@@ -250,34 +250,34 @@ button{cursor:pointer}
   $("codeFileNames").textContent=files.length?files.length+" file(s) selected · "+files.map(file=>file.webkitRelativePath||file.name).slice(0,8).join(", ")+(files.length>8?" …":""):"Choose a project folder or select source files.";
  });
  $("runCodeTests").addEventListener("click",async()=>{
-  if(!statusData?.sandbox_runtime?.ready){$("codeAnalysisStatus").textContent="The private isolated Docker runner is not connected.";return;}
+  if(!statusData?.isolated_test_runner_ready){$("codeAnalysisStatus").textContent="The private isolated Docker runner is not connected.";return;}
   const files=Array.from(codeFilesInput.files||[]);
   if(!files.length){$("codeAnalysisStatus").textContent="Select the project folder and include the required tests or JavaScript file.";return;}
   $("runCodeTests").disabled=true;$("codeAnalysisStatus").textContent="Starting the selected isolated check…";
   try{
    const projectFiles=await Promise.all(files.slice(0,40).map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
-   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_run",command:$("codeRunCommand").value,target:$("codeRunTarget").value.trim(),files:projectFiles})});
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_run",command:$("codeRunCommand").value,target:$("codeRunTarget").value.trim(),files:projectFiles}),headers:{"Content-Type":"application/json","X-Expert802-CSRF":statusData.csrf_token}});
    const data=await response.json();if(!response.ok&&data.error)throw new Error(data.error);
    $("codeRunResult").style.display="block";
    $("codeRunSummary").textContent=(data.ok?"PASSED":"FAILED")+" · exit code "+data.exit_code+" · "+data.duration_seconds+" seconds · network disabled · read-only workspace";
    $("codeRunOutput").textContent=[data.stdout||"",data.stderr||""].filter(Boolean).join("\n");
    $("codeAnalysisStatus").textContent=data.ok?"Isolated test run completed successfully.":"Isolated test run found failures.";
   }catch(error){$("codeAnalysisStatus").textContent=error.message||"Isolated test run failed.";}
-  finally{$("runCodeTests").disabled=!statusData?.sandbox_runtime?.ready;}
+  finally{$("runCodeTests").disabled=!statusData?.isolated_test_runner_ready;}
  });
  $("generateCode").addEventListener("click",async()=>{
-  if(!statusData?.neural_generator_ready){$("codeAnalysisStatus").textContent="No trained private neural checkpoint is connected yet. The analyzer remains available.";return;}
+  if(!statusData?.code_generation_enabled){$("codeAnalysisStatus").textContent="No trained private neural checkpoint is connected yet. The analyzer remains available.";return;}
   const files=Array.from(codeFilesInput.files||[]);
   if(!files.length){$("codeAnalysisStatus").textContent="Select project files first so the model can use real code context.";return;}
   $("generateCode").disabled=true;$("codeAnalysisStatus").textContent="Preparing a patch draft with the private Expert 802 model…";
   try{
    const projectFiles=await Promise.all(files.slice(0,40).map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
-   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_generate",task:$("codeTask").value.trim()||"Review this project and suggest the highest-priority safe improvement.",files:projectFiles})});
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json","X-Expert802-CSRF":statusData.csrf_token},body:JSON.stringify({action:"code_generate",task:$("codeTask").value.trim()||"Review this project and suggest the highest-priority safe improvement.",files:projectFiles})});
    const data=await response.json();if(!response.ok)throw new Error(data.error||"Code generation failed.");
    $("codePatchResult").style.display="block";$("codePatchText").textContent=data.patch;$("codePatchWarning").textContent=data.warning;
    $("codeAnalysisStatus").textContent="Draft generated. It has not been applied or executed.";
   }catch(error){$("codeAnalysisStatus").textContent=error.message||"Code generation failed.";}
-  finally{$("generateCode").disabled=!statusData?.neural_generator_ready;}
+  finally{$("generateCode").disabled=!statusData?.code_generation_enabled;}
  });
  $("analyzeCode").addEventListener("click",async()=>{
   const files=Array.from(codeFilesInput.files||[]);
@@ -332,8 +332,8 @@ button{cursor:pointer}
    $("statusLabel").textContent="Cognitive core online";
    $("statusCaption").textContent="Conversation reasoning · programming planner · code inspection.";
    $("modelPill").textContent=statusData.neural_generator_ready?"Private neural model active":"Native cognition active";
-   $("generateCode").disabled=!statusData.neural_generator_ready;
-   $("runCodeTests").disabled=!statusData.sandbox_runtime?.ready;
+   $("generateCode").disabled=!statusData.code_generation_enabled;
+   $("runCodeTests").disabled=!statusData.isolated_test_runner_ready;
    $("modelPill").classList.add("live");
     $("modelStatusText").textContent="Active pipeline: normalization, intent and slot analysis, dialogue-state tracking, knowledge graph, local retrieval, programming planner, safe code inspection and symbolic reasoning. External model providers are not used. Private neural runtime: "+(statusData.neural_generator_ready?"configured":"not connected");
    $("artifactStatus").textContent=statusData.trained_artifact
