@@ -83,9 +83,11 @@ class ExpertLanguageEngine:
         elif re.search(r"\b(what does|meaning of|define|definition of)\b", lower):
             answer = self._define(text, words)
         elif re.search(r"\bwhat is\b", lower):
-            # "What is X?" is a definition request unless it asks for current or external facts.
+            # Definitions are local; named world facts must not be mistaken for dictionary entries.
             target = self._definition_target(text)
-            if target:
+            if target and re.match(r"(?:the )?(?:capital|president|population|weather|price|score|latest)\b", target, re.I):
+                answer = "I recognise this as a factual question, but I do not have a connected current-world knowledge source in this version. I should not invent an answer."
+            elif target:
                 answer = self._define_target(target)
             else:
                 answer = "I can explain a word or concept if you tell me which one you mean."
