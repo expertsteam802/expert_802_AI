@@ -14,7 +14,7 @@ class CognitiveEngine:
         parts = [
             part.strip(" \t\r\n")
             for part in re.split(
-                r"\s{2,}|(?<=[?!])\s+(?=(?:what|who|where|when|why|how)\\b)",
+                r"\s{2,}|(?<=[?!])\s+(?=(?:what|who|where|when|why|how)\b)",
                 original,
                 flags=re.I,
             )
