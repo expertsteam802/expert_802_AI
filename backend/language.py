@@ -36,6 +36,13 @@ def dictionary_words():
                   "need", "want", "game", "please", "what", "where", "when", "why", "how"})
     return words
 
+@lru_cache(maxsize=1)
+def words_by_length():
+    grouped = {}
+    for word in dictionary_words():
+        grouped.setdefault(len(word), []).append(word)
+    return grouped
+
 def _distance(a, b, limit=2):
     if abs(len(a) - len(b)) > limit:
         return limit + 1
