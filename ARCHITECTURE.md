@@ -49,6 +49,7 @@ Answer + evidence + trace + confidence
 - `code_intelligence.py`: validates file paths and size limits; parses Python with AST; checks JSON; indexes selected JavaScript/TypeScript declarations; checks delimiters, HTML duplicate IDs and selected security patterns. Static diagnostics are not a full compiler or type checker.
 - `agent.py`: explicit tool registry and bounded project inspection entry point.
 - `neural_runtime.py`: optional HTTP client for the project's own private inference server. It is not a hosted model-provider client.
+- `sandbox_runtime.py`: authenticated HTTP client for a separately hosted, allowlisted Docker test runner.
 - `orchestrator.py`: applies deterministic capabilities first and uses the private neural runtime for open-ended responses only when configured.
 
 ## Code Lab tool contract
@@ -57,7 +58,7 @@ The project inspection API accepts up to 40 files and 1 MB of UTF-8 text. It rej
 
 Supported static inspection: Python, JavaScript, TypeScript, HTML, CSS and JSON, plus selected text/config formats. It reports a project file map, symbols, imports and diagnostics. It does not currently perform full type checking, dependency installation, arbitrary test execution or repository writes.
 
-The optional code-generation endpoint returns an unapplied draft. Applying a patch, running tests and deploying require separate explicit tool permissions and are not silently performed by the current Code Lab.
+The optional code-generation endpoint returns an unapplied draft. The optional Docker runner supports only Python unittest discovery and JavaScript syntax checks; it uses network-disabled, read-only containers with resource limits. Applying a patch, running tests and deploying require separate explicit tool permissions and are not silently performed by the current Code Lab.
 
 ## Native neural training architecture
 
