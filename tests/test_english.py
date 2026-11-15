@@ -37,6 +37,18 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertIn("run", [item["name"] for item in result["symbols"]])
         self.assertIn("dynamic_eval", [item["code"] for item in result["diagnostics"]])
 
+    def test_project_inspection_flags_python_and_javascript_security_risks(self):
+        python_source = "import subprocess\\ndef run(command):\\n    subprocess.run(command, shell=True)\\n"
+        js_source = "eval(userInput); element.innerHTML = userInput;"
+        result = inspect_project([
+            {"path":"unsafe.py","content":python_source},
+            {"path":"unsafe.js","content":js_source},
+        ])
+        codes = {item["code"] for item in result["diagnostics"]}
+        self.assertIn("subprocess_shell_true", codes)
+        self.assertIn("javascript_eval", codes)
+        self.assertIn("unsafe_inner_html", codes)
+
     def test_project_inspection_detects_python_syntax_error(self):
         result = inspect_project([{"path": "broken.py", "content": "def broken(:\n pass"}])
         self.assertEqual(result["summary"]["errors"], 1)
