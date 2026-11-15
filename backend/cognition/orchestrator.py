@@ -55,7 +55,8 @@ class CognitiveEngine:
         if frame.kind == "gratitude":
             return {**base, "reply": "You're welcome. What would you like to work on next?"}
         if frame.kind == "identity":
-            return {**base, "reply": "I'm Expert 802 AI, a provider-independent assistant with a growing conversation, intent analysis, reasoning, and programming architecture. I can currently inspect supported source files, map symbols, detect selected syntax and safety issues, and plan engineering tasks. General neural language generation and autonomous code execution are not yet enabled; this system is still being developed."}
+            neural_status = "My private neural runtime is ready." if self.neural.health()["ready"] else "My private neural generator is not connected yet."
+            return {**base, "reply": "I'm Expert 802 AI, a provider-independent conversational and programming assistant. My implemented core includes intent analysis, dialogue context, explicit-fact reasoning, local retrieval, engineering task planning, static code inspection and registered tools. " + neural_status + " Code execution is restricted to an optional isolated test runner; I do not claim to have run or changed code without a tool result."}
 
         if is_programming_request(message):
             plan = build_work_plan(message)
