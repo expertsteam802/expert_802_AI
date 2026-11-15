@@ -70,7 +70,7 @@ def _split_joined(token, vocabulary):
     valid = [i for i, parts in enumerate(best[:-1]) if parts and len(token) - i <= 15]
     if valid:
         end = max(valid)
-        return best[end] + [token[end:]]
+        tail = token[end:]\n        if len(tail) == 1 and end > 0 and tail == token[end - 1]:\n            return best[end]\n        return best[end] + [tail]
     # A repeated final keystroke is a common source of merged-word failures.
     if len(token) > 7 and token[-1] == token[-2]:
         return _split_joined(token[:-1], vocabulary)
