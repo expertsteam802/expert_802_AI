@@ -4,8 +4,11 @@ from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 from backend.engine import ExpertLanguageEngine
 from backend.language import dictionary_lookup, load_dictionary, load_wordnet
+from backend.cognition.agent import AgentPlanner, InspectionError
+from backend.cognition.programming import build_work_plan
 
 _ENGINE = ExpertLanguageEngine()
+_AGENT = AgentPlanner()
 _MODEL_PATH = Path(__file__).resolve().parents[1] / "backend" / "language_model.json"
 
 def _training_stats():
@@ -24,10 +27,13 @@ class handler(BaseHTTPRequestHandler):
         self._send(200, {
             "engine": "expert802-cognitive-core",
             "architecture": ["normalization", "intent_analysis", "dialogue_state", "knowledge_graph",
-                             "local_retrieval", "symbolic_reasoning"],
+                             "local_retrieval", "symbolic_reasoning", "programming_planner", "safe_code_inspection", "tool_registry"],
             "external_model_provider": False,
             "model_configured": False,
             "neural_generator_ready": False,
+            "coding_agent_ready": True,
+            "code_execution_enabled": False,
+            "supported_code_inspection": ["Python", "JavaScript", "TypeScript", "HTML", "CSS", "JSON"],
             "dictionary_entries": len(load_dictionary()),
             "wordnet_entries": len(load_wordnet()),
             "corpus_documents": len(_ENGINE.retriever.documents),
@@ -44,11 +50,25 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
             size = int(self.headers.get("Content-Length", "0"))
-            if size < 1 or size > 20000:
-                return self._send(400, {"error": "Send a message under 20 KB."})
+            if size < 1 or size > 1100000:
+                return self._send(400, {"error": "Request payload must be under 1.1 MB."})
             payload = json.loads(self.rfile.read(size).decode("utf-8"))
             if not isinstance(payload, dict):
                 return self._send(400, {"error": "The request body must be a JSON object."})
+            action = payload.get("action", "chat")
+            if action == "code_analyze":
+                files = payload.get("files", [])
+                result = _AGENT.inspect(files)
+                if not result["ok"]:
+                    return self._send(400, {"error": result["error"]})
+                task = payload.get("task", "Review this project for correctness and maintainability.")
+                plan = _AGENT.plan(task, files)
+                return self._send(200, {"engine": "expert802-coding-agent", "analysis": result["output"], "plan": plan})
+            if action == "plan":
+                task = payload.get("task", "")
+                if not isinstance(task, str) or not task.strip():
+                    return self._send(400, {"error": "A non-empty engineering task is required."})
+                return self._send(200, {"engine": "expert802-coding-agent", "plan": _AGENT.plan(task)})
             if payload.get("action", "chat") == "lookup":
                 term = payload.get("term", "")
                 if not isinstance(term, str) or not term.strip():
