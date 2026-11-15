@@ -23,7 +23,7 @@ jobs:
   train:
     # Requires a separately provisioned GPU runner; GitHub-hosted ubuntu-latest has no training GPU.
     runs-on: [self-hosted, linux, x64, gpu]
-    timeout-minutes: 720
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
