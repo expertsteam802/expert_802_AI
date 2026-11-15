@@ -83,7 +83,7 @@ class handler(BaseHTTPRequestHandler):
         self._send(200, {
             "engine": "expert802-cognitive-core",
             "architecture": ["normalization", "intent_analysis", "dialogue_state", "knowledge_graph",
-                             "local_retrieval", "symbolic_reasoning", "programming_planner", "safe_code_inspection", "tool_registry"],
+                             "local_retrieval", "symbolic_reasoning", "programming_planner", "safe_code_inspection", "tool_registry", "private_neural_runtime", "isolated_test_runner"],
             "external_model_provider": False,
             "model_configured": _ENGINE.neural.configured,
             "neural_generator_ready": neural_health["ready"],
