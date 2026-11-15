@@ -81,11 +81,11 @@ class ExpertLanguageEngine:
         )
         if lower in {"yes", "yeah", "yep", "sure", "ok", "okay"} and game_context:
             answer = "Sure. Which do you mean: open a game you already have, download a game, or find a game to play?"
-        elif game_choice_context and re.search(r"\\b(open|launch|start)\\b.*\\b(game|gta)\\b", lower):
+        elif game_choice_context and re.search(r"\b(open|launch|start)\\b.*\\b(game|gta)\\b", lower):
             answer = "Got it—you want to open a game you already have. I cannot launch an app on your device from this chat, but I can guide you. Which device are you using: Windows PC, Android phone, PlayStation, or Xbox?"
-        elif game_choice_context and re.search(r"\\b(download|install|get)\\b.*\\b(game|gta)\\b", lower):
+        elif game_choice_context and re.search(r"\b(download|install|get)\\b.*\\b(game|gta)\\b", lower):
             answer = "Got it—you want to download or install a game. Which device are you using: Windows PC, Android phone, PlayStation, or Xbox?"
-        elif game_choice_context and re.search(r"\\b(find|recommend|choose)\\b.*\\bgame\\b", lower):
+        elif game_choice_context and re.search(r"\b(find|recommend|choose)\\b.*\\bgame\\b", lower):
             answer = "I can help you find a game. What kind of games do you enjoy—action, racing, sports, adventure, or something else?"
         elif lower in {"gta", "grand theft auto"} and game_context:
             answer = "GTA usually means Grand Theft Auto. Which one do you mean—GTA V, GTA Online, or another GTA game?"
@@ -96,8 +96,14 @@ class ExpertLanguageEngine:
             answer = "Hello! I'm Expert 802 AI. We can talk in English. What would you like to discuss?"
         elif re.search(r"\b(who are you|what are you|your name)\b", lower):
             answer = "I'm Expert 802 AI, a project-owned English language assistant. I help with word meanings, spelling, grammar and conversation."
-        elif re.search(r"\bwhat is ai in full|what is ai full|full form of ai|ai in full words?\b", lower):
-            answer = "AI stands for artificial intelligence."
+        elif re.search(r"^what is .+? in full(?: words)?[?!.]*$", lower) or re.search(r"^full form of .+[?!.]*$", lower):
+            target = re.sub(r"^what is\s+|^full form of\s+", "", lower)
+            target = re.sub(r"\s+in full(?: words)?[?!.]*$", "", target).strip(" ?.!'\"" )
+            if target in CURATED_DEFINITIONS and CURATED_DEFINITIONS[target][0].startswith("abbreviation"):
+                expansions = {"ai": "artificial intelligence", "fbi": "Federal Bureau of Investigation", "gta": "Grand Theft Auto"}
+                answer = target.upper() + " stands for " + expansions[target] + "."
+            else:
+                answer = self._define_target(target)
         elif re.search(r"\b(what does|meaning of|define|definition of)\b", lower):
             answer = self._define(text, words)
         elif re.search(r"\bwhat is\b", lower):
@@ -123,6 +129,8 @@ class ExpertLanguageEngine:
             answer = "Got it—you need your game right now. Are you trying to open a game you already have, download one, or find a game to play?"
         elif re.search(r"\b(affect and effect|difference between affect and effect)\b", lower):
             answer = "“Affect” is usually a verb meaning to influence: “Rain can affect traffic.” “Effect” is usually a noun meaning a result: “The effect was a delay.”"
+        elif lower.strip(" .!?") in CURATED_DEFINITIONS:
+            answer = self._define_target(lower.strip(" .!?"))
         elif re.search(r"\b(thank you|thanks)\b", lower):
             answer = "You're welcome. What else would you like to talk about?"
         elif re.search(r"\b(you are wrong|that's wrong|you don't understand|not what i asked)\b", lower):
