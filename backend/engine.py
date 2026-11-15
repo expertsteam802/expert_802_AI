@@ -59,6 +59,37 @@ class ExpertLanguageEngine:
         if not original:
             return {"reply": "Please type a message so I can try to understand it.", "engine": "python-english-v2"}
 
+        # If several utterances are pasted into one message, process them in order.
+        # Double-space/newline separators are treated as deliberate boundaries;
+        # question punctuation also separates consecutive questions.
+        batch_parts = [
+            part.strip(" \\t\\r\\n")
+            for part in re.split(
+                r"\\s{2,}|(?<=[?!])\\s+(?=(?:what|who|where|when|why|how)\\b)",
+                original,
+                flags=re.I,
+            )
+            if part.strip(" \\t\\r\\n")
+        ]
+        if len(batch_parts) > 1:
+            running_history = list(history) if isinstance(history, list) else []
+            rendered = []
+            for part in batch_parts:
+                result = self.reply(part, running_history)
+                answer = result.get("reply", "")
+                rendered.append("You: " + part + "\\nExpert 802 AI: " + answer)
+                running_history.extend([
+                    {"role": "user", "text": part},
+                    {"role": "assistant", "text": answer},
+                ])
+            return {
+                "reply": "\\n\\n".join(rendered),
+                "engine": "python-english-v2",
+                "language": "English",
+                "batch_processed": True,
+                "batch_items": len(batch_parts),
+            }
+
         normalized, spelling_changes = correct_spelling(original)
         text = normalized.strip()
         lower = text.lower()
