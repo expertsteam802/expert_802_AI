@@ -30,7 +30,7 @@ def calculate(expression):
     value = (expression or "").lower()
     replacements = [
         (r"\bdivided by\b", "/"), (r"\bover\b", "/"),
-        (r"\bmultiplied by\b|\btimes\b", "*"), (r"\bplus\b", "+"),
+        (r"\bpercent of\b", "*0.01*"), (r"\bmultiplied by\b|\btimes\b|\bx\b", "*"), (r"\bplus\b", "+"),
         (r"\bminus\b", "-"), (r"\bmodulo\b|\bmod\b", "%"),
         (r"\bto the power of\b|\bpower of\b", "**"),
         (r"\bx\b", "*"),
