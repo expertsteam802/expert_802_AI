@@ -5,6 +5,7 @@ import os
 import subprocess
 import tempfile
 import time
+import threading
 import uuid
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
@@ -12,6 +13,7 @@ from backend.cognition.code_intelligence import safe_path,InspectionError,MAX_FI
 
 PYTHON_IMAGE=os.environ.get("EXPERT802_PYTHON_IMAGE","python:3.11-slim")
 NODE_IMAGE=os.environ.get("EXPERT802_NODE_IMAGE","node:22-alpine")
+RUN_SEMAPHORE=threading.BoundedSemaphore(2)
 
 def validate_files(files):
     if not isinstance(files,list) or not files or len(files)>MAX_FILES:
@@ -106,7 +108,12 @@ def build_handler(token):
                 if size<1 or size>1100000:
                     return self.send_json(400,{"error":"Request must be under 1.1 MB."})
                 payload=json.loads(self.rfile.read(size).decode("utf-8"))
-                result=execute(payload.get("files"),payload.get("command",""),payload.get("target",""))
+                if not RUN_SEMAPHORE.acquire(blocking=False):
+                    return self.send_json(429,{"error":"The isolated runner is busy. Try again shortly."})
+                try:
+                    result=execute(payload.get("files"),payload.get("command",""),payload.get("target",""))
+                finally:
+                    RUN_SEMAPHORE.release()
                 status=200 if "error" not in result else 503
                 self.send_json(status,result)
             except (ValueError,TypeError,InspectionError,json.JSONDecodeError,UnicodeDecodeError) as error:
