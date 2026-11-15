@@ -32,7 +32,7 @@ def prepare(input_path,output_dir,tokenizer_path,validation_fraction=0.05,seed=8
     if len(training)<=513 or len(validation)<=513:
         raise ValueError("Supply enough complete conversations for both train and validation splits (more than 513 tokens each).")
     output=Path(output_dir)
-    output.mkdir(parents=True,exist_ok=True)
+    output.mkdir(parents=True,exist_ok=True)\n    shutil.copy2(tokenizer_path,output/"tokenizer.json")
     dtype=np.uint16 if tokenizer.get_vocab_size()<=65535 else np.uint32
     np.asarray(training,dtype=dtype).tofile(output/"train.bin")
     np.asarray(validation,dtype=dtype).tofile(output/"val.bin")
