@@ -63,6 +63,8 @@ python training/train.py --data training/sft_data --output training/sft-checkpoi
 
 The fine-tuning tokenizer must match the base checkpoint. `--steps` is the total target step number, so choose a number greater than the checkpoint's saved step.
 
+A separate manual workflow, `.github/workflows/finetune-neural.yml`, runs the same fine-tuning stage on a GPU runner. It requires the reviewed JSONL dataset, base checkpoint and matching tokenizer to be present at the supplied paths on that runner. Keep checkpoints in private durable storage; workflow artifacts expire after seven days.
+
 ## Stage 3 — test generation and serve privately
 
 ```bash
