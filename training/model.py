@@ -6,8 +6,8 @@ from torch.nn import functional as F
 
 @dataclass
 class ModelConfig:
-    vocab_size: int = 256
-    block_size: int = 512
+    vocab_size: int = 16000
+    block_size: int = 1024
     n_layer: int = 6
     n_head: int = 8
     n_embd: int = 256
