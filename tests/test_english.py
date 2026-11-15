@@ -7,12 +7,44 @@ from urllib.request import Request, urlopen
 from backend.engine import ExpertLanguageEngine
 from backend.cognition.intent import normalize, parse_intent
 from backend.cognition.reasoning import calculate
+from backend.cognition.code_intelligence import inspect_project, InspectionError
+from backend.cognition.programming import build_work_plan, is_programming_request
 from backend.language import correct_common_grammar, dictionary_lookup
 from api.chat import handler as ChatHandler
 
 class CognitiveArchitectureTests(unittest.TestCase):
     def setUp(self):
         self.engine = ExpertLanguageEngine()
+
+    def test_programming_request_is_classified_and_planned(self):
+        self.assertTrue(is_programming_request("Please build a Python API"))
+        plan = build_work_plan("Fix the Python API error")
+        self.assertEqual(plan["kind"], "debug")
+        self.assertTrue(plan["requires_project_files"])
+
+    def test_python_project_inspection_maps_symbols_and_security_warnings(self):
+        result = inspect_project([{"path": "app.py", "content": "import os\\n\\ndef run():\\n    eval('1 + 1')\\n"}])
+        self.assertEqual(result["file_count"], 1)
+        self.assertIn("run", [item["name"] for item in result["symbols"]])
+        self.assertIn("dynamic_eval", [item["code"] for item in result["diagnostics"]])
+
+    def test_project_inspection_detects_python_syntax_error(self):
+        result = inspect_project([{"path": "broken.py", "content": "def broken(:\\n pass"}])
+        self.assertEqual(result["summary"]["errors"], 1)
+        self.assertEqual(result["diagnostics"][0]["code"], "python_syntax")
+
+    def test_project_inspection_detects_invalid_json_and_js_delimiters(self):
+        result = inspect_project([
+            {"path": "config.json", "content": "{bad json}"},
+            {"path": "app.js", "content": "function run() { return [1, 2; "}
+        ])
+        codes = {item["code"] for item in result["diagnostics"]}
+        self.assertIn("invalid_json", codes)
+        self.assertIn("unclosed_delimiter", codes)
+
+    def test_project_inspection_rejects_path_traversal(self):
+        with self.assertRaises(InspectionError):
+            inspect_project([{"path": "../secret.py", "content": "print('no')"}])
 
     def test_spelling_and_joined_words_are_recovered(self):
         fixed = normalize("i nned my gamerightnoww")
