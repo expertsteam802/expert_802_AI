@@ -125,7 +125,7 @@ class ExpertLanguageEngine:
     def _definition_target(text):
         value = re.sub(r"[?!.]+$", "", text.strip())
         patterns = [
-            r"^what is (?:the definition of )?(.+?)(?:\s+in full)?$",
+            r"^what is (?:the definition of )?(.+?)(?:\s+in full(?: words)?)?$",
             r"^what does (.+?) mean$",
             r"^define (.+)$",
         ]
