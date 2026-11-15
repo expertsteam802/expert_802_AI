@@ -51,7 +51,7 @@ def _clean_target(value):
 
 def parse_intent(message):
     text = normalize(message)
-    low = text.lower().strip()
+    low = re.sub(r"[?!.]+$", "", text.lower().strip())
     words = tokens(low)
     if not low:
         return IntentFrame("empty", "", confidence=1.0, slots={})
