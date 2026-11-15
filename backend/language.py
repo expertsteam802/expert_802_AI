@@ -96,6 +96,17 @@ def correct_spelling(text):
             output.append(original)
             continue
         lower = original.lower()
+        # Preserve acronyms, initials and short uppercase names (GTA, AI, FIFA).
+        if original.isupper() and 2 <= len(original) <= 6:
+            output.append(original)
+            continue
+        # Common informal chat spellings are normalized explicitly, not guessed.
+        chat_aliases = {"ur": "your", "u": "you", "r": "are", "wht": "what", "thx": "thanks"}
+        if lower in chat_aliases:
+            replacement = chat_aliases[lower]
+            changes.append((lower, replacement))
+            output.append(replacement)
+            continue
         pieces = _split_joined(lower, vocab)
         fixed = []
         for piece in pieces:
