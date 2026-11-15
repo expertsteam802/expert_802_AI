@@ -63,10 +63,10 @@ class KnowledgeGraph:
             direct = self.edges.get((subject, "in"), [])
             objects = sorted({edge["object"] for edge in direct})
             if len(objects) == 1:
-                return {"reply": f"According to what you told me, {subject} is in {objects[0]}.",
+                return {"reply": f"According to what you told me, {subject.title()} is in {objects[0].title()}.",
                         "evidence": [edge["source"] for edge in direct], "confidence": 0.99}
             if len(objects) > 1:
-                return {"reply": f"Your earlier notes give conflicting locations for {subject}: {', '.join(objects)}. Which one should I use?",
+                return {"reply": f"Your earlier notes give conflicting locations for {subject.title()}: {', '.join(value.title() for value in objects)}. Which one should I use?",
                         "evidence": [edge["source"] for edge in direct], "confidence": 0.99}
 
         relation = re.match(r"^(?:is|are|was|were)\s+(.+?)\s+in\s+(.+)$", text)
@@ -75,11 +75,11 @@ class KnowledgeGraph:
             direct = self.edges.get((subject, "in"), [])
             for edge in direct:
                 if edge["object"] == target:
-                    return {"reply": f"Yes. Your earlier note says {subject} is in {target}.",
+                    return {"reply": f"Yes. Your earlier note says {subject.title()} is in {target.title()}.",
                             "evidence": [edge["source"]], "confidence": 0.99}
             for found, nodes, sources in self._paths(subject, "in"):
                 if found == target:
-                    chain = " -> ".join(nodes)
+                    chain = " -> ".join(node.title() for node in nodes)
                     return {"reply": f"Yes. This follows from the facts you gave me: {chain}.",
                             "evidence": sources, "confidence": 0.95}
 
