@@ -98,13 +98,38 @@ function respond(raw){
  return "I understand that you're telling me: “"+s+"”. I can follow the words and some grammar patterns, but I don't want to pretend I fully understand the meaning when my current language model cannot establish it confidently. What would you like me to do with this: explain it, correct it, or discuss the idea?";
 }
 function submit(text){
- const value=(text??input.value).trim();if(!value)return;
- $('#welcome')?.remove();add('user',value);history.push({role:'user',text:value});
- input.value='';input.style.height='auto';send.disabled=true;
- const answer=respond(value);add('assistant',answer);history.push({role:'assistant',text:answer});send.disabled=false;input.focus();
+ const value=String(text ?? input.value ?? '').trim();
+ if(!value || send.disabled)return;
+ try {
+  $('#welcome')?.remove();
+  add('user',value);
+  history.push({role:'user',text:value});
+  input.value='';
+  input.style.height='auto';
+  send.disabled=true;
+  const answer=respond(value);
+  add('assistant',answer);
+  history.push({role:'assistant',text:answer});
+ } catch(error) {
+  console.error('Expert 802 AI response error:',error);
+  add('assistant',"I hit an internal error while processing that message. Please try again.");
+ } finally {
+  send.disabled=false;
+  input.focus();
+ }
 }
-send.addEventListener('click',()=>submit());input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit()}});
-input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,150)+'px'});
+send.type='button';
+send.addEventListener('click',event=>{event.preventDefault();submit();});
+input.addEventListener('keydown',event=>{
+ if(event.key==='Enter'&&!event.shiftKey){
+  event.preventDefault();
+  submit();
+ }
+});
+input.addEventListener('input',()=>{
+ input.style.height='auto';
+ input.style.height=Math.min(input.scrollHeight,150)+'px';
+});
 document.querySelectorAll('[data-prompt]').forEach(b=>b.addEventListener('click',()=>submit(b.dataset.prompt)));
 $('#newChat').addEventListener('click',()=>{history=[];chat.innerHTML='<div class="welcome" id="welcome"><div class="orb">✳</div><h2>Let's understand language.</h2><p>Talk to Expert 802 AI in your own words. Try different grammar, ask about English, or see how it interprets a sentence.</p><div class="suggestions"><button data-prompt="Why do we say she is instead of she are?">Explain an English grammar rule</button><button data-prompt="What does the word curious mean?">Ask for a word meaning</button><button data-prompt="I went to school yesterday. Is this sentence correct?">Check a sentence</button><button data-prompt="Can you explain the difference between affect and effect?">Compare two words</button></div></div>';document.querySelectorAll('[data-prompt]').forEach(b=>b.addEventListener('click',()=>submit(b.dataset.prompt)));input.focus()});
 })();
