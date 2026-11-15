@@ -40,7 +40,7 @@ class CognitiveEngine:
             "language": "English",
             "intent": frame.to_dict(),
             "dialogue_state": state.to_dict(),
-            "model_configured": False,
+            "cognition_trace": ["normalize", "parse_intent", "build_dialogue_state", "retrieve_evidence", "reason", "compose_response"],
         }
         if frame.kind == "empty":
             return {**base, "reply": "Send me a message and I'll work with it."}
