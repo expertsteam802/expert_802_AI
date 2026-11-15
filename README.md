@@ -64,7 +64,7 @@ Training has separate dependencies in `training/requirements.txt`; see [training
 
 ## Deployment
 
-Vercel hosts the lightweight web/API layer. A trained neural model must run separately on a private machine or GPU service. The optional Docker test runner also runs separately on a private host. Configure `EXPERT802_NEURAL_URL` to its HTTPS `/generate` endpoint and `EXPERT802_INFERENCE_TOKEN` with a strong shared secret. The private inference process requires a TLS reverse proxy for remote binding. See [sandbox/README.md](sandbox/README.md) for the isolated test runner and its environment variables.
+Vercel hosts the lightweight web/API layer. A trained neural model must run separately on a private machine or GPU service. The optional Docker test runner also runs separately on a private host. Configure `EXPERT802_NEURAL_URL` to its HTTPS `/generate` endpoint and `EXPERT802_INFERENCE_TOKEN` with a strong shared secret. The private inference process requires a TLS reverse proxy for remote binding. See [sandbox/README.md](sandbox/README.md) for the isolated test runner. Test execution is disabled by default; do not enable it on a public app until authenticated user access and edge-level rate limiting are in place.
 
 GitHub Actions validates code on pushes to `main`. It does not train a capable conversational model.
 
