@@ -38,7 +38,7 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertIn("dynamic_eval", [item["code"] for item in result["diagnostics"]])
 
     def test_project_inspection_flags_python_and_javascript_security_risks(self):
-        python_source = "import subprocess\\ndef run(command):\\n    subprocess.run(command, shell=True)\\n"
+        python_source = chr(10).join(["import subprocess", "def run(command):", "    subprocess.run(command, shell=True)", ""])
         js_source = "eval(userInput); element.innerHTML = userInput;"
         result = inspect_project([
             {"path":"unsafe.py","content":python_source},
