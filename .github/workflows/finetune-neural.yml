@@ -34,6 +34,8 @@ jobs:
           python-version: "3.11"
       - name: Install isolated training dependencies
         run: python -m pip install -r training/requirements.txt
+      - name: Smoke-test native Transformer forward, backward and generation
+        run: python training/test_model.py
       - name: Validate mounted training inputs
         env:
           DATASET_PATH: ${{ inputs.dataset_path }}
