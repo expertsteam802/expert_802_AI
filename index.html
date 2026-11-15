@@ -131,26 +131,26 @@ button{cursor:pointer}
   <div class="side-foot">EXPERIMENTAL · ENGLISH LANGUAGE SYSTEM</div>
  </aside>
  <main class="workspace">
-  <header class="topbar"><div><div class="top-title" id="pageTitle">Conversation</div><div class="top-subtitle" id="pageSubtitle">Talk naturally. Expert 802 AI will interpret your message.</div></div><div class="top-right"><span class="pill" id="modelPill">Checking model</span></div></header>
+  <header class="topbar"><div><div class="top-title" id="pageTitle">Conversation</div><div class="top-subtitle" id="pageSubtitle">A native cognitive pipeline for language, context, knowledge and reasoning.</div></div><div class="top-right"><span class="pill" id="modelPill">Checking model</span></div></header>
   <section class="view chat-view active" id="chatView">
-   <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask a question, explore a word, explain an idea or continue a conversation. This workspace keeps the conversation in its own scrollable area.</p><div class="welcome-note">Your messages are sent to the Expert 802 AI language engine.</div></div></div>
+   <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask a question, explore a word, explain an idea or continue a conversation. The native cognition pipeline tracks intent, context, evidence and reasoning.</p><div class="welcome-note">Your messages are processed by the Expert 802 cognitive core.</div></div></div>
    <div class="composer-wrap"><div class="composer"><textarea id="messageInput" rows="1" aria-label="Message Expert 802 AI" placeholder="Message Expert 802 AI…"></textarea><button class="send" id="sendButton" aria-label="Send message">↑</button></div><div class="composer-meta"><span>Enter to send · Shift + Enter for a new line</span><span>Only the conversation panel scrolls</span></div></div>
   </section>
   <section class="view content-view" id="dictionaryView"><div class="page-scroll"><div class="page-inner">
    <div class="page-heading"><h1>English dictionary</h1><p>Search the actual local dictionary and WordNet knowledge imported into this project.</p></div>
    <div class="lookup-card"><form class="lookup-form" id="lookupForm"><input id="lookupInput" autocomplete="off" placeholder="Enter a word, for example: curious"><button class="primary-btn" type="submit">Look up word</button></form><div class="lookup-result" id="lookupResult"><div class="result-word" id="resultWord"></div><div class="result-pos" id="resultPos"></div><div class="result-definition" id="resultDefinition"></div><div class="result-synonyms" id="resultSynonyms"></div></div></div>
-   <div class="info-block"><h2>How knowledge is used</h2><p>Dictionary entries are retrieved as evidence for answers. They are not a collection of scripted question-and-answer pairs. When a pretrained model is connected, relevant entries are supplied to it so it can interpret context and form its own response.</p></div>
+   <div class="info-block"><h2>How knowledge is used</h2><p>Dictionary and corpus passages are retrieved as evidence. The cognitive core combines this evidence with intent frames, dialogue state and deterministic reasoning. It does not call an external model provider.</p></div>
   </div></div></section>
   <section class="view content-view" id="trainingView"><div class="page-scroll"><div class="page-inner">
-   <div class="page-heading"><h1>Training and model status</h1><p>Live information reported by the backend, not demonstration metrics.</p></div>
+   <div class="page-heading"><h1>Cognitive architecture status</h1><p>Live information reported by the backend, not demonstration metrics.</p></div>
    <div class="grid-stats">
     <div class="stat"><div class="stat-label">Dictionary entries</div><div class="stat-value" id="dictionaryCount">—</div><div class="stat-note">Project vocabulary file</div></div>
     <div class="stat"><div class="stat-label">WordNet entries</div><div class="stat-value" id="wordnetCount">—</div><div class="stat-note">Imported word senses</div></div>
     <div class="stat"><div class="stat-label">Training vocabulary</div><div class="stat-value" id="trainingVocab">—</div><div class="stat-note">Current trained artifact</div></div>
    </div>
-   <div class="info-block"><h2>Pretrained conversational model</h2><p id="modelStatusText">Checking whether a self-hosted model is connected…</p><div class="info-links"><a href="https://github.com/QwenLM/Qwen3" target="_blank" rel="noopener">Qwen3 source repository ↗</a><a href="https://huggingface.co/Qwen/Qwen3-1.7B" target="_blank" rel="noopener">Qwen3-1.7B model ↗</a><a href="https://github.com/unslothai/unsloth" target="_blank" rel="noopener">Fine-tuning tools ↗</a></div></div>
-   <div class="info-block"><h2>Current local training artifact</h2><p id="artifactStatus">Checking the saved model artifact…</p><div class="info-links"><a href="https://github.com/expertsteam802/expert_802_AI/actions/workflows/train-english.yml" target="_blank" rel="noopener">Open training workflow ↗</a><a href="https://github.com/expertsteam802/expert_802_AI/tree/main/learning" target="_blank" rel="noopener">View training code ↗</a></div></div>
-   <div class="notice">A word-bigram model is a statistical next-word baseline, not a pretrained neural conversational model. The neural model status will only show connected when the self-hosted inference endpoint is configured.</div>
+   <div class="info-block"><h2>Native cognitive architecture</h2><p id="modelStatusText">Checking the live Expert 802 cognitive pipeline…</p><div class="info-links"><a href="https://github.com/expertsteam802/expert_802_AI/tree/main/backend/cognition" target="_blank" rel="noopener">Inspect cognition modules ↗</a><a href="https://spacy.io/usage/spacy-101" target="_blank" rel="noopener">NLP architecture reference ↗</a></div></div>
+   <div class="info-block"><h2>Current local training artifact</h2><p id="artifactStatus">Checking the local statistical baseline…</p><div class="info-links"><a href="https://github.com/expertsteam802/expert_802_AI/actions/workflows/train-english.yml" target="_blank" rel="noopener">Open training workflow ↗</a><a href="https://github.com/expertsteam802/expert_802_AI/tree/main/learning" target="_blank" rel="noopener">View training code ↗</a></div></div>
+   <div class="notice">The word-bigram artifact is only a next-word statistical baseline. The live chat path now uses the native cognitive pipeline; a trained neural text generator is not yet part of this build.</div>
   </div></div></section>
  </main>
 </div>
@@ -228,10 +228,10 @@ button{cursor:pointer}
    $("wordnetCount").textContent=number(statusData.wordnet_entries);
    $("trainingVocab").textContent=number(statusData.training_vocabulary);
    $("statusDot").classList.toggle("ready",true);
-   $("statusLabel").textContent="Engine online";
-   $("statusCaption").textContent=number(statusData.dictionary_entries)+" dictionary entries available.";
-   $("modelPill").textContent=statusData.model_configured?"Pretrained model configured":"Dictionary engine";
-   $("modelPill").classList.toggle("live",!!statusData.model_configured);
+   $("statusLabel").textContent="Cognitive core online";
+   $("statusCaption").textContent=number(statusData.dictionary_entries)+" dictionary entries · "+number(statusData.corpus_documents)+" corpus passages.";
+   $("modelPill").textContent="Native cognition active";
+   $("modelPill").classList.add("live");
    $("modelStatusText").textContent=statusData.model_configured
     ?"Configured to send chat requests to "+statusData.model_name+" through the self-hosted inference server. The model host must be online for generation to work."
     :"No pretrained neural model is configured yet. The selected integration target is Qwen3-1.7B, served on a separate self-hosted inference machine. Vercel continues to host the website and lightweight API only.";
