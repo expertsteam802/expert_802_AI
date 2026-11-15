@@ -9,9 +9,10 @@ The live chat endpoint runs the project-owned pipeline in `backend/cognition/`:
 1. **Normalization** — common chat shorthand, spelling recovery and joined-word recovery.
 2. **Intent and slot analysis** — turns a message into a structured frame (definition, calculation, request, follow-up, explanation, question or statement).
 3. **Dialogue state** — extracts the current topic and resolves simple references such as “it” and “that” against supplied conversation history.
-4. **Local retrieval** — ranks passages from the project corpus and retrieves dictionary / WordNet entries as evidence.
-5. **Symbolic reasoning** — evaluates safe arithmetic expressions with a restricted AST; it never evaluates arbitrary Python.
-6. **Response orchestration** — combines the frame, context, retrieved evidence and computed results, and exposes confidence/evidence metadata to callers.
+4. **Local retrieval** — ranks passages from the project corpus and expands terms with WordNet synonyms.
+5. **Fact graph** — stores explicit relations from the supplied conversation history, answers supported questions and detects conflicts; it can infer transitive location relations when each link was explicitly stated.
+6. **Symbolic reasoning** — evaluates safe arithmetic expressions with a restricted AST; it never evaluates arbitrary Python.
+7. **Response orchestration** — combines the frame, context, retrieved evidence and computed results, and exposes confidence/evidence metadata to callers.
 
 There is no Qwen integration, external model endpoint, API key, or provider token in the active chat path.
 
