@@ -35,6 +35,7 @@ class CognitiveArchitectureTests(unittest.TestCase):
 
     def test_programming_request_is_classified_and_planned(self):
         self.assertTrue(is_programming_request("Please build a Python API"))
+        self.assertTrue(is_programming_request("Help me with this Python error"))
         plan = build_work_plan("Fix the Python API error")
         self.assertEqual(plan["kind"], "debug")
         self.assertTrue(plan["requires_project_files"])
