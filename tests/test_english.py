@@ -23,13 +23,13 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertTrue(plan["requires_project_files"])
 
     def test_python_project_inspection_maps_symbols_and_security_warnings(self):
-        result = inspect_project([{"path": "app.py", "content": "import os\\n\\ndef run():\\n    eval('1 + 1')\\n"}])
+        result = inspect_project([{"path": "app.py", "content": "import os\n\ndef run():\n    eval('1 + 1')\n"}])
         self.assertEqual(result["file_count"], 1)
         self.assertIn("run", [item["name"] for item in result["symbols"]])
         self.assertIn("dynamic_eval", [item["code"] for item in result["diagnostics"]])
 
     def test_project_inspection_detects_python_syntax_error(self):
-        result = inspect_project([{"path": "broken.py", "content": "def broken(:\\n pass"}])
+        result = inspect_project([{"path": "broken.py", "content": "def broken(:\n pass"}])
         self.assertEqual(result["summary"]["errors"], 1)
         self.assertEqual(result["diagnostics"][0]["code"], "python_syntax")
 
@@ -172,7 +172,7 @@ class CognitiveArchitectureTests(unittest.TestCase):
             payload = json.dumps({
                 "action": "code_analyze",
                 "task": "Review this Python project",
-                "files": [{"path": "app.py", "content": "def main():\\n    return 42\\n"}],
+                "files": [{"path": "app.py", "content": "def main():\n    return 42\n"}],
             }).encode()
             request = Request(f"http://127.0.0.1:{server.server_port}/api/chat", data=payload,
                               headers={"Content-Type": "application/json"}, method="POST")
