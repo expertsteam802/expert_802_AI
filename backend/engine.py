@@ -100,7 +100,7 @@ class ExpertLanguageEngine:
         elif re.search(r"\b(noun|verb|adjective|adverb|pronoun|tense|preposition|conjunction|article|clause|phrase|subject|predicate|object|word order|sentence structure|active voice|passive voice|conditional|modal verb|gerund|infinitive|punctuation|agreement)\b", lower) and re.search(r"\b(explain|grammar|what is|meaning|how does|how do)\b", lower):
             answer = self._explain_grammar(lower)
         elif re.search(r"\b(i need my game right now|i need a game right now)\b", lower):
-            answer = "Got it—you need a game right now. Are you trying to open a game you already have, download one, or find a game to play?"
+            answer = "Got it—you need your game right now. Are you trying to open a game you already have, download one, or find a game to play?"
         elif re.search(r"\b(affect and effect|difference between affect and effect)\b", lower):
             answer = "“Affect” is usually a verb meaning to influence: “Rain can affect traffic.” “Effect” is usually a noun meaning a result: “The effect was a delay.”"
         elif re.search(r"\b(thank you|thanks)\b", lower):
