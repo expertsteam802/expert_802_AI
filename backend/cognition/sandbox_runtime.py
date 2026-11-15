@@ -10,7 +10,8 @@ class SandboxRuntime:
         self.url=os.environ.get("EXPERT802_SANDBOX_URL","").strip()
         self.token=os.environ.get("EXPERT802_SANDBOX_TOKEN","").strip()
         parsed=urlparse(self.url)
-        local=parsed.hostname in {"127.0.0.1","localhost","::1"}\n        self.configured=bool(parsed.netloc and (parsed.scheme=="https" or (parsed.scheme=="http" and local)) and len(self.token)>=32)
+        local=parsed.hostname in {"127.0.0.1","localhost","::1"}
+        self.configured=bool(parsed.netloc and (parsed.scheme=="https" or (parsed.scheme=="http" and local)) and len(self.token)>=32)
 
     def health(self):
         if not self.configured:
