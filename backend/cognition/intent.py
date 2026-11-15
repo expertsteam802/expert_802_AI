@@ -1,0 +1,96 @@
+"""Intent and slot analysis. This module builds structured meaning, not canned replies."""
+import re
+from dataclasses import dataclass, asdict
+from backend.language import correct_spelling, tokens
+
+@dataclass
+class IntentFrame:
+    kind: str
+    normalized: str
+    target: str = ""
+    action: str = ""
+    confidence: float = 0.0
+    slots: dict = None
+
+    def to_dict(self):
+        value = asdict(self)
+        value["slots"] = value["slots"] or {}
+        return value
+
+ALIASES = {
+    "ur": "your", "u": "you", "r": "are", "wht": "what",
+    "pls": "please", "plz": "please", "thx": "thanks",
+    "bc": "because", "bcz": "because", "idk": "i do not know",
+    "im": "i am", "ive": "i have", "dont": "do not",
+    "cant": "cannot", "wanna": "want to", "gonna": "going to",
+}
+STOP = {
+    "a","an","the","i","you","he","she","it","we","they","me","my","your",
+    "his","her","our","their","is","am","are","was","were","be","been",
+    "do","does","did","to","of","in","on","at","for","with","and","or",
+    "but","what","who","where","when","why","how","please","can","could",
+    "would","should","will","now","just","really","very","about","this",
+    "that","these","those","there","here","have","has","had"
+}
+
+def normalize(text):
+    raw = (text or "").strip()
+    if not raw:
+        return ""
+    # Expand common chat shorthand before spelling recovery.
+    raw = re.sub(r"\b([A-Za-z]+)\b", lambda m: ALIASES.get(m.group(1).lower(), m.group(1)), raw)
+    fixed, _ = correct_spelling(raw)
+    # Preserve punctuation and sentence boundaries; collapse only accidental whitespace.
+    return re.sub(r"\s+", " ", fixed).strip()
+
+def _clean_target(value):
+    value = re.sub(r"[?!.]+$", "", value.strip())
+    value = re.sub(r"\s+", " ", value)
+    return value.strip(" '""“”")
+
+def parse_intent(message):
+    text = normalize(message)
+    low = text.lower().strip()
+    words = tokens(low)
+    if not low:
+        return IntentFrame("empty", "", confidence=1.0, slots={})
+
+    if re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening|howdy)[!. ]*", low):
+        return IntentFrame("greeting", text, confidence=0.99, slots={})
+    if re.fullmatch(r"(thanks|thank you|thx|many thanks)[!. ]*", low):
+        return IntentFrame("gratitude", text, confidence=0.99, slots={})
+    if re.search(r"\b(who are you|what are you|your name)\b", low):
+        return IntentFrame("identity", text, confidence=0.99, slots={})
+
+    patterns = [
+        r"^(?:what is|what's|define|meaning of|definition of)\s+(.+?)(?:\s+in full(?: words)?)?$",
+        r"^what does\s+(.+?)\s+mean$",
+        r"^what is the meaning of\s+(.+)$",
+    ]
+    for pattern in patterns:
+        match = re.match(pattern, low)
+        if match:
+            return IntentFrame("definition", text, target=_clean_target(match.group(1)), confidence=0.97, slots={})
+
+    math = re.search(r"\b(?:what is|calculate|compute|solve)\s+([0-9().+\-*/%^ x]+(?:plus|minus|times|divided by)[0-9().+\-*/%^ x]*)\s*[?!.]*$", low)
+    if math:
+        return IntentFrame("calculation", text, target=math.group(1).strip(), confidence=0.95, slots={})
+
+    if re.search(r"\b(what about it|what about that|and it|why is that|how about it|tell me more)\b", low):
+        return IntentFrame("followup", text, confidence=0.82, slots={})
+
+    request_match = re.search(
+        r"\b(?:i need|i want|i would like|help me|can you help me|find me|show me|make me|build me|create me)\s+(.+)$",
+        low,
+    )
+    if request_match:
+        target = _clean_target(request_match.group(1))
+        return IntentFrame("request", text, target=target, action="help", confidence=0.88, slots={"object": target})
+
+    if re.search(r"\b(explain|describe|how does|how do|why does|why do|teach me)\b", low):
+        return IntentFrame("explanation", text, target=text, confidence=0.78, slots={})
+
+    if low.endswith("?") or re.match(r"^(what|who|where|when|why|how|which|is|are|can|could|does|do|did|will|would)\b", low):
+        return IntentFrame("question", text, target=text, confidence=0.68, slots={})
+
+    return IntentFrame("statement", text, target=text, confidence=0.55, slots={})
