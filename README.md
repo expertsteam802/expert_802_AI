@@ -39,11 +39,11 @@ For example:
 python -m learning.train knowledge/english_corpus.txt
 ```
 
-The starter trainer is a statistical word-bigram model. It learns word co-occurrence and next-word probabilities from the supplied text. It is **not** a neural network, does not automatically acquire human-like understanding, and is not yet used as a free-form chat generator. The current conversation endpoint combines explicit English vocabulary, grammar patterns, and intent handling. This is an honest first foundation, not a finished general intelligence.
+The starter trainer is a statistical word-bigram model. It learns word co-occurrence and next-word probabilities from the supplied text. It is **not** a neural network, does not automatically acquire human-like understanding, and is not yet used as a free-form chat generator. The conversation endpoint combines explicit English vocabulary, grammar patterns, intent handling, and (for next-word prediction prompts) the trained word-bigram model when its artifact exists. This is an honest first foundation, not a finished general intelligence.
 
 ## Training compute limitation
 
-Vercel Functions are for short request/response work, not long model training. The training script is designed to run in a separate Python environment (for example, a future GitHub Actions training workflow or another hosted CPU/GPU runtime) and save its resulting model artifact to the repository or object storage. No local-PC training is required once a hosted training runner is configured. This commit does not claim that such a runner is already configured.
+Vercel Functions are for short request/response work, not long model training. A GitHub Actions workflow at `.github/workflows/train-english.yml` runs the trainer on GitHub-hosted CPU compute when English training files change, and can also be started manually from the Actions tab. It commits the generated model artifact back to the repository. This avoids requiring your PC to perform training. The workflow uses GitHub-hosted runner limits; it is suitable for this small statistical model, not for training a large neural model.
 
 ## Next milestones
 
