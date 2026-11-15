@@ -124,7 +124,8 @@ button{cursor:pointer}
   <div><div class="nav-label">Workspace</div><nav class="nav" aria-label="Main navigation">
    <button class="nav-btn active" data-view="chat"><span class="nav-icon">◉</span><span>Chat</span></button>
    <button class="nav-btn" data-view="dictionary"><span class="nav-icon">▤</span><span>Dictionary</span></button>
-   <button class="nav-btn" data-view="training"><span class="nav-icon">⌁</span><span>Training</span></button>
+   <button class="nav-btn" data-view="codelab"><span class="nav-icon">⌘</span><span>Code Lab</span></button>
+   <button class="nav-btn" data-view="training"><span class="nav-icon">⌁</span><span>Architecture</span></button>
   </nav></div>
   <div class="sidebar-spacer"></div>
   <div class="engine-card"><div class="engine-line"><span class="status-dot" id="statusDot"></span><span id="statusLabel">Checking engine…</span></div><div class="engine-caption" id="statusCaption">Reading live backend status.</div></div>
@@ -140,6 +141,20 @@ button{cursor:pointer}
    <div class="page-heading"><h1>English dictionary</h1><p>Search the actual local dictionary and WordNet knowledge imported into this project.</p></div>
    <div class="lookup-card"><form class="lookup-form" id="lookupForm"><input id="lookupInput" autocomplete="off" placeholder="Enter a word, for example: curious"><button class="primary-btn" type="submit">Look up word</button></form><div class="lookup-result" id="lookupResult"><div class="result-word" id="resultWord"></div><div class="result-pos" id="resultPos"></div><div class="result-definition" id="resultDefinition"></div><div class="result-synonyms" id="resultSynonyms"></div></div></div>
    <div class="info-block"><h2>How knowledge is used</h2><p>Dictionary and corpus passages are retrieved as evidence. The cognitive core combines this evidence with intent frames, dialogue state and deterministic reasoning. It does not call an external model provider.</p></div>
+  </div></div></section>
+  <section class="view content-view" id="codelabView"><div class="page-scroll"><div class="page-inner">
+   <div class="page-heading"><h1>Code Lab</h1><p>Load a project snapshot and inspect its structure, symbols, syntax issues and selected security risks. Source files are analyzed without execution.</p></div>
+   <div class="lookup-card">
+    <label for="codeTask" style="display:block;font-size:12px;font-weight:700;margin-bottom:7px">Engineering task</label>
+    <textarea id="codeTask" rows="2" style="width:100%;box-sizing:border-box;border:1px solid #dfe5ef;border-radius:11px;padding:12px;font:inherit;resize:vertical" placeholder="Example: Find why the login flow fails and propose a safe fix."></textarea>
+    <label for="codeFiles" style="display:block;font-size:12px;font-weight:700;margin:16px 0 7px">Project files</label>
+    <input id="codeFiles" type="file" multiple webkitdirectory accept=".py,.js,.jsx,.mjs,.cjs,.ts,.tsx,.html,.css,.json,.sql,.md,.txt,.yml,.yaml" style="display:block;width:100%;padding:12px;border:1px dashed #bdc9dc;border-radius:11px;background:#f8faff">
+    <div id="codeFileNames" style="font-size:11px;color:#7c879b;margin-top:7px">Choose a project folder or select source files. Maximum 40 files and 1 MB total.</div>
+    <button class="primary-btn" id="analyzeCode" type="button" style="margin-top:14px">Analyze project</button>
+    <div id="codeAnalysisStatus" style="font-size:12px;color:#68758c;margin-top:10px" aria-live="polite"></div>
+   </div>
+   <div class="info-block" id="codeAnalysisResult" style="display:none"><h2>Project analysis</h2><div id="codeAnalysisSummary" style="font-size:13px;line-height:1.7"></div><div id="codeDiagnostics" style="margin-top:12px"></div><details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Detected symbols and files</summary><pre id="codeSymbols" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.6;max-height:340px;overflow:auto"></pre></details><details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Engineering work plan</summary><ol id="codePlan" style="font-size:12px;line-height:1.7"></ol></details></div>
+   <div class="notice">This first coding layer performs static analysis and task planning. It does not yet generate arbitrary code, run uploaded programs, or make changes to your repository.</div>
   </div></div></section>
   <section class="view content-view" id="trainingView"><div class="page-scroll"><div class="page-inner">
    <div class="page-heading"><h1>Cognitive architecture status</h1><p>Live information reported by the backend, not demonstration metrics.</p></div>
@@ -169,7 +184,8 @@ button{cursor:pointer}
  const viewInfo = {
   chat:["Conversation","Talk naturally. Expert 802 AI will interpret your message."],
   dictionary:["Dictionary","Look up words from the project's local knowledge base."],
-  training:["Architecture","Inspect the native cognitive pipeline and local learning data."]
+  training:["Architecture","Inspect the native cognitive pipeline and local learning data."],
+  codelab:["Code Lab","Inspect project files and plan real engineering work."]
  };
  function switchView(name){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
@@ -219,6 +235,39 @@ button{cursor:pointer}
   history.length=0; localStorage.removeItem(HISTORY_KEY);
   messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask a question, explore a word, explain an idea or continue a conversation. This workspace keeps the conversation in its own scrollable area.</p><div class="welcome-note">Your messages are sent to the Expert 802 AI language engine.</div></div>';
   input.value="";input.focus();switchView("chat");
+ });
+ const codeFilesInput=$("codeFiles");
+ codeFilesInput.addEventListener("change",()=>{
+  const files=Array.from(codeFilesInput.files||[]);
+  $("codeFileNames").textContent=files.length?files.length+" file(s) selected · "+files.map(file=>file.webkitRelativePath||file.name).slice(0,8).join(", ")+(files.length>8?" …":""):"Choose a project folder or select source files.";
+ });
+ $("analyzeCode").addEventListener("click",async()=>{
+  const files=Array.from(codeFilesInput.files||[]);
+  if(!files.length){$("codeAnalysisStatus").textContent="Choose a project folder or source files first.";return;}
+  if(files.length>40){$("codeAnalysisStatus").textContent="Select at most 40 files.";return;}
+  $("analyzeCode").disabled=true;$("codeAnalysisStatus").textContent="Reading files and running static analysis…";
+  try{
+   const projectFiles=await Promise.all(files.map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
+   const totalBytes=projectFiles.reduce((sum,file)=>sum+new TextEncoder().encode(file.content).length,0);
+   if(totalBytes>1000000)throw new Error("The selected source snapshot exceeds 1 MB. Select fewer or smaller files.");
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_analyze",task:$("codeTask").value.trim()||"Review this project for correctness and maintainability.",files:projectFiles})});
+   const data=await response.json();if(!response.ok)throw new Error(data.error||"Project inspection failed.");
+   const report=data.analysis,summary=report.summary;
+   $("codeAnalysisResult").style.display="block";
+   $("codeAnalysisSummary").textContent=report.file_count+" files · "+report.total_lines+" lines · "+Object.entries(report.languages).map(([key,value])=>key+": "+value).join(", ")+" · "+summary.errors+" error(s) · "+summary.warnings+" warning(s).";
+   const diagnostics=$("codeDiagnostics");diagnostics.replaceChildren();
+   if(!report.diagnostics.length){const p=document.createElement("p");p.textContent="No supported static diagnostics were found.";diagnostics.appendChild(p);}
+   report.diagnostics.forEach(item=>{
+    const row=document.createElement("div");row.style.cssText="padding:10px 12px;margin-top:7px;border:1px solid #e5eaf2;border-radius:9px;font-size:12px;line-height:1.5";
+    const head=document.createElement("strong");head.textContent=item.severity.toUpperCase()+" · "+item.path+(item.line?":"+item.line:"");
+    const body=document.createElement("div");body.textContent=item.message;row.append(head,body);diagnostics.appendChild(row);
+   });
+   $("codeSymbols").textContent=JSON.stringify({files:report.files,symbols:report.symbols,imports:report.imports},null,2);
+   $("codePlan").replaceChildren();
+   (data.plan.steps||[]).forEach(step=>{const li=document.createElement("li");li.textContent=step;$("codePlan").appendChild(li);});
+   $("codeAnalysisStatus").textContent=report.execution_policy;
+  }catch(error){$("codeAnalysisStatus").textContent=error.message||"Project inspection failed.";}
+  finally{$("analyzeCode").disabled=false;}
  });
  $("lookupForm").addEventListener("submit",async e=>{
   e.preventDefault();const term=$("lookupInput").value.trim();if(!term)return;
