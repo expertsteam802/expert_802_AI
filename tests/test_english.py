@@ -5,7 +5,7 @@ from http.server import HTTPServer
 from urllib.request import Request, urlopen
 
 from backend.engine import ExpertLanguageEngine
-from backend.language import correct_common_grammar, dictionary_lookup
+from backend.language import correct_common_grammar, correct_spelling, dictionary_lookup
 from api.chat import handler as ChatHandler
 
 class EnglishFoundationTests(unittest.TestCase):
@@ -13,6 +13,16 @@ class EnglishFoundationTests(unittest.TestCase):
         corrected, notes = correct_common_grammar("She are ready")
         self.assertEqual(corrected, "She is ready")
         self.assertTrue(notes)
+
+    def test_spelling_and_missing_spaces_are_recovered(self):
+        corrected, changes = correct_spelling("i nned my gamerightnoww")
+        self.assertEqual(corrected.lower(), "i need my game right now")
+        self.assertTrue(changes)
+
+    def test_engine_responds_to_recovered_sentence(self):
+        answer = ExpertLanguageEngine().reply("i nned my gamerightnoww")["reply"].lower()
+        self.assertIn("i think you meant", answer)
+        self.assertIn("you need your game right now", answer)
 
     def test_dictionary_contains_english_words(self):
         self.assertIn("eager to know", dictionary_lookup("curious"))
