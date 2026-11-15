@@ -96,7 +96,9 @@ class ExpertLanguageEngine:
 
     def _define(self, text, words):
         quoted = re.findall(r"['\"“]([a-zA-Z'-]+)['\"”]", text)
-        candidates = quoted + list(reversed(words))
+        requested = re.search(r"what does ([a-zA-Z'-]+) mean|meaning of ([a-zA-Z'-]+)|define ([a-zA-Z'-]+)", text, re.I)
+        extracted = next((part for part in requested.groups() if part), None) if requested else None
+        candidates = ([extracted] if extracted else []) + quoted + list(reversed(words))
         for word in candidates:
             definition = dictionary_lookup(word.lower())
             if definition:
