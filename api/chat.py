@@ -29,8 +29,8 @@ class handler(BaseHTTPRequestHandler):
             "architecture": ["normalization", "intent_analysis", "dialogue_state", "knowledge_graph",
                              "local_retrieval", "symbolic_reasoning", "programming_planner", "safe_code_inspection", "tool_registry"],
             "external_model_provider": False,
-            "model_configured": False,
-            "neural_generator_ready": False,
+            "model_configured": _ENGINE.neural.configured,
+            "neural_generator_ready": _ENGINE.neural.configured,
             "coding_agent_ready": True,
             "code_execution_enabled": False,
             "supported_code_inspection": ["Python", "JavaScript", "TypeScript", "HTML", "CSS", "JSON"],
@@ -56,6 +56,28 @@ class handler(BaseHTTPRequestHandler):
             if not isinstance(payload, dict):
                 return self._send(400, {"error": "The request body must be a JSON object."})
             action = payload.get("action", "chat")
+            if action == "code_generate":
+                if not _ENGINE.neural.configured:
+                    return self._send(503, {"error": "The private Expert 802 neural generator is not connected. Train a checkpoint and configure the private inference URL first."})
+                task = payload.get("task", "")
+                if not isinstance(task, str) or not task.strip():
+                    return self._send(400, {"error": "Describe the code change you want."})
+                files = payload.get("files", [])
+                project_context = ""
+                if files:
+                    inspected = _AGENT.inspect(files)
+                    if not inspected["ok"]:
+                        return self._send(400, {"error": inspected["error"]})
+                    snippets = []
+                    for item in files[:5]:
+                        if isinstance(item, dict) and isinstance(item.get("path"), str) and isinstance(item.get("content"), str):
+                            snippets.append("FILE: " + item["path"] + "\\n" + item["content"][:1800])
+                    project_context = "\\n\\n".join(snippets)
+                generated = _ENGINE.neural.generate("Implement this programming task and return a focused patch or complete file as appropriate: " + task, [], project_context)
+                if not generated["ok"]:
+                    return self._send(502, {"error": generated["error"]})
+                return self._send(200, {"engine": generated["engine"], "patch": generated["reply"],
+                                        "warning": "Generated output has not been applied or executed. Review and test it before use."})
             if action == "code_analyze":
                 files = payload.get("files", [])
                 result = _AGENT.inspect(files)
