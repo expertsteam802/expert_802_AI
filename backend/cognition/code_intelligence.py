@@ -149,14 +149,14 @@ def inspect_project(files):
         elif suffix in {".js",".jsx",".mjs",".cjs",".ts",".tsx"}:
             diagnostics.extend(bracket_diagnostics(source, path))
             security_patterns = [
-                (r"\\beval\\s*\\(", "javascript_eval", "eval() executes dynamically constructed code."),
-                (r"\\binnerHTML\\s*=", "unsafe_inner_html", "Untrusted innerHTML can create cross-site scripting."),
+                (r"\beval\s*\(", "javascript_eval", "eval() executes dynamically constructed code."),
+                (r"\binnerHTML\s*=", "unsafe_inner_html", "Untrusted innerHTML can create cross-site scripting."),
                 (r"dangerouslySetInnerHTML", "dangerous_html_injection", "Review the trust boundary for dangerouslySetInnerHTML."),
             ]
             for pattern, code, message in security_patterns:
                 for match in re.finditer(pattern, source):
                     diagnostics.append({"severity":"warning","code":code,"path":path,
-                                        "line":source.count("\\n",0,match.start())+1,"message":message})
+                                        "line":source.count("\n",0,match.start())+1,"message":message})
             for match in re.finditer(r"\b(?:function|class|interface|type|const|let|var)\s+([A-Za-z_$][\w$]*)", source):
                 symbols.append({"path":path,"kind":"declaration","name":match.group(1),"line":source.count("\n",0,match.start())+1})
         elif suffix == ".html":
