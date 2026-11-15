@@ -40,8 +40,8 @@ jobs:
           python -m learning.import_wordnet "$WORDNET_DIR" knowledge/wordnet_dictionary.json
       - name: Download public-domain English grammar and style books
         run: |
-          curl -L -A "Mozilla/5.0 (compatible; Expert802Training/1.0)" --fail --retry 3 https://www.gutenberg.org/cache/epub/37134/pg37134.txt -o /tmp/elements-of-style.txt
-          curl -L -A "Mozilla/5.0 (compatible; Expert802Training/1.0)" --fail --retry 3 https://www.gutenberg.org/cache/epub/75439/pg75439.txt -o /tmp/kings-english.txt
+          curl -L -A "Mozilla/5.0 (compatible; Expert802Training/1.0)" --fail --retry 3 https://raw.githubusercontent.com/GITenberg/The-Elements-of-Style_37134/master/37134.txt -o /tmp/elements-of-style.txt
+          curl -L -A "Mozilla/5.0 (compatible; Expert802Training/1.0)" --fail --retry 3 https://raw.githubusercontent.com/GITenberg/The-King-s-English_75439/master/75439-0.txt -o /tmp/kings-english.txt
       - name: Train from local corpus and grammar books
         run: python -m learning.train knowledge/english_corpus.txt /tmp/elements-of-style.txt /tmp/kings-english.txt
       - name: Save dictionary and trained model
