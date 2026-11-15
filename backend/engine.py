@@ -2,7 +2,7 @@
 import re
 import json
 from pathlib import Path
-from .language import (
+from .model_client import is_configured, configured_model_name, generate_reply\nfrom .language import (
     tokens, load_dictionary, correct_common_grammar, correct_spelling,
     dictionary_lookup,
 )
@@ -89,6 +89,27 @@ class ExpertLanguageEngine:
                 "batch_processed": True,
                 "batch_items": len(batch_parts),
             }
+
+        # Prefer a real pretrained model when a self-hosted inference server is configured.
+        # The dictionary is retrieved inside model_client and supplied as evidence, not as canned replies.
+        if is_configured():
+            try:
+                answer = generate_reply(original, history)
+                return {
+                    "reply": answer,
+                    "engine": "qwen3-self-hosted",
+                    "model": configured_model_name(),
+                    "language": "English",
+                    "trained_model": True,
+                    "knowledge_source": "local_dictionary",
+                }
+            except Exception:
+                return {
+                    "reply": "The pretrained language model is configured but its inference server did not respond. Please check the model host; I will not silently substitute scripted answers.",
+                    "engine": "qwen3-self-hosted",
+                    "model": configured_model_name(),
+                    "model_error": True,
+                }
 
         normalized, spelling_changes = correct_spelling(original)
         text = normalized.strip()
