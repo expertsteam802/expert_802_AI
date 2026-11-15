@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101827"><title>Expert 802 AI</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1120;--panel:#111b2d;--panel2:#17243a;--line:#26364f;--text:#edf4ff;--muted:#91a3bd;--accent:#71a7ff;--green:#6ee7b7}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#1c3559 0,transparent 48%),var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
+.app{max-width:1120px;margin:auto;min-height:100vh;display:grid;grid-template-columns:270px 1fr;gap:18px;padding:18px}
+aside,.main{background:rgba(17,27,45,.92);border:1px solid var(--line);border-radius:20px}
+aside{padding:20px;display:flex;flex-direction:column;gap:20px}.brand{display:flex;gap:12px;align-items:center}.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#3979df,#7c5ce7);display:grid;place-items:center;font-weight:900;font-size:20px}.brand strong{display:block;font-size:16px}.brand small,.muted{color:var(--muted)}.new{border:1px solid #35547d;background:#1b3150;color:#eaf2ff;border-radius:12px;padding:11px;font-weight:650;cursor:pointer}.section{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#7f93af;font-weight:800}.status{border:1px solid var(--line);border-radius:14px;padding:13px;background:#0d1728}.dot{display:inline-block;width:8px;height:8px;background:var(--green);border-radius:50%;margin-right:8px}.status p{margin:7px 0 0;font-size:12px;color:var(--muted)}.notice{font-size:12px;color:var(--muted);line-height:1.6}.main{display:flex;flex-direction:column;min-height:calc(100vh - 36px);overflow:hidden}.top{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}.top h1{font-size:16px;margin:0}.top span{font-size:12px;color:var(--muted)}.chat{flex:1;overflow:auto;padding:28px clamp(16px,5vw,60px);display:flex;flex-direction:column;gap:20px}.welcome{margin:auto;max-width:620px;text-align:center}.orb{width:66px;height:66px;margin:0 auto 18px;border-radius:22px;background:linear-gradient(145deg,#3279dc,#7d60e9);display:grid;place-items:center;font-size:30px;box-shadow:0 12px 40px #3869bf40}.welcome h2{font-size:clamp(25px,4vw,36px);margin:0 0 10px;letter-spacing:-.04em}.welcome p{color:var(--muted);margin:0 auto 24px;max-width:500px}.suggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;text-align:left}.suggestions button{background:#142239;border:1px solid var(--line);border-radius:13px;padding:13px;color:#dce8fa;text-align:left;cursor:pointer}.suggestions button:hover,.new:hover{border-color:#638ed0}.msg{display:flex;gap:12px;max-width:850px;align-self:flex-start;width:100%}.msg.user{align-self:flex-end;flex-direction:row-reverse}.avatar{width:31px;height:31px;flex:0 0 31px;border-radius:10px;background:#203858;display:grid;place-items:center;font-size:12px;font-weight:800}.user .avatar{background:#315f9f}.bubble{background:#142239;border:1px solid var(--line);padding:13px 16px;border-radius:4px 16px 16px 16px;max-width:min(720px,calc(100% - 45px));white-space:pre-wrap;overflow-wrap:anywhere}.user .bubble{background:#1d3c64;border-color:#315b8d;border-radius:16px 4px 16px 16px}.bubble p{margin:0 0 9px}.bubble p:last-child{margin:0}.composer{padding:16px clamp(14px,4vw,42px) 20px;border-top:1px solid var(--line)}.inputbox{display:flex;gap:10px;align-items:flex-end;border:1px solid #344966;background:#0c1627;border-radius:17px;padding:9px}.inputbox textarea{flex:1;resize:none;max-height:150px;min-height:42px;border:0;outline:0;background:transparent;color:var(--text);font:inherit;padding:10px}.send{height:42px;width:44px;border:0;border-radius:12px;background:#4387ed;color:white;font-size:19px;cursor:pointer}.send:disabled{opacity:.4;cursor:not-allowed}.foot{display:flex;justify-content:space-between;color:#7386a1;font-size:11px;margin:9px 4px 0}.typing{color:var(--muted);font-size:13px}.tag{font-size:10px;color:#a9c7f5;border:1px solid #314a6b;border-radius:99px;padding:3px 8px}
+@media(max-width:760px){.app{display:block;padding:8px}.app aside{display:none}.main{min-height:calc(100vh - 16px)}.top{padding:14px}.chat{padding:22px 14px}.suggestions{grid-template-columns:1fr}.foot span:last-child{display:none}}
+</style></head>
+<body><div class="app">
+<aside><div class="brand"><div class="logo">E</div><div><strong>Expert 802 AI</strong><small>Natural language lab</small></div></div>
+<button class="new" id="newChat">＋ New conversation</button>
+<div><div class="section">Engine status</div><div class="status" style="margin-top:10px"><span class="dot"></span><b>Browser engine ready</b><p>No external AI service. Messages are processed locally in this page.</p></div></div>
+<div><div class="section">Current capabilities</div><p class="notice">English vocabulary lookup<br>Grammar and sentence patterns<br>Intent and question detection<br>Conversation context<br>Transparent uncertainty</p></div>
+<div style="margin-top:auto"><div class="section">Prototype honesty</div><p class="notice">This first version is a rule-based language engine, not a trained neural language model. It does not claim knowledge it has not learned.</p></div></aside>
+<section class="main"><header class="top"><div><h1>Expert 802 AI <span class="tag">EXPERIMENTAL</span></h1><span>Talk naturally. Ask questions. Explore language.</span></div><span>Local session</span></header>
+<div class="chat" id="chat"><div class="welcome" id="welcome"><div class="orb">✳</div><h2>Let's understand language.</h2><p>Talk to Expert 802 AI in your own words. Try different grammar, ask about English, or see how it interprets a sentence.</p><div class="suggestions"><button data-prompt="Why do we say 'she is' instead of 'she are'?">Explain an English grammar rule</button><button data-prompt="What does the word curious mean?">Ask for a word meaning</button><button data-prompt="I went to school yesterday. Is this sentence correct?">Check a sentence</button><button data-prompt="Can you explain the difference between affect and effect?">Compare two words</button></div></div></div>
+<div class="composer"><div class="inputbox"><textarea id="input" rows="1" placeholder="Message Expert 802 AI..."></textarea><button class="send" id="send" aria-label="Send">↑</button></div><div class="foot"><span>Enter to send · Shift + Enter for a new line</span><span>Responses are generated by local language rules, not an external model.</span></div></div>
+</section></div>
+<script>
+(()=>{
+const $=s=>document.querySelector(s), chat=$('#chat'), input=$('#input'), send=$('#send');
+let history=[],lastTopic='';
+const dictionary={
+"able":"having the power, skill, or opportunity to do something","about":"on the subject of; concerning","accept":"to receive or agree to something","answer":"a spoken or written response to a question","beautiful":"pleasing the senses or mind aesthetically","because":"for the reason that; since","believe":"to accept something as true","book":"a written or printed work consisting of pages","brave":"ready to face danger or difficulty","curious":"eager to know or learn something","different":"not the same as another or each other","education":"the process of receiving or giving systematic instruction","friend":"a person whom one knows and likes","grammar":"the system and rules governing how words combine in a language","happy":"feeling or showing pleasure or contentment","hope":"a feeling of expectation and desire for something to happen","improve":"to make or become better","knowledge":"facts, information, and skills acquired through experience or education","language":"a system of communication used by a community","learn":"to gain knowledge or skill through study, experience, or teaching","meaning":"the idea represented by a word, action, or concept","necessary":"needed to be done, achieved, or present","question":"a sentence or phrase used to ask for information","read":"to look at and understand written words","reason":"a cause, explanation, or justification","sentence":"a set of words that expresses a complete thought","understand":"to know the meaning of something; to comprehend","word":"a single unit of language with meaning"
+};
+const synonyms={"hi":"hello","hey":"hello","hiya":"hello","greetings":"hello","thx":"thanks","thnx":"thanks","pls":"please","plz":"please","u":"you","ur":"your","r":"are","wanna":"want to","gonna":"going to","dont":"don't","doesnt":"doesn't","cant":"can't","wont":"won't","im":"i'm","ive":"i've","id":"i'd","whats":"what's","hows":"how's"};
+const tokenize=s=>(s.toLowerCase().replace(/[^a-z0-9'\s-]/g,' ').split(/\s+/).filter(Boolean).map(w=>synonyms[w]||w));
+const has=(a,words)=>words.some(w=>a.includes(w));
+function grammarCheck(s){
+ let fixes=[],t=s;
+ const rules=[
+ [/\b(i)\s+is\b/ig,'$1 am','Use “am” with “I”.'],
+ [/\b(he|she|it)\s+are\b/ig,'$1 is','Use “is” with he, she, or it.'],
+ [/\b(you|we|they)\s+is\b/ig,'$1 are','Use “are” with you, we, or they.'],
+ [/\b(he|she|it)\s+don't\b/ig,'$1 doesn’t','Use “doesn’t” with he, she, or it.'],
+ [/\b(he|she|it)\s+doesn't\s+([a-z]+s)\b/ig,'$1 doesn’t $2','After “doesn’t”, use the base verb, not the third-person form.'],
+ [/\b(yesterday|last night|last week)\s+(i|we|they|he|she)\s+go\b/ig,'$1 $2 went','Use the past form “went” for a completed past action.']
+ ];
+ for(const [re,rep,why] of rules){if(re.test(t)){re.lastIndex=0;t=t.replace(re,rep);fixes.push(why)}}
+ return {corrected:t,fixes};
+}
+function add(role,text){
+ const row=document.createElement('div');row.className='msg '+role;
+ const av=document.createElement('div');av.className='avatar';av.textContent=role==='user'?'YOU':'E';
+ const b=document.createElement('div');b.className='bubble';b.textContent=text;row.append(av,b);chat.append(row);chat.scrollTop=chat.scrollHeight;
+}
+function respond(raw){
+ const s=raw.trim(), t=s.toLowerCase(), words=tokenize(t), clean=words.join(' ');
+ const prev=history.length?history[history.length-1].text:'';
+ if(/^(hi|hello|hey|good morning|good afternoon|good evening|howdy)[!. ]*$/.test(t))return "Hello! I'm here. What would you like to talk about?";
+ if(has(words,['thanks','thank']))return "You're welcome. What else would you like to explore?";
+ if(/\b(who are you|what are you|your name)\b/.test(t))return "I'm Expert 802 AI, an experimental language program running in this browser. I use vocabulary, grammar rules, intent patterns, and the conversation so far. I am not yet a trained neural language model.";
+ if(/\b(can you hear|are you real|are you human)\b/.test(t))return "I'm software, not a human. I can process the text you type here, but I don't have feelings or human experiences.";
+ if(/\b(what does|meaning of|define|definition of)\b/.test(t)){
+  let key=words.find(w=>dictionary[w]);
+  if(key)return "“"+key+"” means "+dictionary[key]+".\n\nExample: “"+(key==='curious'?'The curious child asked many questions.':key==='learn'?'We learn by reading, asking questions, and practising.':'Understanding a word also depends on how it is used in a sentence.')+"”";
+  let quoted=s.match(/['“]([^'”]+)['”]/);if(quoted){let k=quoted[1].toLowerCase();if(dictionary[k])return "“"+k+"” means "+dictionary[k]+"."}
+  return "I can explain words in my current vocabulary, but I don't have a complete dictionary installed yet. Tell me the exact word and I can try to analyse its use.";
+ }
+ if(/\b(difference between|differentiate|compare)\b/.test(t)){
+  let pair=s.match(/(?:between|compare)\s+(.+?)\s+and\s+(.+?)(?:[?.!]|$)/i);
+  if(pair){let a=pair[1].replace(/\b(the|word)\b/gi,'').trim(),b=pair[2].trim();if(a==='affect'&&b==='effect')return "“Affect” is usually a verb meaning to influence: “Rain can affect traffic.” “Effect” is usually a noun meaning a result: “The effect was a delay.” A useful memory aid: affect = action; effect = end result."}
+  return "I understand you're asking for a comparison. Please give me the two exact words or ideas so I can compare them accurately.";
+ }
+ if(/\b(correct|grammar|grammatically|is this sentence|check my sentence)\b/.test(t)){
+  let c=grammarCheck(s.replace(/^(please )?(can you )?(check|correct) (this|my sentence)[: ]*/i,''));
+  if(c.fixes.length)return "I found a likely grammar issue. A suggested correction is:\n“"+c.corrected+"”\n\n"+c.fixes.join(' ')+"\n\nLanguage can depend on context, so tell me what you intended if this changes your meaning.";
+  return "I don't detect one of the grammar errors covered by my current rules. That doesn't guarantee the sentence is perfect. The sentence appears understandable to me: “"+s+"”";
+ }
+ if(/\b(why|how)\b/.test(t)&&/\b(she|he|it|they|we|you|am|is|are|was|were)\b/.test(t)){
+  if(/\b(she|he|it)\b/.test(t)&&/\b(is|are)\b/.test(t))return "In standard English, “he”, “she”, and “it” are third-person singular subjects, so they normally take “is” in the present tense: “She is ready.” “They” is plural and takes “are”: “They are ready.”";
+  if(/\b(i|am)\b/.test(t))return "“I” takes “am” in the present tense: “I am ready.” This is an irregular form that English speakers learn as a subject–verb agreement pattern.";
+ }
+ if(/\b(what is|what are|explain)\b/.test(t)&&/\b(grammar|noun|verb|adjective|adverb|pronoun|tense|preposition|conjunction)\b/.test(t)){
+  if(/\bnoun\b/.test(t))return "A noun names a person, place, thing, or idea. Examples: teacher, Kigali, book, freedom. In “The teacher reads”, “teacher” is the noun.";
+  if(/\bverb\b/.test(t))return "A verb expresses an action, event, or state. Examples: run, think, become, is. In “They play football”, “play” is the verb.";
+  if(/\badjective\b/.test(t))return "An adjective describes or gives more information about a noun. In “a bright room”, “bright” describes the noun “room”.";
+  if(/\badverb\b/.test(t))return "An adverb modifies a verb, adjective, or another adverb. In “She speaks clearly”, “clearly” tells us how she speaks.";
+  if(/\bpronoun\b/.test(t))return "A pronoun can stand in for a noun or noun phrase. Examples include I, you, she, it, we, and they.";
+  if(/\btense\b/.test(t))return "Verb tense locates an action or state in time. For example: “I work” (present), “I worked” (past), and “I will work” (future construction).";
+  return "Grammar is the system of patterns that helps words form meaningful sentences. It includes word classes, word order, agreement, tense, and punctuation.";
+ }
+ if(/\b(what is|who is|where is|when did|how many|capital of|president of|latest|today)\b/.test(t))return "That's a factual question. I don't have a trained world-knowledge model or live information source, so I shouldn't guess. In this offline prototype I can answer language questions and analyse text, but I don't yet know general facts reliably.";
+ if(/\b(remember|earlier|before|what did i say|continue)\b/.test(t)&&history.length>1){return "In this conversation, you said: “"+history[Math.max(0,history.length-2)].text+"”. I can use the messages in this open session as context, but they aren't saved after the page is closed."}
+ if(/\b(i feel|i am sad|i'm sad|i am happy|i'm happy|i am worried)\b/.test(t))return "I hear what you're saying. Would you like to tell me a little more about what happened? I can listen and respond to what you share, although I don't experience emotions myself.";
+ if(/\b(what do you think|your opinion|do you think)\b/.test(t))return "I can help examine the idea, but I need to know exactly which claim or situation you mean. I won't invent a personal experience or pretend certainty.";
+ if(/\b(you don't understand|not what i asked|wrong answer|that's wrong|you are wrong)\b/.test(t))return "Thank you for correcting me. I may have matched your words to the wrong pattern. Please rephrase what you intended or show me the part I misunderstood. This prototype can use your clarification in this conversation, but it does not permanently retrain itself from feedback.";
+ const check=grammarCheck(s);
+ const question=/\?$/.test(s)||/^(what|why|how|when|where|who|which|can|could|would|will|is|are|do|does|did)\b/i.test(t);
+ if(question)return "I can identify that you're asking a question, but I don't yet have enough language knowledge to interpret this one reliably. Could you say it another way or give a little context? I would rather ask than make up an answer.";
+ if(check.fixes.length)return "I think I understand the sentence. A possible standard-English correction is “"+check.corrected+"”. "+check.fixes.join(' ')+"\n\nWhat did you want to express? I can help you say it more naturally.";
+ if(words.length<3)return "Could you tell me a little more? A few more words will help me understand what you mean.";
+ return "I understand that you're telling me: “"+s+"”. I can follow the words and some grammar patterns, but I don't want to pretend I fully understand the meaning when my current language model cannot establish it confidently. What would you like me to do with this: explain it, correct it, or discuss the idea?";
+}
+function submit(text){
+ const value=(text??input.value).trim();if(!value)return;
+ $('#welcome')?.remove();add('user',value);history.push({role:'user',text:value});
+ input.value='';input.style.height='auto';send.disabled=true;
+ const answer=respond(value);add('assistant',answer);history.push({role:'assistant',text:answer});send.disabled=false;input.focus();
+}
+send.addEventListener('click',()=>submit());input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submit()}});
+input.addEventListener('input',()=>{input.style.height='auto';input.style.height=Math.min(input.scrollHeight,150)+'px'});
+document.querySelectorAll('[data-prompt]').forEach(b=>b.addEventListener('click',()=>submit(b.dataset.prompt)));
+$('#newChat').addEventListener('click',()=>{history=[];chat.innerHTML='<div class="welcome" id="welcome"><div class="orb">✳</div><h2>Let's understand language.</h2><p>Talk to Expert 802 AI in your own words. Try different grammar, ask about English, or see how it interprets a sentence.</p><div class="suggestions"><button data-prompt="Why do we say she is instead of she are?">Explain an English grammar rule</button><button data-prompt="What does the word curious mean?">Ask for a word meaning</button><button data-prompt="I went to school yesterday. Is this sentence correct?">Check a sentence</button><button data-prompt="Can you explain the difference between affect and effect?">Compare two words</button></div></div>';document.querySelectorAll('[data-prompt]').forEach(b=>b.addEventListener('click',()=>submit(b.dataset.prompt)));input.focus()});
+})();
+</script></body></html>
