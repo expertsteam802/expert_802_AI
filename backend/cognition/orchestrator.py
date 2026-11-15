@@ -7,10 +7,12 @@ from .reasoning import calculate, derive_simple_facts
 from backend.language import tokens
 from .knowledge_graph import KnowledgeGraph
 from .programming import is_programming_request, build_work_plan
+from .neural_runtime import NeuralRuntime
 
 class CognitiveEngine:
     def __init__(self):
         self.retriever = LocalRetriever()
+        self.neural = NeuralRuntime()
 
     def reply(self, message, history=None):
         original = (message or "").strip()
@@ -57,9 +59,13 @@ class CognitiveEngine:
 
         if is_programming_request(message):
             plan = build_work_plan(message)
-            steps = "\n".join(str(index + 1) + ". " + step for index, step in enumerate(plan["steps"]))
+            plan_text = "\n".join(str(index + 1) + ". " + step for index, step in enumerate(plan["steps"]))
+            neural = self.neural.generate(message, history, "Engineering workflow:\n" + plan_text)
+            if neural["ok"]:
+                return {**base, "engine": neural["engine"], "intent": {**frame.to_dict(), "kind": "programming_task"},
+                        "engineering_plan": plan, "reply": neural["reply"], "neural_generated": True}
             next_input = plan.get("next_input", "Send the relevant source files or project snapshot so I can inspect the actual code.")
-            answer = "I classified this as a " + plan["kind"] + " engineering task.\n\n" + steps + "\n\n" + next_input + "\n\nI can inspect Python, JavaScript, TypeScript, HTML, CSS and JSON project files. I do not execute uploaded code."
+            answer = "I classified this as a " + plan["kind"] + " engineering task.\n\n" + plan_text + "\n\n" + next_input + "\n\nCode Lab can inspect Python, JavaScript, TypeScript, HTML, CSS and JSON project files. A trained private neural generator is not connected yet; I will not pretend to generate or execute arbitrary code."
             return {**base, "intent": {**frame.to_dict(), "kind": "programming_task"},
                     "engineering_plan": plan, "reply": answer}
 
@@ -101,6 +107,9 @@ class CognitiveEngine:
             if hits:
                 evidence = " ".join(item["text"] for item in hits[:2])
                 return {**base, "reply": evidence, "evidence": hits, "confidence": min(0.9, hits[0]["score"] / 3)}
+            neural = self.neural.generate(message, history)
+            if neural["ok"]:
+                return {**base, "engine": neural["engine"], "reply": neural["reply"], "neural_generated": True}
             return {**base, "reply": "I can analyze the question, but my current local knowledge does not contain enough evidence for a dependable explanation. Give me the specific term, system, or example you want examined.", "confidence": 0.25}
 
         if frame.kind == "question":
@@ -120,9 +129,15 @@ class CognitiveEngine:
                 return {**base, "reply": "The strongest match in my local knowledge is: " + hits[0]["text"], "evidence": hits, "resolved_topic": topic, "confidence": min(0.85, hits[0]["score"] / 3)}
             if topic:
                 return {**base, "reply": f"I resolved “it” to “{topic}”, but my local knowledge doesn't contain enough evidence to answer. Can you narrow down what you want to know about {topic}?", "resolved_topic": topic, "confidence": 0.35}
+            neural = self.neural.generate(message, history)
+            if neural["ok"]:
+                return {**base, "engine": neural["engine"], "reply": neural["reply"], "neural_generated": True}
             return {**base, "reply": "I can identify this as a question, but I don't yet have enough grounded information to answer it accurately. Add context or a source, and I'll analyze it rather than inventing an answer.", "confidence": 0.2}
 
         # Statements are retained as context for later turns; do not mislabel them as questions.
+        neural = self.neural.generate(message, history)
+        if neural["ok"]:
+            return {**base, "engine": neural["engine"], "reply": neural["reply"], "neural_generated": True}
         return {**base, "reply": self._interpret_statement(frame.normalized), "confidence": frame.confidence}
 
     @staticmethod
