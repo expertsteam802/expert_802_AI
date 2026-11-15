@@ -15,6 +15,26 @@ on:
         description: Batch size for the available GPU
         required: true
         default: "16"
+      vocab_size:
+        description: BPE vocabulary size
+        required: true
+        default: "16000"
+      block_size:
+        description: Context length in BPE tokens
+        required: true
+        default: "1024"
+      layers:
+        description: Transformer block count
+        required: true
+        default: "6"
+      heads:
+        description: Attention head count
+        required: true
+        default: "8"
+      width:
+        description: Transformer embedding width
+        required: true
+        default: "256"
 
 permissions:
   contents: read
@@ -38,12 +58,18 @@ jobs:
       - name: Prepare BPE corpus
         env:
           DATASET_PATH: ${{ inputs.dataset_path }}
-        run: python training/prepare_data.py "$DATASET_PATH" --output training/data
+        env:
+          VOCAB_SIZE: ${{ inputs.vocab_size }}
+        run: python training/prepare_data.py "$DATASET_PATH" --output training/data --vocab-size "$VOCAB_SIZE"
       - name: Train from random initialization
         env:
           TRAIN_STEPS: ${{ inputs.steps }}
           TRAIN_BATCH: ${{ inputs.batch_size }}
-        run: python training/train.py --data training/data --output training/checkpoints --steps "$TRAIN_STEPS" --batch-size "$TRAIN_BATCH"
+          BLOCK_SIZE: ${{ inputs.block_size }}
+          LAYERS: ${{ inputs.layers }}
+          HEADS: ${{ inputs.heads }}
+          WIDTH: ${{ inputs.width }}
+        run: python training/train.py --data training/data --output training/checkpoints --steps "$TRAIN_STEPS" --batch-size "$TRAIN_BATCH" --block-size "$BLOCK_SIZE" --layers "$LAYERS" --heads "$HEADS" --width "$WIDTH"
       - name: Upload checkpoint artifact
         uses: actions/upload-artifact@v4
         with:
