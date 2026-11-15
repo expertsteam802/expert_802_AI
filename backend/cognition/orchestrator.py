@@ -6,6 +6,7 @@ from .retrieval import LocalRetriever
 from .reasoning import calculate, derive_simple_facts
 from backend.language import tokens
 from .knowledge_graph import KnowledgeGraph
+from .programming import is_programming_request, build_work_plan
 
 class CognitiveEngine:
     def __init__(self):
@@ -52,7 +53,15 @@ class CognitiveEngine:
         if frame.kind == "gratitude":
             return {**base, "reply": "You're welcome. What would you like to work on next?"}
         if frame.kind == "identity":
-            return {**base, "reply": "I'm Expert 802 AI. My current core combines language normalization, intent analysis, conversation-state tracking, local knowledge retrieval, and deterministic reasoning. I'm still being developed; I won't claim abilities that aren't implemented."}
+            return {**base, "reply": "I'm Expert 802 AI, a provider-independent assistant with a growing conversation, reasoning, and programming architecture. I can currently inspect supported source files, map symbols, detect selected syntax and safety issues, and plan engineering tasks. General neural language generation and autonomous code execution are not yet enabled."}
+
+        if is_programming_request(message):
+            plan = build_work_plan(message)
+            steps = "\\n".join(str(index + 1) + ". " + step for index, step in enumerate(plan["steps"]))
+            next_input = plan.get("next_input", "Send the relevant source files or project snapshot so I can inspect the actual code.")
+            answer = "I classified this as a " + plan["kind"] + " engineering task.\\n\\n" + steps + "\\n\\n" + next_input + "\\n\\nI can inspect Python, JavaScript, TypeScript, HTML, CSS and JSON project files. I do not execute uploaded code."
+            return {**base, "intent": {**frame.to_dict(), "kind": "programming_task"},
+                    "engineering_plan": plan, "reply": answer}
 
         if frame.kind == "calculation":
             try:
