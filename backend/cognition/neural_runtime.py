@@ -2,7 +2,7 @@
 import json
 import os
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 from urllib.request import Request, urlopen
 
 SYSTEM_INSTRUCTION = (
@@ -22,6 +22,20 @@ class NeuralRuntime:
         self.configured = bool(parsed.scheme in {"http", "https"} and parsed.netloc and
                                (parsed.scheme == "https" or local) and
                                (local or len(self.token) >= 32))
+
+    def health(self):
+        if not self.configured:
+            return {"configured": False, "ready": False}
+        parsed = urlparse(self.url)
+        base_path = parsed.path.rsplit("/", 1)[0]
+        health_url = urlunparse((parsed.scheme, parsed.netloc, base_path + "/health", "", "", ""))
+        try:
+            with urlopen(Request(health_url, headers={"Cache-Control": "no-store"}), timeout=2) as response:
+                data = json.loads(response.read().decode("utf-8"))
+            return {"configured": True, "ready": response.status == 200 and data.get("status") == "ready",
+                    "engine": data.get("engine"), "device": data.get("device")}
+        except (HTTPError, URLError, TimeoutError, ValueError, OSError):
+            return {"configured": True, "ready": False}
 
     def generate(self, message, history=None, project_context=""):
         if not self.configured:
