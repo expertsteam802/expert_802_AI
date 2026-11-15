@@ -1,10 +1,35 @@
 """Transparent English conversation engine; deliberately not marketed as human-level AI."""
 import re
+import json
+from pathlib import Path
 from .language import tokens, load_dictionary, correct_common_grammar, dictionary_lookup
 
 class ExpertLanguageEngine:
     def __init__(self):
         self.dictionary = load_dictionary()
+        self.model = self._load_model()
+
+    @staticmethod
+    def _load_model():
+        path = Path(__file__).resolve().parent / "language_model.json"
+        try:
+            with path.open(encoding="utf-8") as stream:
+                model = json.load(stream)
+            return model if model.get("format") == "expert802-word-bigram-v1" else None
+        except (OSError, ValueError):
+            return None
+
+    def _predict_next_word(self, phrase):
+        if not self.model:
+            return "The hosted training workflow has not produced a model artifact yet."
+        words = tokens(phrase)
+        if not words:
+            return "Give me a short English phrase after the words 'next word after'."
+        options = self.model.get("bigram", {}).get(words[-1], {})
+        if not options:
+            return f"I have not learned a next-word pattern after '{words[-1]}' yet."
+        word = max(options.items(), key=lambda item: item[1])[0]
+        return f"From my training examples, a likely next word after '{words[-1]}' is '{word}'. This is a statistical guess, not a guarantee of meaning."
 
     def reply(self, message, history=None):
         text = message.strip()
@@ -12,7 +37,10 @@ class ExpertLanguageEngine:
         words = tokens(text)
         if not text:
             return {"reply": "Please type a message so I can try to understand it.", "engine": "python-english-v1"}
-        if re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening)[!. ]*", lower):
+        if re.search(r"what word comes next|predict the next word|next word after", lower):
+            phrase = text.split("after", 1)[-1].strip(" :") if "after" in lower else ""
+            answer = self._predict_next_word(phrase)
+        elif re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening)[!. ]*", lower):
             answer = "Hello! I'm Expert 802 AI. We can talk in English. What would you like to discuss?"
         elif re.search(r"\b(who are you|what are you|your name)\b", lower):
             answer = "I'm Expert 802 AI. I am a project-owned English language program. I process words, grammar patterns, and conversation context using code and data in this repository. I am still an early system, not a human or a large trained language model."
@@ -42,7 +70,7 @@ class ExpertLanguageEngine:
                 answer = "I can identify a possible grammar issue. A suggested version is:\n“" + corrected + "”\n\n" + " ".join(notes) + "\n\nIs that what you meant?"
             else:
                 answer = "I can process the English words and some sentence patterns in your message, but I cannot confidently infer the full meaning yet. Could you give me more context or ask a specific question? I would rather ask than invent an answer."
-        return {"reply": answer, "engine": "python-english-v1", "language": "English"}
+        return {"reply": answer, "engine": "python-english-v1", "language": "English", "trained_model": bool(self.model), "training_vocabulary": self.model.get("vocabulary_size", 0) if self.model else 0}
 
     def _define(self, text, words):
         quoted = re.findall(r"['\"“]([a-zA-Z'-]+)['\"”]", text)
