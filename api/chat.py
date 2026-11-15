@@ -26,7 +26,8 @@ def _training_stats():
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        neural_health = _ENGINE.neural.health()\n        sandbox_health = _SANDBOX.health()
+        neural_health = _ENGINE.neural.health()
+        sandbox_health = _SANDBOX.health()
         self._send(200, {
             "engine": "expert802-cognitive-core",
             "architecture": ["normalization", "intent_analysis", "dialogue_state", "knowledge_graph",
@@ -34,7 +35,8 @@ class handler(BaseHTTPRequestHandler):
             "external_model_provider": False,
             "model_configured": _ENGINE.neural.configured,
             "neural_generator_ready": neural_health["ready"],
-            "neural_runtime": neural_health,\n            "sandbox_runtime": sandbox_health,
+            "neural_runtime": neural_health,
+            "sandbox_runtime": sandbox_health,
             "coding_agent_ready": True,
             "code_execution_enabled": False,
             "supported_code_inspection": ["Python", "JavaScript", "TypeScript", "HTML", "CSS", "JSON"],
