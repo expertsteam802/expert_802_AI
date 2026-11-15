@@ -5,6 +5,7 @@ import os
 import subprocess
 import tempfile
 import time
+import uuid
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
 from backend.cognition.code_intelligence import safe_path,InspectionError,MAX_FILES,MAX_FILE_BYTES,MAX_TOTAL_BYTES
@@ -54,7 +55,8 @@ def execute(files,command,target=""):
             destination.parent.mkdir(parents=True,exist_ok=True)
             destination.write_text(content,encoding="utf-8")
             destination.chmod(0o644)
-        docker=["docker","run","--rm","--network","none","--read-only",
+        container_name="expert802-"+uuid.uuid4().hex[:12]
+        docker=["docker","run","--name",container_name,"--rm","--network","none","--read-only",
                 "--memory=768m","--cpus=1","--pids-limit=64",
                 "--cap-drop=ALL","--security-opt=no-new-privileges",
                 "--user=65534:65534","--workdir=/workspace",
@@ -72,6 +74,8 @@ def execute(files,command,target=""):
                     "stdout":result.stdout[-12000:],"stderr":result.stderr[-12000:],
                     "command":command,"network":"disabled","source_mount":"read-only"}
         except subprocess.TimeoutExpired as error:
+            subprocess.run(["docker","stop","--time","1",container_name],capture_output=True,text=True,timeout=5,check=False)
+            subprocess.run(["docker","rm","-f",container_name],capture_output=True,text=True,timeout=5,check=False)
             return {"ok":False,"exit_code":None,"timed_out":True,
                     "duration_seconds":round(time.monotonic()-started,2),
                     "stdout":str(error.stdout or "")[-12000:],"stderr":"Execution exceeded 45 seconds.",
