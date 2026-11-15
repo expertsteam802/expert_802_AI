@@ -29,6 +29,12 @@ pip install -r training/requirements.txt
 
 For CUDA, install the PyTorch wheel matching the GPU host's CUDA runtime as directed by the official PyTorch installation selector, then install the remaining requirements.
 
+## Run training on a separate GPU runner
+
+The repository includes `.github/workflows/train-neural.yml`. It is a manual workflow and requires a separately provisioned GitHub Actions self-hosted runner labeled `self-hosted, linux, x64, gpu`. This can be a rented GPU server; it does not train on the user's desktop and it does not use an LLM provider API. The dataset path must already exist on the runner workspace, and should contain legally usable data. GitHub-hosted `ubuntu-latest` runners do not satisfy this GPU requirement.
+
+The workflow uploads a short-lived checkpoint artifact for seven days. Copy trained checkpoints and tokenizer to durable private object storage or the inference host before the artifact expires. Do not commit model weights to Git.
+
 ## Stage 1 — prepare and pretrain
 
 Choose legally usable general-language and programming corpora. You may supply documentation, your own code, public-domain books, and properly licensed code. Keep source/license records. Do not silently train on private customer data or personal conversations.
