@@ -27,8 +27,10 @@ Set these Vercel environment variables:
 
 - `EXPERT802_SANDBOX_URL=https://your-private-runner.example/run`
 - `EXPERT802_SANDBOX_TOKEN` — the same random secret configured on the runner.
+- `EXPERT802_CSRF_SECRET` — a separate random secret of at least 32 characters used to sign short-lived same-origin approval tokens.
+- `EXPERT802_CODE_RUN_ENABLED=true` — explicit administrator opt-in. It defaults to disabled.
 
-The app probes `/health` and only enables the Code Lab test button when the runner responds.
+The app probes `/health` and only enables the Code Lab test button when the runner responds, the CSRF secret is configured and the administrator has enabled the feature. The API also applies a small per-process rate limit. This is not user authentication; keep the feature disabled on a public app until authenticated user access and edge-level rate limits are in place.
 
 ## Allowed operations
 
@@ -39,6 +41,6 @@ There is no shell command input, package installation, network access from conta
 
 ## Isolation controls
 
-Each request uses a fresh Docker container with network disabled, read-only root filesystem and source mount, unprivileged UID, dropped Linux capabilities, no-new-privileges, 768 MB memory, one CPU, 64 process limit, 64 MB temporary filesystem and 45-second timeout. The HTTP endpoint requires bearer authentication. Output is truncated.
+Each request uses a fresh Docker container with network disabled, read-only root filesystem and source mount, unprivileged UID, dropped Linux capabilities, no-new-privileges, 768 MB memory, one CPU, 64 process limit, 64 MB temporary filesystem and 45-second timeout. The runner HTTP endpoint requires bearer authentication. The Vercel API also requires a signed same-origin approval header for test execution. Output is truncated.
 
 This is defense-in-depth, not a guarantee against every container escape. Keep Docker patched, isolate the host, restrict who can reach the service, and never run the Docker daemon on a shared untrusted machine.
