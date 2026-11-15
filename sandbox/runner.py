@@ -9,6 +9,9 @@ import threading
 import uuid
 from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 from pathlib import Path
+import sys
+ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 from backend.cognition.code_intelligence import safe_path,InspectionError,MAX_FILES,MAX_FILE_BYTES,MAX_TOTAL_BYTES
 
 PYTHON_IMAGE=os.environ.get("EXPERT802_PYTHON_IMAGE","python:3.11-slim")
