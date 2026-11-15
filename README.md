@@ -1,61 +1,76 @@
 # Expert 802 AI
 
-Expert 802 AI is a provider-independent English cognitive system with a lightweight web interface and a Python reasoning backend.
+Expert 802 AI is a provider-independent assistant project designed around conversational state, explicit reasoning, local knowledge, programming tools and an optional self-trained neural generator.
 
-## Current architecture
+The dictionary is one retrievable knowledge source. It is not the assistant's architecture.
 
-The live chat endpoint runs the project-owned pipeline in `backend/cognition/`:
+## Runtime architecture
 
-1. **Normalization** — common chat shorthand, spelling recovery and joined-word recovery.
-2. **Intent and slot analysis** — turns a message into a structured frame (definition, calculation, request, follow-up, explanation, question or statement).
-3. **Dialogue state** — extracts the current topic and resolves simple references such as “it” and “that” against supplied conversation history.
-4. **Local retrieval** — ranks passages from the project corpus and expands terms with WordNet synonyms.
-5. **Fact graph** — stores explicit relations from the supplied conversation history, answers supported questions and detects conflicts; it can infer transitive location relations when each link was explicitly stated.
-6. **Symbolic reasoning** — evaluates safe arithmetic expressions with a restricted AST; it never evaluates arbitrary Python.
-7. **Response orchestration** — combines the frame, context, retrieved evidence and computed results, and exposes confidence/evidence metadata to callers.
+The Vercel chat endpoint runs a project-owned Python pipeline:
 
-There is no Qwen integration, external model endpoint, API key, or provider token in the active chat path.
+1. **Language front end** — normalization, shorthand expansion, typo and joined-word recovery.
+2. **Intent and semantic frames** — identifies the user's communicative act and extracts supported targets.
+3. **Dialogue state** — tracks recent turns and resolves limited references using browser-supplied history.
+4. **Knowledge and retrieval** — local dictionary, WordNet synonyms, corpus ranking and explicit-fact graph.
+5. **Symbolic reasoning** — safe arithmetic and conservative inference over explicitly stated relations.
+6. **Programming planner** — classifies engineering tasks and decomposes implementation, debugging, review, refactoring, testing and deployment work.
+7. **Code intelligence** — statically inspects Python ASTs, JavaScript/TypeScript delimiters and declarations, JSON validity, HTML duplicate IDs and selected security risks. It never executes uploaded source.
+8. **Tool registry** — exposes explicitly registered capabilities with bounded input validation.
+9. **Neural runtime adapter** — optionally calls a private Expert 802 inference process when a trained checkpoint is actually available. No hosted model provider is used.
+
+## Code Lab
+
+The Code Lab UI lets a user select a project folder or source files and submit a bounded project snapshot to the backend. It returns a file map, language counts, discovered symbols/imports, selected diagnostics and an engineering plan. It accepts at most 40 files and 1 MB per inspection request.
+
+A trained private model can optionally produce an unapplied patch draft through the self-hosted inference adapter. The app does not claim that a draft has been applied, tested or deployed. Arbitrary uploaded code is not executed.
+
+## Native neural model
+
+The `training/` directory now contains a project-owned decoder-only Transformer, corpus-trained byte-level BPE tokenizer, pretraining pipeline, conversation-level fine-tuning data preparation, checkpointed training loop, local generation and a private inference server.
+
+It starts from random weights. **No trained neural checkpoint is currently included in the repository or connected to production.** The initial model configuration is a small research baseline, not GPT-level intelligence. It needs substantial licensed language and code data, GPU compute, careful evaluation and iterative training.
+
+No Qwen model, Qwen endpoint or third-party model API is part of the architecture.
 
 ## Important capability boundary
 
-This is a real logic-based cognitive pipeline, but it is **not yet a general neural language generator** and it is not GPT-equivalent. It can normalize language, recognize supported intents, resolve limited dialogue references, retrieve local evidence and perform bounded symbolic calculations. For an open-ended question outside its local knowledge, it should say what evidence is missing rather than fabricate an answer.
+The current production chat path is the symbolic cognition system plus optional private neural inference if configured. Without trained weights, open-ended language generation and autonomous code generation are not available. Code Lab can statically inspect source and build work plans, but it does not yet apply changes to arbitrary uploaded projects or execute them.
 
-The word-bigram artifact in `backend/language_model.json` is only a next-word statistical baseline. It is not the cognitive engine and it does not provide general language understanding.
+The old word-bigram artifact in `backend/language_model.json` is only a statistical next-word baseline. It is not the assistant's intelligence.
 
 ## Repository layout
 
-- `index.html` — fixed-layout chat, dictionary and architecture-status views.
-- `api/chat.py` — Vercel HTTP endpoint and live architecture status.
-- `backend/engine.py` — compatibility facade for the native engine.
-- `backend/cognition/` — normalization, intent analysis, dialogue memory, retrieval, reasoning and orchestration.
-- `backend/language.py` — lexical data loading and spelling/grammar helpers.
-- `knowledge/` — English dictionary, imported WordNet and the small starter corpus.
-- `learning/` — reproducible corpus and WordNet import workflows.
-- `training/README.md` — pinned, from-scratch neural-training path using MIT-licensed source code; not yet run or connected.
-- `tests/` — behavior and HTTP integration tests.
+- `index.html` — chat, dictionary, Code Lab and architecture-status views.
+- `api/chat.py` — Vercel HTTP API for chat, lookup, task planning, code inspection and optional patch generation.
+- `backend/cognition/` — language processing, dialogue state, knowledge graph, retrieval, reasoning, programming planner, code analysis, tool registry and private neural connector.
+- `backend/language.py` — lexical data loading, spelling, tokenization and grammar helpers.
+- `knowledge/` — local English dictionary, WordNet and starter corpus.
+- `learning/` — lexical corpus and WordNet workflows.
+- `training/` — BPE tokenizer, Transformer, data preparation, pretraining, fine-tuning, local generation and private inference.
+- `tests/` — engine, tool, security-boundary and HTTP integration tests.
 
-## Run locally
+## Run and validate
 
-Requires Python 3.10+.
+Requires Python 3.10+ for the web/backend path:
 
 ```bash
-python -m compileall -q api backend learning tests
+python -m compileall -q api backend learning tests training
 python -m unittest discover -s tests -v
-python -m learning.train
 ```
 
-For the complete Vercel function environment, install the Vercel CLI and run `vercel dev`.
+Training has separate dependencies in `training/requirements.txt`; see [training/README.md](training/README.md). Do not install PyTorch in the Vercel web function.
 
-## Deploy
+## Deployment
 
-Import this repository into Vercel. Use the Other framework preset and leave the build command empty. Vercel detects Python files under `api/` as serverless functions.
+Vercel hosts the lightweight web/API layer. A trained neural model must run separately on a private machine or GPU service. Configure `EXPERT802_NEURAL_URL` to its HTTPS `/generate` endpoint and `EXPERT802_INFERENCE_TOKEN` with a strong shared secret. The private inference process requires a TLS reverse proxy for remote binding.
 
-GitHub Actions runs validation on pushes to `main`. The separate training workflow runs on GitHub-hosted CPU compute and updates the small word-bigram baseline and WordNet import; it does not train a neural conversational model.
+GitHub Actions validates code on pushes to `main`. It does not train a capable conversational model.
 
-## Roadmap
+## Engineering principles
 
-- Improve robust parsing with a tested grammar and labeled semantic-frame data.
-- Add durable, user-controlled memory storage rather than relying only on browser-supplied recent history.
-- Expand the knowledge base with licensed, source-attributed documents and retrieval evaluations.
-- Add explicit multi-step planning, tool permissions, execution traces and recovery.
-- Train a native neural generator only when a suitable GPU training runtime, large legally usable corpus, checkpoint storage and held-out evaluation set are available. Source code alone is not trained intelligence.
+- Evidence before confident factual claims.
+- Tools must be explicitly registered, bounded and permissioned.
+- Uploaded code is data, never an instruction to the tool runtime.
+- Never execute user code implicitly.
+- Every new capability requires positive, negative, ambiguous and multi-turn tests.
+- Keep corpora, checkpoints and secrets out of Git.
