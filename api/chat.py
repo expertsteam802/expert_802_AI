@@ -1,25 +1,37 @@
-"""Vercel Python serverless endpoint for Expert 802 AI."""
+"""Vercel Python endpoint for the provider-independent Expert 802 cognitive core."""
 import json
 from http.server import BaseHTTPRequestHandler
+from pathlib import Path
 from backend.engine import ExpertLanguageEngine
-from backend.language import dictionary_lookup, load_wordnet
-from backend.model_client import is_configured, configured_model_name
+from backend.language import dictionary_lookup, load_dictionary, load_wordnet
 
 _ENGINE = ExpertLanguageEngine()
+_MODEL_PATH = Path(__file__).resolve().parents[1] / "backend" / "language_model.json"
+
+def _training_stats():
+    try:
+        data = json.loads(_MODEL_PATH.read_text(encoding="utf-8"))
+        if data.get("format") != "expert802-word-bigram-v1":
+            return {}
+        return {"trained_artifact": data.get("format"),
+                "training_sentences": data.get("sentences_seen", 0),
+                "training_vocabulary": data.get("vocabulary_size", 0)}
+    except (OSError, ValueError):
+        return {}
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        model = _ENGINE.model or {}
         self._send(200, {
-            "engine": "qwen3-self-hosted" if is_configured() else "python-english-v2",
-            "model_configured": is_configured(),
-            "model_name": configured_model_name() if is_configured() else None,
-            "dictionary_entries": len(_ENGINE.dictionary),
+            "engine": "expert802-cognitive-core",
+            "architecture": ["normalization", "intent_analysis", "dialogue_state",
+                             "local_retrieval", "symbolic_reasoning"],
+            "external_model_provider": False,
+            "model_configured": False,
+            "neural_generator_ready": False,
+            "dictionary_entries": len(load_dictionary()),
             "wordnet_entries": len(load_wordnet()),
-            "trained_artifact": model.get("format"),
-            "training_sentences": model.get("sentences_seen", 0),
-            "training_vocabulary": model.get("vocabulary_size", 0),
-            "neural_model_ready": is_configured(),
+            "corpus_documents": len(_ENGINE.retriever.documents),
+            **_training_stats(),
         })
 
     def do_OPTIONS(self):
@@ -35,8 +47,9 @@ class handler(BaseHTTPRequestHandler):
             if size < 1 or size > 20000:
                 return self._send(400, {"error": "Send a message under 20 KB."})
             payload = json.loads(self.rfile.read(size).decode("utf-8"))
-            action = payload.get("action", "chat")
-            if action == "lookup":
+            if not isinstance(payload, dict):
+                return self._send(400, {"error": "The request body must be a JSON object."})
+            if payload.get("action", "chat") == "lookup":
                 term = payload.get("term", "")
                 if not isinstance(term, str) or not term.strip():
                     return self._send(400, {"error": "Enter a word to look up."})
@@ -44,17 +57,16 @@ class handler(BaseHTTPRequestHandler):
                 entry = dictionary_lookup(term)
                 if isinstance(entry, dict):
                     definitions = entry.get("definitions", [])
-                    result = {
-                        "term": term,
-                        "part_of_speech": entry.get("part_of_speech", "word"),
-                        "definition": definitions[0] if definitions else "No definition is available in this entry.",
-                        "synonyms": entry.get("synonyms", [])[:8],
-                        "found": bool(definitions),
-                    }
+                    result = {"term": term, "part_of_speech": entry.get("part_of_speech", "word"),
+                              "definition": definitions[0] if definitions else "No definition is available in this entry.",
+                              "synonyms": entry.get("synonyms", [])[:8], "found": bool(definitions)}
                 elif isinstance(entry, str) and entry:
-                    result = {"term": term, "part_of_speech": "word", "definition": entry, "synonyms": [], "found": True}
+                    result = {"term": term, "part_of_speech": "word", "definition": entry,
+                              "synonyms": [], "found": True}
                 else:
-                    result = {"term": term, "part_of_speech": None, "definition": "This word is not present in the local dictionary yet.", "synonyms": [], "found": False}
+                    result = {"term": term, "part_of_speech": None,
+                              "definition": "This word is not present in the local dictionary yet.",
+                              "synonyms": [], "found": False}
                 return self._send(200, result)
             message = payload.get("message", "")
             if not isinstance(message, str) or not message.strip():
@@ -62,10 +74,10 @@ class handler(BaseHTTPRequestHandler):
             history = payload.get("history", [])
             if not isinstance(history, list):
                 history = []
-            result = _ENGINE.reply(message[:4000], history[-12:])
-            return self._send(200, result)
-        except Exception:
-            return self._send(500, {"error": "The English language engine encountered an internal error."})
+            return self._send(200, _ENGINE.reply(message[:4000], history[-30:]))
+        except Exception as error:
+            print("Expert 802 cognitive core error:", repr(error))
+            return self._send(500, {"error": "The cognitive engine encountered an internal error."})
 
     def _send(self, status, data):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
@@ -73,5 +85,6 @@ class handler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
         self.end_headers()
         self.wfile.write(body)
