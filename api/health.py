@@ -4,7 +4,7 @@ from http.server import BaseHTTPRequestHandler
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        body = json.dumps({"ok": True, "name": "Expert 802 AI", "language": "English", "engine": "project-owned-python"}).encode()
+        body = json.dumps({"ok": True, "name": "Expert 802 AI", "language": "English", "engine": "expert802-cognitive-core"}).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
