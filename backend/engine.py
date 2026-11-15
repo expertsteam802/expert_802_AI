@@ -51,11 +51,11 @@ class ExpertLanguageEngine:
             answer = self._predict_next_word(phrase)
         elif re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening)[!. ]*", lower):
             answer = "Hello! I'm Expert 802 AI. We can talk in English. What would you like to discuss?"
-        elif re.search(r"\\b(who are you|what are you|your name)\\b", lower):
+        elif re.search(r"\b(who are you|what are you|your name)\b", lower):
             answer = "I'm Expert 802 AI, a project-owned English language program. I use dictionaries, spelling recovery, grammar rules, and language patterns stored in this project. I am still developing and do not have human-level understanding."
-        elif re.search(r"\\b(what does|meaning of|define|definition of)\\b", lower):
+        elif re.search(r"\b(what does|meaning of|define|definition of)\b", lower):
             answer = self._define(text, words)
-        elif re.search(r"\\b(check|correct|grammar|grammatically|is this sentence)\\b", lower):
+        elif re.search(r"\b(check|correct|grammar|grammatically|is this sentence)\b", lower):
             corrected, notes = correct_common_grammar(text)
             if notes:
                 answer = "A possible correction is:\n“" + corrected + "”\n\n" + " ".join(notes)
@@ -63,17 +63,17 @@ class ExpertLanguageEngine:
                 answer = "The spelling and word spacing look corrected above. I did not find another error covered by my current grammar rules."
             else:
                 answer = "I did not detect an error covered by my current grammar rules. That does not prove the sentence is fully correct; my grammar coverage is still growing."
-        elif re.search(r"\\b(noun|verb|adjective|adverb|pronoun|tense|preposition|conjunction|article|clause|phrase|subject|predicate|object)\\b", lower) and re.search(r"\\b(what is|explain|define|meaning)\\b", lower):
+        elif re.search(r"\b(noun|verb|adjective|adverb|pronoun|tense|preposition|conjunction|article|clause|phrase|subject|predicate|object)\b", lower) and re.search(r"\b(what is|explain|define|meaning)\b", lower):
             answer = self._explain_grammar(lower)
-        elif re.search(r"\\b(i need my game right now|i need a game right now)\\b", lower):
+        elif re.search(r"\b(i need my game right now|i need a game right now)\b", lower):
             answer = "Got it—you need your game right now. Are you trying to open a game you already have, download one, or find a game to play?"
-        elif re.search(r"\\b(affect and effect|difference between affect and effect)\\b", lower):
+        elif re.search(r"\b(affect and effect|difference between affect and effect)\b", lower):
             answer = "“Affect” is usually a verb meaning to influence: “Rain can affect traffic.” “Effect” is usually a noun meaning a result: “The effect was a delay.”"
-        elif re.search(r"\\b(thank you|thanks)\\b", lower):
+        elif re.search(r"\b(thank you|thanks)\b", lower):
             answer = "You're welcome. What else would you like to talk about?"
-        elif re.search(r"\\b(you are wrong|that's wrong|you don't understand|not what i asked)\\b", lower):
+        elif re.search(r"\b(you are wrong|that's wrong|you don't understand|not what i asked)\b", lower):
             answer = "Thanks for correcting me. I may have interpreted your words incorrectly. Please explain what you intended. I can use that correction in this conversation, but this version does not permanently retrain itself from feedback."
-        elif re.search(r"\\b(what is|who is|where is|when did|how many|capital of|president of|latest|today)\\b", lower):
+        elif re.search(r"\b(what is|who is|where is|when did|how many|capital of|president of|latest|today)\b", lower):
             answer = "I recognise this as a factual question, but my current training does not provide a reliable world-knowledge system. I should not guess. I can explain English wording and definitions from my local knowledge."
         elif len(words) <= 2:
             answer = "Could you add a little more detail? A complete sentence or a little context will help me interpret your meaning."
@@ -129,6 +129,6 @@ class ExpertLanguageEngine:
             "object": "An object receives the action of a verb or completes its meaning. In “She kicked the ball”, “the ball” is the direct object.",
         }
         for key, value in explanations.items():
-            if re.search(r"\\b" + key + r"\\b", text):
+            if re.search(r"\b" + key + r"\b", text):
                 return value
         return "English grammar explains how words form phrases and sentences through word classes, word order, agreement, tense, clauses, and punctuation."
