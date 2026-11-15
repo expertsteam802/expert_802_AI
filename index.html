@@ -119,22 +119,22 @@ button{cursor:pointer}
 <body>
 <div class="app">
  <aside class="sidebar">
-  <div class="brand"><div class="brand-mark">E</div><div><div class="brand-name">Expert 802 AI</div><div class="brand-sub">Language intelligence</div></div></div>
+  <div class="brand"><div class="brand-mark">E</div><div><div class="brand-name">Expert 802 AI</div><div class="brand-sub">Conversation + coding assistant</div></div></div>
   <button class="new-chat" id="newChat"><span>＋</span> New conversation</button>
   <div><div class="nav-label">Workspace</div><nav class="nav" aria-label="Main navigation">
    <button class="nav-btn active" data-view="chat"><span class="nav-icon">◉</span><span>Chat</span></button>
-   <button class="nav-btn" data-view="dictionary"><span class="nav-icon">▤</span><span>Dictionary</span></button>
    <button class="nav-btn" data-view="codelab"><span class="nav-icon">⌘</span><span>Code Lab</span></button>
    <button class="nav-btn" data-view="training"><span class="nav-icon">⌁</span><span>Architecture</span></button>
+   <button class="nav-btn" data-view="dictionary"><span class="nav-icon">▤</span><span>Dictionary</span></button>
   </nav></div>
   <div class="sidebar-spacer"></div>
   <div class="engine-card"><div class="engine-line"><span class="status-dot" id="statusDot"></span><span id="statusLabel">Checking engine…</span></div><div class="engine-caption" id="statusCaption">Reading live backend status.</div></div>
-  <div class="side-foot">EXPERIMENTAL · ENGLISH LANGUAGE SYSTEM</div>
+  <div class="side-foot">CONVERSATION · REASONING · CODE</div>
  </aside>
  <main class="workspace">
-  <header class="topbar"><div><div class="top-title" id="pageTitle">Conversation</div><div class="top-subtitle" id="pageSubtitle">A native cognitive pipeline for language, context, knowledge and reasoning.</div></div><div class="top-right"><span class="pill" id="modelPill">Checking model</span></div></header>
+  <header class="topbar"><div><div class="top-title" id="pageTitle">Conversation</div><div class="top-subtitle" id="pageSubtitle">A conversational and programming assistant built around reasoning, tools and its own trainable model.</div></div><div class="top-right"><span class="pill" id="modelPill">Checking model</span></div></header>
   <section class="view chat-view active" id="chatView">
-   <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask a question, explore a word, explain an idea or continue a conversation. The native cognition pipeline tracks intent, context, evidence and reasoning.</p><div class="welcome-note">Your messages are processed by the Expert 802 cognitive core.</div></div></div>
+   <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, discuss ideas, plan software, debug projects and continue multi-turn conversations. Use Code Lab to inspect real source files and map engineering work.</p><div class="welcome-note">No hosted AI provider is required. A private neural model can be connected after its own training.</div></div></div>
    <div class="composer-wrap"><div class="composer"><textarea id="messageInput" rows="1" aria-label="Message Expert 802 AI" placeholder="Message Expert 802 AI…"></textarea><button class="send" id="sendButton" aria-label="Send message">↑</button></div><div class="composer-meta"><span>Enter to send · Shift + Enter for a new line</span><span>Only the conversation panel scrolls</span></div></div>
   </section>
   <section class="view content-view" id="dictionaryView"><div class="page-scroll"><div class="page-inner">
@@ -235,7 +235,7 @@ button{cursor:pointer}
  input.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,150)+"px";});
  $("newChat").addEventListener("click",()=>{
   history.length=0; localStorage.removeItem(HISTORY_KEY);
-  messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask a question, explore a word, explain an idea or continue a conversation. This workspace keeps the conversation in its own scrollable area.</p><div class="welcome-note">Your messages are sent to the Expert 802 AI language engine.</div></div>';
+  messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, discuss ideas, plan software and continue multi-turn conversations. Open Code Lab to inspect project files.</p><div class="welcome-note">Your messages are processed by Expert 802 AI.</div></div>';
   input.value="";input.focus();switchView("chat");
  });
  const codeFilesInput=$("codeFiles");
@@ -308,7 +308,7 @@ button{cursor:pointer}
    $("trainingVocab").textContent=number(statusData.training_vocabulary);
    $("statusDot").classList.toggle("ready",true);
    $("statusLabel").textContent="Cognitive core online";
-   $("statusCaption").textContent=number(statusData.dictionary_entries)+" dictionary entries · "+number(statusData.corpus_documents)+" corpus passages.";
+   $("statusCaption").textContent="Conversation reasoning · programming planner · code inspection.";
    $("modelPill").textContent=statusData.neural_generator_ready?"Private neural model active":"Native cognition active";
    $("generateCode").disabled=!statusData.neural_generator_ready;
    $("modelPill").classList.add("live");
