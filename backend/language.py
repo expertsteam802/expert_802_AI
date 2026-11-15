@@ -64,7 +64,17 @@ def _split_joined(token, vocabulary):
                 candidate = best[start] + [piece]
                 if best[end] is None or len(candidate) < len(best[end]):
                     best[end] = candidate
-    return best[-1] if best[-1] and len(best[-1]) > 1 else [token]
+    if best[-1] and len(best[-1]) > 1:
+        return best[-1]
+    # Keep a short unknown tail as a candidate typo after recognized words.
+    valid = [i for i, parts in enumerate(best[:-1]) if parts and len(token) - i <= 15]
+    if valid:
+        end = max(valid)
+        return best[end] + [token[end:]]
+    # A repeated final keystroke is a common source of merged-word failures.
+    if len(token) > 7 and token[-1] == token[-2]:
+        return _split_joined(token[:-1], vocabulary)
+    return [token]
 
 def correct_spelling(text):
     vocab = dictionary_words()
@@ -82,7 +92,7 @@ def correct_spelling(text):
                 fixed.append(piece)
                 continue
             # Collapse accidental repeated keystrokes: nowww -> now.
-            squeezed = re.sub(r"([a-z])\\1{2,}", r"\\1\\1", piece)
+            squeezed = re.sub(r"([a-z])\1{2,}", r"\1\1", piece)
             if squeezed in vocab:
                 replacement = squeezed
             else:
@@ -104,14 +114,14 @@ def correct_common_grammar(text):
     value = text.strip()
     notes = []
     rules = [
-        (r"\\bI is\\b", "I am", "Use 'am' with the subject 'I'."),
-        (r"\\b(he|she|it) are\\b", r"\\1 is", "Use 'is' with he, she, or it."),
-        (r"\\b(you|we|they) is\\b", r"\\1 are", "Use 'are' with you, we, or they."),
-        (r"\\b(he|she|it) don't\\b", r"\\1 doesn't", "Use 'doesn't' with he, she, or it."),
-        (r"\\b(he|she|it) doesn't ([a-z]+)s\\b", r"\\1 doesn't \\2", "After 'doesn't', use the base form of the verb."),
-        (r"\\bI has\\b", "I have", "Use 'have' with 'I'."),
-        (r"\\b(he|she|it) have\\b", r"\\1 has", "Use 'has' with he, she, or it."),
-        (r"\\b(a) ([aeiou][a-z]+)\\b", r"an \\2", "Use 'an' before a vowel sound (this spelling rule is only an approximation)."),
+        (r"\bI is\b", "I am", "Use 'am' with the subject 'I'."),
+        (r"\b(he|she|it) are\b", r"\1 is", "Use 'is' with he, she, or it."),
+        (r"\b(you|we|they) is\b", r"\1 are", "Use 'are' with you, we, or they."),
+        (r"\b(he|she|it) don't\b", r"\1 doesn't", "Use 'doesn't' with he, she, or it."),
+        (r"\b(he|she|it) doesn't ([a-z]+)s\b", r"\1 doesn't \2", "After 'doesn't', use the base form of the verb."),
+        (r"\bI has\b", "I have", "Use 'have' with 'I'."),
+        (r"\b(he|she|it) have\b", r"\1 has", "Use 'has' with he, she, or it."),
+        (r"\b(a) ([aeiou][a-z]+)\b", r"an \2", "Use 'an' before a vowel sound (this spelling rule is only an approximation)."),
     ]
     for pattern, replacement, explanation in rules:
         changed = re.sub(pattern, replacement, value, flags=re.I)
