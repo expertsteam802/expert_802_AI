@@ -25,7 +25,7 @@ class EnglishFoundationTests(unittest.TestCase):
     def test_engine_responds_to_recovered_sentence(self):
         answer = self.engine.reply("i nned my gamerightnoww")["reply"].lower()
         self.assertIn("i think you meant", answer)
-        self.assertIn("you need a game right now", answer)
+        self.assertIn("you need your game right now", answer)
 
     def test_short_yes_uses_game_context(self):
         history = [{"role": "user", "text": "I need my game right now"}]
@@ -37,6 +37,14 @@ class EnglishFoundationTests(unittest.TestCase):
         answer = self.engine.reply("GTA", history)["reply"]
         self.assertIn("Grand Theft Auto", answer)
         self.assertNotIn("Eta", answer)
+
+    def test_uppercase_acronym_is_preserved(self):
+        corrected, changes = correct_spelling("GTA")
+        self.assertEqual(corrected, "GTA")
+
+    def test_chat_shorthand_ur_is_normalized(self):
+        corrected, changes = correct_spelling("what is ur name")
+        self.assertEqual(corrected.lower(), "what is your name")
 
     def test_ai_full_form(self):
         answer = self.engine.reply("What is AI in full words?")["reply"]
