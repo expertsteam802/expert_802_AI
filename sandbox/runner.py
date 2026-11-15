@@ -56,7 +56,7 @@ def execute(files,command,target=""):
             destination.write_text(content,encoding="utf-8")
             destination.chmod(0o644)
         container_name="expert802-"+uuid.uuid4().hex[:12]
-        docker=["docker","run","--name",container_name,"--rm","--network","none","--read-only",
+        docker=["docker","run","--name",container_name,"--rm","--init","--network","none","--read-only",
                 "--memory=768m","--cpus=1","--pids-limit=64",
                 "--cap-drop=ALL","--security-opt=no-new-privileges",
                 "--user=65534:65534","--workdir=/workspace",
@@ -74,8 +74,11 @@ def execute(files,command,target=""):
                     "stdout":result.stdout[-12000:],"stderr":result.stderr[-12000:],
                     "command":command,"network":"disabled","source_mount":"read-only"}
         except subprocess.TimeoutExpired as error:
-            subprocess.run(["docker","stop","--time","1",container_name],capture_output=True,text=True,timeout=5,check=False)
-            subprocess.run(["docker","rm","-f",container_name],capture_output=True,text=True,timeout=5,check=False)
+            try:
+                subprocess.run(["docker","stop","--time","1",container_name],capture_output=True,text=True,timeout=5,check=False)
+                subprocess.run(["docker","rm","-f",container_name],capture_output=True,text=True,timeout=5,check=False)
+            except (subprocess.TimeoutExpired, FileNotFoundError):
+                pass
             return {"ok":False,"exit_code":None,"timed_out":True,
                     "duration_seconds":round(time.monotonic()-started,2),
                     "stdout":str(error.stdout or "")[-12000:],"stderr":"Execution exceeded 45 seconds.",
@@ -106,7 +109,7 @@ def build_handler(token):
                 result=execute(payload.get("files"),payload.get("command",""),payload.get("target",""))
                 status=200 if "error" not in result else 503
                 self.send_json(status,result)
-            except (ValueError,TypeError,InspectionError,json.JSONDecodeError) as error:
+            except (ValueError,TypeError,InspectionError,json.JSONDecodeError,UnicodeDecodeError) as error:
                 self.send_json(400,{"error":str(error)})
         def send_json(self,status,data):
             body=json.dumps(data,ensure_ascii=False).encode("utf-8")
