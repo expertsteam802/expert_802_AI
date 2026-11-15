@@ -1,177 +1,253 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#101827"><title>Expert 802 AI</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f8fc">
+<title>Expert 802 AI</title>
 <style>
-:root{color-scheme:dark;--bg:#0b1120;--panel:#111b2d;--panel2:#17243a;--line:#26364f;--text:#edf4ff;--muted:#91a3bd;--accent:#71a7ff;--green:#6ee7b7}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#1c3559 0,transparent 48%),var(--bg);color:var(--text);font:15px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh}
-.app{max-width:1120px;margin:auto;min-height:100vh;display:grid;grid-template-columns:270px 1fr;gap:18px;padding:18px}
-aside,.main{background:rgba(17,27,45,.92);border:1px solid var(--line);border-radius:20px}
-aside{padding:20px;display:flex;flex-direction:column;gap:20px}.brand{display:flex;gap:12px;align-items:center}.logo{width:42px;height:42px;border-radius:13px;background:linear-gradient(135deg,#3979df,#7c5ce7);display:grid;place-items:center;font-weight:900;font-size:20px}.brand strong{display:block;font-size:16px}.brand small,.muted{color:var(--muted)}.new{border:1px solid #35547d;background:#1b3150;color:#eaf2ff;border-radius:12px;padding:11px;font-weight:650;cursor:pointer}.section{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#7f93af;font-weight:800}.status{border:1px solid var(--line);border-radius:14px;padding:13px;background:#0d1728}.dot{display:inline-block;width:8px;height:8px;background:var(--green);border-radius:50%;margin-right:8px}.status p{margin:7px 0 0;font-size:12px;color:var(--muted)}.notice{font-size:12px;color:var(--muted);line-height:1.6}.main{display:flex;flex-direction:column;min-height:calc(100vh - 36px);overflow:hidden}.top{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px}.top h1{font-size:16px;margin:0}.top span{font-size:12px;color:var(--muted)}.chat{flex:1;overflow:auto;padding:28px clamp(16px,5vw,60px);display:flex;flex-direction:column;gap:20px}.welcome{margin:auto;max-width:620px;text-align:center}.orb{width:66px;height:66px;margin:0 auto 18px;border-radius:22px;background:linear-gradient(145deg,#3279dc,#7d60e9);display:grid;place-items:center;font-size:30px;box-shadow:0 12px 40px #3869bf40}.welcome h2{font-size:clamp(25px,4vw,36px);margin:0 0 10px;letter-spacing:-.04em}.welcome p{color:var(--muted);margin:0 auto 24px;max-width:500px}.suggestions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;text-align:left}.suggestions button{background:#142239;border:1px solid var(--line);border-radius:13px;padding:13px;color:#dce8fa;text-align:left;cursor:pointer}.suggestions button:hover,.new:hover{border-color:#638ed0}.msg{display:flex;gap:12px;max-width:850px;align-self:flex-start;width:100%}.msg.user{align-self:flex-end;flex-direction:row-reverse}.avatar{width:31px;height:31px;flex:0 0 31px;border-radius:10px;background:#203858;display:grid;place-items:center;font-size:12px;font-weight:800}.user .avatar{background:#315f9f}.bubble{background:#142239;border:1px solid var(--line);padding:13px 16px;border-radius:4px 16px 16px 16px;max-width:min(720px,calc(100% - 45px));white-space:pre-wrap;overflow-wrap:anywhere}.user .bubble{background:#1d3c64;border-color:#315b8d;border-radius:16px 4px 16px 16px}.bubble p{margin:0 0 9px}.bubble p:last-child{margin:0}.composer{padding:16px clamp(14px,4vw,42px) 20px;border-top:1px solid var(--line)}.inputbox{display:flex;gap:10px;align-items:flex-end;border:1px solid #344966;background:#0c1627;border-radius:17px;padding:9px}.inputbox textarea{flex:1;resize:none;max-height:150px;min-height:42px;border:0;outline:0;background:transparent;color:var(--text);font:inherit;padding:10px}.send{height:42px;width:44px;border:0;border-radius:12px;background:#4387ed;color:white;font-size:19px;cursor:pointer}.send:disabled{opacity:.4;cursor:not-allowed}.foot{display:flex;justify-content:space-between;color:#7386a1;font-size:11px;margin:9px 4px 0}.typing{color:var(--muted);font-size:13px}.tag{font-size:10px;color:#a9c7f5;border:1px solid #314a6b;border-radius:99px;padding:3px 8px}
-@media(max-width:760px){.app{display:block;padding:8px}.app aside{display:none}.main{min-height:calc(100vh - 16px)}.top{padding:14px}.chat{padding:22px 14px}.suggestions{grid-template-columns:1fr}.foot span:last-child{display:none}}
-</style></head>
-<body><div class="app">
-<aside><div class="brand"><div class="logo">E</div><div><strong>Expert 802 AI</strong><small>Natural language lab</small></div></div>
-<button class="new" id="newChat">＋ New conversation</button>
-<div><div class="section">Engine status</div><div class="status" style="margin-top:10px"><span class="dot"></span><b>English engine ready</b><p>No external AI service. Messages are processed by the project's own Python language engine.</p></div></div>
-<div><div class="section">Current capabilities</div><p class="notice">English vocabulary lookup<br>Grammar and sentence patterns<br>Intent and question detection<br>Conversation context<br>Transparent uncertainty</p></div>
-<div style="margin-top:auto"><div class="section">Prototype honesty</div><p class="notice">The English engine combines grammar rules, a starter dictionary, and a trainable word-pattern model. It is an early learning system, not human-level intelligence.</p></div></aside>
-<section class="main"><header class="top"><div><h1>Expert 802 AI <span class="tag">EXPERIMENTAL</span></h1><span>Talk naturally. Ask questions. Explore language.</span></div><span>Local session</span></header>
-<div class="chat" id="chat"><div class="welcome" id="welcome"><div class="orb">✳</div><h2>Let's understand language.</h2><p>Talk to Expert 802 AI in your own words. Try different grammar, ask about English, or see how it interprets a sentence.</p><div class="suggestions"><button data-prompt="Why do we say 'she is' instead of 'she are'?">Explain an English grammar rule</button><button data-prompt="What does the word curious mean?">Ask for a word meaning</button><button data-prompt="I went to school yesterday. Is this sentence correct?">Check a sentence</button><button data-prompt="Can you explain the difference between affect and effect?">Compare two words</button></div></div></div>
-<div class="composer"><div class="inputbox"><textarea id="input" rows="1" placeholder="Message Expert 802 AI..."></textarea><button class="send" id="send" aria-label="Send">↑</button></div><div class="foot"><span>Enter to send · Shift + Enter for a new line</span><span>Responses are generated by local language rules, not an external model.</span></div></div>
-</section></div>
+:root{color-scheme:light;--bg:#f5f7fb;--surface:#fff;--surface-soft:#f8faff;--line:#e6eaf1;--text:#172033;--muted:#778198;--blue:#356fe5;--blue-dark:#2458c6;--blue-soft:#edf3ff;--green:#15966b;--shadow:0 12px 36px rgba(29,48,84,.07)}
+*{box-sizing:border-box}
+html,body{height:100%;width:100%;margin:0;overflow:hidden}
+body{background:var(--bg);color:var(--text);font:14px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.app{height:100dvh;width:100%;display:grid;grid-template-columns:248px minmax(0,1fr);overflow:hidden;background:var(--bg)}
+.sidebar{min-width:0;background:var(--surface);border-right:1px solid var(--line);padding:22px 15px 16px;display:flex;flex-direction:column;gap:23px;overflow:hidden}
+.brand{display:flex;align-items:center;gap:11px;padding:0 8px}
+.brand-mark{height:40px;width:40px;flex:0 0 40px;border-radius:13px;background:linear-gradient(145deg,#4385f4,#685de8);color:#fff;display:grid;place-items:center;font-size:21px;font-weight:850;box-shadow:0 6px 15px #4678e533}
+.brand-name{font-weight:800;font-size:15px;letter-spacing:-.02em}.brand-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.new-chat{height:42px;border:1px solid #d9e4fb;border-radius:12px;background:var(--blue-soft);color:var(--blue-dark);font-weight:700;text-align:left;padding:0 13px;display:flex;align-items:center;gap:9px}
+.new-chat:hover{background:#e4edff}
+.nav-label{padding:0 10px;color:#9aa3b5;font-size:10px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;margin-bottom:5px}
+.nav{display:grid;gap:5px}
+.nav-btn{width:100%;height:42px;border:0;border-radius:10px;background:transparent;color:#59657b;display:flex;align-items:center;gap:12px;text-align:left;padding:0 12px;font-weight:650}
+.nav-btn:hover{background:#f6f8fc;color:var(--text)}
+.nav-btn.active{background:var(--blue-soft);color:var(--blue-dark)}
+.nav-icon{width:20px;text-align:center;font-size:17px}
+.sidebar-spacer{flex:1}
+.engine-card{border:1px solid var(--line);background:#fbfcff;border-radius:13px;padding:12px}
+.engine-line{display:flex;align-items:center;gap:8px;font-weight:700;font-size:12px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#d69b38;box-shadow:0 0 0 3px #f9efd9}
+.status-dot.ready{background:var(--green);box-shadow:0 0 0 3px #e2f5ed}
+.engine-caption{font-size:11px;color:var(--muted);line-height:1.45;margin-top:7px}
+.side-foot{font-size:10px;color:#9aa3b5;padding:0 5px}
+.workspace{min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.topbar{height:72px;flex:0 0 72px;background:rgba(255,255,255,.92);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(18px,3vw,42px);gap:14px}
+.top-title{font-size:16px;font-weight:780;letter-spacing:-.025em}
+.top-subtitle{font-size:11px;color:var(--muted);margin-top:2px}
+.top-right{display:flex;align-items:center;gap:10px}
+.pill{border:1px solid var(--line);background:#fff;color:#647087;border-radius:99px;padding:6px 10px;font-size:11px;font-weight:650;white-space:nowrap}
+.pill.live{background:#effaf5;border-color:#d8f0e4;color:#16825e}
+.view{display:none;flex:1;min-height:0;overflow:hidden}
+.view.active{display:flex}
+.chat-view{flex-direction:column;min-height:0}
+.messages{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:30px clamp(18px,5vw,72px) 22px;display:flex;flex-direction:column;gap:18px}
+.messages::-webkit-scrollbar,.page-scroll::-webkit-scrollbar{width:8px}
+.messages::-webkit-scrollbar-thumb,.page-scroll::-webkit-scrollbar-thumb{background:#dce2ed;border-radius:10px;border:2px solid transparent;background-clip:padding-box}
+.welcome{width:min(760px,100%);margin:auto;display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 10px 42px}
+.welcome-orb{width:68px;height:68px;border-radius:22px;background:linear-gradient(145deg,#4385f4,#7465e8);display:grid;place-items:center;color:white;font-size:30px;font-weight:800;box-shadow:0 12px 28px #4e76d52b;margin-bottom:21px}
+.welcome h1{font-size:clamp(27px,4vw,40px);line-height:1.15;letter-spacing:-.055em;margin:0 0 12px;font-weight:800}
+.welcome p{max-width:560px;color:var(--muted);font-size:14px;line-height:1.7;margin:0}
+.welcome-note{margin-top:24px;padding:10px 14px;background:#fff;border:1px solid var(--line);border-radius:12px;color:#778198;font-size:11px}
+.message{display:flex;align-items:flex-start;gap:11px;width:min(900px,100%);margin:0 auto}
+.message.user{flex-direction:row-reverse}
+.avatar{width:32px;height:32px;flex:0 0 32px;border-radius:11px;background:#eaf0ff;color:#356fe5;display:grid;place-items:center;font-size:12px;font-weight:800}
+.message.user .avatar{background:#356fe5;color:white}
+.bubble{max-width:min(780px,calc(100% - 45px));background:#fff;border:1px solid var(--line);border-radius:4px 15px 15px 15px;padding:12px 15px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 3px 12px rgba(29,48,84,.025);color:#273249}
+.message.user .bubble{background:#edf3ff;border-color:#dce7ff;border-radius:15px 4px 15px 15px}
+.message.error .bubble{background:#fff8f4;border-color:#f3dfd2;color:#9a4e28}
+.composer-wrap{flex:0 0 auto;padding:13px clamp(16px,4vw,56px) max(16px,env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(245,247,251,0),#f5f7fb 18%)}
+.composer{width:min(920px,100%);margin:auto;background:#fff;border:1px solid #dfe5ef;border-radius:17px;padding:8px;display:flex;align-items:flex-end;gap:9px;box-shadow:0 7px 24px rgba(30,51,90,.06)}
+.composer:focus-within{border-color:#9bb9f6;box-shadow:0 0 0 3px #356fe51a,0 7px 24px rgba(30,51,90,.06)}
+.composer textarea{flex:1;min-width:0;min-height:42px;max-height:150px;resize:none;border:0;outline:0;padding:10px 11px;background:transparent;color:var(--text);font:inherit;line-height:1.5}
+.composer textarea::placeholder{color:#a0a9b9}
+.send{height:42px;width:44px;flex:0 0 44px;border:0;border-radius:12px;background:var(--blue);color:#fff;font-size:20px;font-weight:700}
+.send:hover{background:var(--blue-dark)}.send:disabled{opacity:.45;cursor:wait}
+.composer-meta{width:min(920px,100%);margin:7px auto 0;display:flex;justify-content:space-between;gap:10px;color:#9aa3b5;font-size:10px;padding:0 4px}
+.content-view{flex-direction:column;min-height:0}
+.page-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:clamp(20px,4vw,44px)}
+.page-inner{width:min(100%,980px);margin:0 auto}
+.page-heading{margin-bottom:25px}
+.page-heading h1{font-size:26px;letter-spacing:-.04em;margin:0 0 5px}
+.page-heading p{margin:0;color:var(--muted);font-size:13px}
+.lookup-card,.data-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.lookup-form{display:flex;gap:9px}
+.lookup-form input{height:46px;min-width:0;flex:1;border:1px solid #dfe5ef;border-radius:11px;padding:0 13px;outline:0;color:var(--text)}
+.lookup-form input:focus{border-color:#9bb9f6;box-shadow:0 0 0 3px #356fe51a}
+.primary-btn{height:46px;border:0;border-radius:11px;background:var(--blue);color:#fff;padding:0 18px;font-weight:700}
+.primary-btn:hover{background:var(--blue-dark)}
+.lookup-result{margin-top:17px;padding:16px;border-radius:12px;background:#f8faff;border:1px solid #e7edf8;display:none}
+.lookup-result.show{display:block}
+.result-word{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.result-pos{font-size:11px;color:#7c879b;text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+.result-definition{margin-top:9px;color:#344057;line-height:1.7}
+.result-synonyms{font-size:12px;color:#78849a;margin-top:10px}
+.grid-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-top:18px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:17px}
+.stat-label{font-size:11px;color:var(--muted);font-weight:650}
+.stat-value{font-size:25px;font-weight:800;letter-spacing:-.04em;margin-top:6px}
+.stat-note{font-size:11px;color:#9aa3b5;margin-top:3px}
+.info-block{background:#fff;border:1px solid var(--line);border-radius:15px;padding:19px;margin-top:17px}
+.info-block h2{font-size:14px;margin:0 0 9px}
+.info-block p{font-size:12px;color:var(--muted);margin:0;line-height:1.7}
+.info-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:13px}
+.info-links a{color:var(--blue-dark);font-size:12px;font-weight:700;text-decoration:none;border:1px solid #dce7ff;background:#f4f7ff;padding:8px 11px;border-radius:9px}
+.info-links a:hover{background:#eaf1ff}
+.notice{padding:12px 14px;border-radius:11px;background:#fff8e9;border:1px solid #f3e6c8;color:#80612b;font-size:12px;line-height:1.6;margin-top:16px}
+@media(max-width:760px){
+ .app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) 66px}
+ .sidebar{grid-row:2;grid-column:1;padding:5px 10px calc(5px + env(safe-area-inset-bottom));border-right:0;border-top:1px solid var(--line);display:flex;flex-direction:row;align-items:center;justify-content:center;gap:0;z-index:3}
+ .brand,.new-chat,.nav-label,.engine-card,.side-foot,.sidebar-spacer{display:none}
+ .nav{display:flex;width:100%;justify-content:space-around;gap:5px}
+ .nav-btn{width:auto;min-width:76px;height:51px;padding:4px 9px;flex-direction:column;justify-content:center;gap:1px;font-size:10px}
+ .nav-icon{font-size:17px}
+ .workspace{grid-row:1;grid-column:1}
+ .topbar{height:62px;flex-basis:62px;padding:0 15px}
+ .top-title{font-size:14px}.top-subtitle{font-size:10px}
+ .messages{padding:18px 13px 15px;gap:14px}
+ .welcome{padding:10px 5px 25px}.welcome-orb{width:58px;height:58px;border-radius:19px}
+ .welcome h1{font-size:29px}.welcome p{font-size:13px}
+ .composer-wrap{padding:9px 10px max(10px,env(safe-area-inset-bottom))}
+ .composer-meta{font-size:9px}.composer-meta span:last-child{display:none}
+ .grid-stats{grid-template-columns:1fr}
+ .page-scroll{padding:18px 13px}
+ .lookup-form{flex-direction:column}.primary-btn{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+ <aside class="sidebar">
+  <div class="brand"><div class="brand-mark">E</div><div><div class="brand-name">Expert 802 AI</div><div class="brand-sub">Language intelligence</div></div></div>
+  <button class="new-chat" id="newChat"><span>＋</span> New conversation</button>
+  <div><div class="nav-label">Workspace</div><nav class="nav" aria-label="Main navigation">
+   <button class="nav-btn active" data-view="chat"><span class="nav-icon">◉</span><span>Chat</span></button>
+   <button class="nav-btn" data-view="dictionary"><span class="nav-icon">▤</span><span>Dictionary</span></button>
+   <button class="nav-btn" data-view="training"><span class="nav-icon">⌁</span><span>Training</span></button>
+  </nav></div>
+  <div class="sidebar-spacer"></div>
+  <div class="engine-card"><div class="engine-line"><span class="status-dot" id="statusDot"></span><span id="statusLabel">Checking engine…</span></div><div class="engine-caption" id="statusCaption">Reading live backend status.</div></div>
+  <div class="side-foot">EXPERIMENTAL · ENGLISH LANGUAGE SYSTEM</div>
+ </aside>
+ <main class="workspace">
+  <header class="topbar"><div><div class="top-title" id="pageTitle">Conversation</div><div class="top-subtitle" id="pageSubtitle">Talk naturally. Expert 802 AI will interpret your message.</div></div><div class="top-right"><span class="pill" id="modelPill">Checking model</span></div></header>
+  <section class="view chat-view active" id="chatView">
+   <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask a question, explore a word, explain an idea or continue a conversation. This workspace keeps the conversation in its own scrollable area.</p><div class="welcome-note">Your messages are sent to the Expert 802 AI language engine.</div></div></div>
+   <div class="composer-wrap"><div class="composer"><textarea id="messageInput" rows="1" aria-label="Message Expert 802 AI" placeholder="Message Expert 802 AI…"></textarea><button class="send" id="sendButton" aria-label="Send message">↑</button></div><div class="composer-meta"><span>Enter to send · Shift + Enter for a new line</span><span>Only the conversation panel scrolls</span></div></div>
+  </section>
+  <section class="view content-view" id="dictionaryView"><div class="page-scroll"><div class="page-inner">
+   <div class="page-heading"><h1>English dictionary</h1><p>Search the actual local dictionary and WordNet knowledge imported into this project.</p></div>
+   <div class="lookup-card"><form class="lookup-form" id="lookupForm"><input id="lookupInput" autocomplete="off" placeholder="Enter a word, for example: curious"><button class="primary-btn" type="submit">Look up word</button></form><div class="lookup-result" id="lookupResult"><div class="result-word" id="resultWord"></div><div class="result-pos" id="resultPos"></div><div class="result-definition" id="resultDefinition"></div><div class="result-synonyms" id="resultSynonyms"></div></div></div>
+   <div class="info-block"><h2>How knowledge is used</h2><p>Dictionary entries are retrieved as evidence for answers. They are not a collection of scripted question-and-answer pairs. When a pretrained model is connected, relevant entries are supplied to it so it can interpret context and form its own response.</p></div>
+  </div></div></section>
+  <section class="view content-view" id="trainingView"><div class="page-scroll"><div class="page-inner">
+   <div class="page-heading"><h1>Training and model status</h1><p>Live information reported by the backend, not demonstration metrics.</p></div>
+   <div class="grid-stats">
+    <div class="stat"><div class="stat-label">Dictionary entries</div><div class="stat-value" id="dictionaryCount">—</div><div class="stat-note">Project vocabulary file</div></div>
+    <div class="stat"><div class="stat-label">WordNet entries</div><div class="stat-value" id="wordnetCount">—</div><div class="stat-note">Imported word senses</div></div>
+    <div class="stat"><div class="stat-label">Training vocabulary</div><div class="stat-value" id="trainingVocab">—</div><div class="stat-note">Current trained artifact</div></div>
+   </div>
+   <div class="info-block"><h2>Pretrained conversational model</h2><p id="modelStatusText">Checking whether a self-hosted model is connected…</p><div class="info-links"><a href="https://github.com/QwenLM/Qwen3" target="_blank" rel="noopener">Qwen3 source repository ↗</a><a href="https://huggingface.co/Qwen/Qwen3-1.7B" target="_blank" rel="noopener">Qwen3-1.7B model ↗</a><a href="https://github.com/unslothai/unsloth" target="_blank" rel="noopener">Fine-tuning tools ↗</a></div></div>
+   <div class="info-block"><h2>Current local training artifact</h2><p id="artifactStatus">Checking the saved model artifact…</p><div class="info-links"><a href="https://github.com/expertsteam802/expert_802_AI/actions/workflows/train-english.yml" target="_blank" rel="noopener">Open training workflow ↗</a><a href="https://github.com/expertsteam802/expert_802_AI/tree/main/learning" target="_blank" rel="noopener">View training code ↗</a></div></div>
+   <div class="notice">A word-bigram model is a statistical next-word baseline, not a pretrained neural conversational model. The neural model status will only show connected when the self-hosted inference endpoint is configured.</div>
+  </div></div></section>
+ </main>
+</div>
 <script>
 (() => {
-  "use strict";
-  const byId = (id) => document.getElementById(id);
-  const chat = byId("chat");
-  const input = byId("input");
-  const send = byId("send");
-  const newChat = byId("newChat");
-  if (!chat || !input || !send) {
-    console.error("Expert 802 AI: chat elements are missing.");
-    return;
+ "use strict";
+ const $ = id => document.getElementById(id);
+ const messages = $("messages"), input = $("messageInput"), send = $("sendButton");
+ const history = [];
+ let statusData = null;
+ const viewInfo = {
+  chat:["Conversation","Talk naturally. Expert 802 AI will interpret your message."],
+  dictionary:["Dictionary","Look up words from the project's local knowledge base."],
+  training:["Training","Inspect real dictionary, training and model status."]
+ };
+ function switchView(name){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.querySelectorAll(".nav-btn").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
+  $(name+"View").classList.add("active");
+  $("pageTitle").textContent=viewInfo[name][0];
+  $("pageSubtitle").textContent=viewInfo[name][1];
+ }
+ document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
+ function appendMessage(role,text,isError=false){
+  const row=document.createElement("div"); row.className="message "+role+(isError?" error":"");
+  const avatar=document.createElement("div"); avatar.className="avatar"; avatar.textContent=role==="user"?"YOU":"E";
+  const bubble=document.createElement("div"); bubble.className="bubble"; bubble.textContent=text;
+  row.append(avatar,bubble); messages.appendChild(row); messages.scrollTop=messages.scrollHeight; return row;
+ }
+ async function sendMessage(raw){
+  const message=String(raw??input.value).trim();
+  if(!message||send.disabled)return;
+  const welcome=$("welcome"); if(welcome)welcome.remove();
+  appendMessage("user",message); history.push({role:"user",text:message});
+  input.value="";input.style.height="auto";send.disabled=true;send.textContent="…";
+  const pending=appendMessage("assistant","Thinking…");
+  try{
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-12)})});
+   const data=await response.json();
+   if(!response.ok||typeof data.reply!=="string"||!data.reply.trim())throw new Error(data.error||"The language engine returned no answer.");
+   pending.querySelector(".bubble").textContent=data.reply;
+   history.push({role:"assistant",text:data.reply});
+  }catch(error){
+   pending.classList.add("error");
+   pending.querySelector(".bubble").textContent="I couldn't reach the language engine. "+(error.message||"Please try again.");
+  }finally{send.disabled=false;send.textContent="↑";input.focus();messages.scrollTop=messages.scrollHeight;}
+ }
+ send.addEventListener("click",()=>sendMessage());
+ input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
+ input.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,150)+"px";});
+ $("newChat").addEventListener("click",()=>{
+  history.length=0;
+  messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask a question, explore a word, explain an idea or continue a conversation. This workspace keeps the conversation in its own scrollable area.</p><div class="welcome-note">Your messages are sent to the Expert 802 AI language engine.</div></div>';
+  input.value="";input.focus();switchView("chat");
+ });
+ $("lookupForm").addEventListener("submit",async e=>{
+  e.preventDefault();const term=$("lookupInput").value.trim();if(!term)return;
+  const result=$("lookupResult");result.classList.add("show");
+  $("resultWord").textContent=term;$("resultPos").textContent="Searching local dictionary…";
+  $("resultDefinition").textContent="";$("resultSynonyms").textContent="";
+  try{
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"lookup",term})});
+   const data=await response.json();if(!response.ok)throw new Error(data.error||"Lookup failed");
+   $("resultWord").textContent=data.term;$("resultPos").textContent=data.found?(data.part_of_speech||"word"):"Not found in local dictionary";
+   $("resultDefinition").textContent=data.definition;
+   $("resultSynonyms").textContent=data.synonyms?.length?"Related words: "+data.synonyms.join(", "):"";
+  }catch(err){$("resultPos").textContent="Lookup unavailable";$("resultDefinition").textContent=err.message;}
+ });
+ function number(value){return Number(value||0).toLocaleString();}
+ async function loadStatus(){
+  try{
+   const response=await fetch("/api/chat",{cache:"no-store"});if(!response.ok)throw new Error("Status endpoint unavailable");
+   statusData=await response.json();
+   $("dictionaryCount").textContent=number(statusData.dictionary_entries);
+   $("wordnetCount").textContent=number(statusData.wordnet_entries);
+   $("trainingVocab").textContent=number(statusData.training_vocabulary);
+   $("statusDot").classList.toggle("ready",true);
+   $("statusLabel").textContent="Engine online";
+   $("statusCaption").textContent=number(statusData.dictionary_entries)+" dictionary entries available.";
+   $("modelPill").textContent=statusData.model_configured?"Pretrained model connected":"Dictionary engine";
+   $("modelPill").classList.toggle("live",!!statusData.model_configured);
+   $("modelStatusText").textContent=statusData.model_configured
+    ?"Connected to "+statusData.model_name+" through the configured self-hosted inference server. Chat requests use this model with retrieved local dictionary context."
+    :"No pretrained neural model is connected yet. The selected integration target is Qwen3-1.7B, served on a separate self-hosted inference machine. Vercel continues to host the website and lightweight API only.";
+   $("artifactStatus").textContent=statusData.trained_artifact
+    ? "Saved artifact: "+statusData.trained_artifact+". It contains "+number(statusData.training_sentences)+" training sentences and "+number(statusData.training_vocabulary)+" vocabulary items. This is a word-bigram statistical model, not a neural chatbot."
+    :"No trained word-pattern artifact is currently available.";
+  }catch(error){
+   $("statusDot").classList.remove("ready");$("statusLabel").textContent="Backend offline";
+   $("statusCaption").textContent="The live status endpoint could not be reached.";
+   $("modelPill").textContent="Model status unavailable";
+   $("modelStatusText").textContent="Could not retrieve the model connection status from the backend.";
+   $("artifactStatus").textContent="Could not retrieve training artifact information.";
   }
-
-  const history = [];
-  const dictionary = {
-    curious:"eager to know or learn something",
-    grammar:"the system and rules governing how words combine in a language",
-    language:"a system of communication used by a community",
-    learn:"to gain knowledge or skill through study, experience, or teaching",
-    sentence:"a set of words that expresses a complete thought",
-    understand:"to know the meaning of something; to comprehend",
-    affect:"to influence or make a difference to something",
-    effect:"a result or consequence of an action or event",
-    noun:"a word that names a person, place, thing, or idea",
-    verb:"a word that expresses an action, event, or state"
-  };
-
-  function addMessage(role, text) {
-    const row = document.createElement("div");
-    row.className = "msg " + role;
-    const avatar = document.createElement("div");
-    avatar.className = "avatar";
-    avatar.textContent = role === "user" ? "YOU" : "E";
-    const bubble = document.createElement("div");
-    bubble.className = "bubble";
-    bubble.textContent = text;
-    row.append(avatar, bubble);
-    chat.appendChild(row);
-    chat.scrollTop = chat.scrollHeight;
-    return row;
-  }
-
-  function fallbackReply(message) {
-    const s = message.trim();
-    const lower = s.toLowerCase();
-    if (/^(hi|hello|hey|good morning|good afternoon|good evening)[!. ]*$/.test(lower))
-      return "Hello! I'm Expert 802 AI. What would you like to talk about?";
-    if (/who are you|what are you|your name/.test(lower))
-      return "I'm Expert 802 AI, an early English language program. I use vocabulary and grammar rules. I am not yet a trained neural conversational model.";
-    if (/what does|meaning of|define/.test(lower)) {
-      const match = lower.match(/(?:what does|meaning of|define)\s+['"]?([a-z'-]+)/);
-      const word = match && match[1];
-      return word && dictionary[word] ? "“" + word + "” means " + dictionary[word] + "." :
-        "I don't have that word in my small starter dictionary yet. My vocabulary is still being expanded.";
-    }
-    if (/difference between.*affect.*effect|affect and effect/.test(lower))
-      return "“Affect” is usually a verb meaning to influence. “Effect” is usually a noun meaning a result. Example: “Rain can affect traffic”; “The effect was a delay.”";
-    if (/what is.*noun|explain.*noun/.test(lower))
-      return "A noun names a person, place, thing, or idea. Examples include teacher, Kigali, book, and freedom.";
-    if (/what is.*verb|explain.*verb/.test(lower))
-      return "A verb expresses an action, event, or state. Examples include run, think, become, and is.";
-    let corrected = s;
-    const notes = [];
-    const rules = [
-      [/\bI is\b/g, "I am", "Use “am” with “I”."],
-      [/\b(he|she|it) are\b/gi, "$1 is", "Use “is” with he, she, or it."],
-      [/\b(you|we|they) is\b/gi, "$1 are", "Use “are” with you, we, or they."],
-      [/\b(he|she|it) don't\b/gi, "$1 doesn't", "Use “doesn't” with he, she, or it."]
-    ];
-    for (const [pattern, replacement, note] of rules) {
-      if (pattern.test(corrected)) {
-        pattern.lastIndex = 0;
-        corrected = corrected.replace(pattern, replacement);
-        notes.push(note);
-      }
-    }
-    if (/\b(check|correct|grammar)\b/i.test(s))
-      return notes.length ? "A possible correction is:\n“" + corrected + "”\n\n" + notes.join(" ") :
-        "I didn't detect an error covered by my current grammar rules. That doesn't guarantee the sentence is fully correct.";
-    if (history.length > 1 && /\b(what did i say|earlier|before)\b/i.test(s))
-      return "Earlier in this conversation, you said: “" + history[history.length - 2].text + "”.";
-    return "I received your message: “" + s + "”. I can recognise some English words and grammar patterns, but I don't yet understand every sentence reliably. Could you give me more context or ask a specific English-language question?";
-  }
-
-  async function submit(raw) {
-    const message = String(raw ?? input.value ?? "").trim();
-    if (!message || send.disabled) return;
-    const welcome = byId("welcome");
-    if (welcome) welcome.remove();
-    addMessage("user", message);
-    history.push({ role: "user", text: message });
-    input.value = "";
-    input.style.height = "auto";
-    send.disabled = true;
-    send.textContent = "…";
-    const typing = addMessage("assistant", "Thinking…");
-    let reply = "";
-    let source = "python";
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-    try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, history: history.slice(-12) }),
-        signal: controller.signal
-      });
-      if (!response.ok) throw new Error("Chat endpoint returned HTTP " + response.status);
-      const data = await response.json();
-      if (!data || typeof data.reply !== "string" || !data.reply.trim())
-        throw new Error("Chat endpoint returned an empty reply");
-      reply = data.reply;
-    } catch (error) {
-      source = "browser fallback";
-      console.warn("Expert 802 AI backend unavailable; using fallback:", error);
-      reply = fallbackReply(message) + "\n\n(Note: the Python backend did not respond, so this answer came from the basic browser fallback.)";
-    } finally {
-      clearTimeout(timeout);
-      typing.querySelector(".bubble").textContent = reply || "I couldn't produce a reply. Please try again.";
-      history.push({ role: "assistant", text: reply });
-      send.disabled = false;
-      send.textContent = "↑";
-      input.focus();
-      chat.scrollTop = chat.scrollHeight;
-    }
-  }
-
-  send.type = "button";
-  send.addEventListener("click", (event) => {
-    event.preventDefault();
-    submit();
-  });
-  input.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      submit();
-    }
-  });
-  input.addEventListener("input", () => {
-    input.style.height = "auto";
-    input.style.height = Math.min(input.scrollHeight, 150) + "px";
-  });
-  document.addEventListener("click", (event) => {
-    const prompt = event.target.closest("[data-prompt]");
-    if (prompt) submit(prompt.dataset.prompt);
-  });
-  if (newChat) newChat.addEventListener("click", () => {
-    history.length = 0;
-    chat.innerHTML = '<div class="welcome" id="welcome"><div class="orb">✳</div><h2>Let\'s understand language.</h2><p>Talk to Expert 802 AI in your own words. Try different grammar, ask about English, or see how it interprets a sentence.</p><div class="suggestions"><button data-prompt="Why do we say she is instead of she are?">Explain an English grammar rule</button><button data-prompt="What does the word curious mean?">Ask for a word meaning</button><button data-prompt="I went to school yesterday. Is this sentence correct?">Check a sentence</button><button data-prompt="Can you explain the difference between affect and effect?">Compare two words</button></div></div>';
-    input.focus();
-  });
-  console.info("Expert 802 AI chat controls initialized.");
+ }
+ loadStatus();
 })();
-</script></body></html>
+</script>
+</body>
+</html>
