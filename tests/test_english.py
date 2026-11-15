@@ -9,6 +9,7 @@ from backend.cognition.intent import normalize, parse_intent
 from backend.cognition.reasoning import calculate
 from backend.cognition.code_intelligence import inspect_project, InspectionError
 from backend.cognition.programming import build_work_plan, is_programming_request
+from backend.cognition.agent import AgentPlanner
 from sandbox.runner import validate_files, execute
 from backend.language import correct_common_grammar, dictionary_lookup
 from api.chat import handler as ChatHandler
@@ -16,6 +17,13 @@ from api.chat import handler as ChatHandler
 class CognitiveArchitectureTests(unittest.TestCase):
     def setUp(self):
         self.engine = ExpertLanguageEngine()
+
+    def test_agent_plan_exposes_registered_tools_and_safety_policy(self):
+        plan = AgentPlanner().plan("Review this Python project")
+        names = {tool["name"] for tool in plan["available_tools"]}
+        self.assertIn("inspect_project", names)
+        self.assertIn("run_python_tests", names)
+        self.assertFalse(plan["code_execution_enabled"])
 
     def test_sandbox_rejects_unregistered_commands(self):
         with self.assertRaises(ValueError):
