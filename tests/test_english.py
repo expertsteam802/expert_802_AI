@@ -93,6 +93,23 @@ class EnglishFoundationTests(unittest.TestCase):
         self.assertIn("which device are you using", answer)
         self.assertIn("windows pc", answer)
 
+
+    def test_multiple_pasted_utterances_are_processed_in_order(self):
+        message = (
+            "What is FBI in full words?    "
+            "What is kill in full words?    "
+            "Artificial intelligence    "
+            "I need my game right now    "
+            "yes    "
+            "open a game"
+        )
+        answer = self.engine.reply(message)["reply"].lower()
+        self.assertIn("federal bureau of investigation", answer)
+        self.assertIn("cause the death", answer)
+        self.assertIn("field of creating computer systems", answer)
+        self.assertIn("which do you mean", answer)
+        self.assertIn("which device are you using", answer)
+
     def test_chat_http_endpoint_returns_json_reply(self):
         server = HTTPServer(("127.0.0.1", 0), ChatHandler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
