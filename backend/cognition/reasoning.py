@@ -37,6 +37,7 @@ def calculate(expression):
     ]
     for pattern, replacement in replacements:
         value = re.sub(pattern, replacement, value)
+    value = value.replace("^", "**")
     value = value.strip().rstrip("?.! ")
     if not re.fullmatch(r"[0-9+\-*/()%.*\s]+", value):
         raise ValueError("The expression contains unsupported content.")
