@@ -4,6 +4,7 @@ from .intent import parse_intent, normalize
 from .memory import build_state, resolve_reference
 from .retrieval import LocalRetriever
 from .reasoning import calculate, derive_simple_facts
+from backend.language import tokens
 
 class CognitiveEngine:
     def __init__(self):
@@ -92,6 +93,10 @@ class CognitiveEngine:
             return {**base, "reply": "I can analyze the question, but my current local knowledge does not contain enough evidence for a dependable explanation. Give me the specific term, system, or example you want examined.", "confidence": 0.25}
 
         if frame.kind == "question":
+            remembered = self._match_fact(frame.normalized, state.facts)
+            if remembered:
+                return {**base, "reply": "From your earlier message: " + remembered["text"],
+                        "evidence": [remembered], "confidence": 0.99, "memory_used": True}
             topic = resolve_reference(frame.normalized, state)
             query = frame.normalized
             if topic and re.search(r"\b(it|that|this|they|them)\b", frame.normalized.lower()):
@@ -105,6 +110,17 @@ class CognitiveEngine:
 
         # Statements are retained as context for later turns; do not mislabel them as questions.
         return {**base, "reply": self._interpret_statement(frame.normalized), "confidence": frame.confidence}
+
+    @staticmethod
+    def _match_fact(query, facts):
+        query_terms = set(tokens(query))
+        for fact in reversed(facts or []):
+            subject_terms = set(tokens(fact.get("subject", "")))
+            if subject_terms and subject_terms.intersection(query_terms):
+                return fact
+            if fact.get("kind") == "preference" and set(tokens(fact.get("value", ""))).intersection(query_terms):
+                return fact
+        return None
 
     @staticmethod
     def _respond_to_request(target):
