@@ -85,6 +85,16 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertEqual(result["reasoning"]["method"], "explicit_fact_graph")
         self.assertIn("Paris -> France -> Europe", result["reply"])
 
+    def test_knowledge_graph_surfaces_conflicting_facts(self):
+        history = [
+            {"role": "user", "text": "Paris is in France."},
+            {"role": "user", "text": "Paris is in Texas."},
+        ]
+        result = self.engine.reply("Where is Paris?", history)
+        self.assertIn("conflicting locations", result["reply"].lower())
+        self.assertIn("france", result["reply"].lower())
+        self.assertIn("texas", result["reply"].lower())
+
     def test_proper_names_are_not_autocorrected(self):
         self.assertIn("Paris", normalize("Where is Paris?"))
 
