@@ -73,6 +73,18 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertEqual(result["resolved_topic"], "minecraft")
         self.assertIn("minecraft", result["reply"].lower())
 
+    def test_knowledge_graph_performs_transitive_location_reasoning(self):
+        history = [
+            {"role": "user", "text": "Paris is in France."},
+            {"role": "assistant", "text": "Noted."},
+            {"role": "user", "text": "France is in Europe."},
+            {"role": "assistant", "text": "Noted."},
+        ]
+        result = self.engine.reply("Is Paris in Europe?", history)
+        self.assertTrue(result.get("memory_used"))
+        self.assertEqual(result["reasoning"]["method"], "explicit_fact_graph")
+        self.assertIn("Paris -> France -> Europe", result["reply"])
+
     def test_proper_names_are_not_autocorrected(self):
         self.assertIn("Paris", normalize("Where is Paris?"))
 
