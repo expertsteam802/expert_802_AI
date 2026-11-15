@@ -13,6 +13,8 @@ CURATED_DEFINITIONS = {
     "car": ("noun", "A car is a road vehicle, usually with four wheels, powered by an engine or electric motor and used to carry people."),
     "artificial intelligence": ("noun phrase", "Artificial intelligence (AI) is the field of creating computer systems that can perform tasks associated with human intelligence."),
     "gta": ("abbreviation / title", "GTA commonly refers to Grand Theft Auto, a video-game series. The exact game can be identified by its subtitle or number."),
+    "fbi": ("abbreviation", "FBI stands for Federal Bureau of Investigation, the United States federal law-enforcement and domestic intelligence agency."),
+    "kill": ("verb", "To kill means to cause the death of a living thing. The word can also have figurative meanings, such as stopping or defeating something."),
 }
 
 class ExpertLanguageEngine:
@@ -66,9 +68,25 @@ class ExpertLanguageEngine:
         previous_user = history_text[-1].strip().lower() if history_text else ""
         game_context = self._in_game_context(history)
 
-        # Short confirmations must be interpreted against the previous request.
+        # Interpret replies using the assistant's immediately preceding question.
+        last_assistant = next(
+            (str(item.get("text", "")).strip().lower()
+             for item in reversed(history or [])
+             if isinstance(item, dict) and item.get("role") == "assistant"),
+            ""
+        )
+        game_choice_context = game_context and any(
+            phrase in last_assistant
+            for phrase in ("open a game you already have", "download a game", "find a game to play")
+        )
         if lower in {"yes", "yeah", "yep", "sure", "ok", "okay"} and game_context:
             answer = "Sure. Which do you mean: open a game you already have, download a game, or find a game to play?"
+        elif game_choice_context and re.search(r"\\b(open|launch|start)\\b.*\\b(game|gta)\\b", lower):
+            answer = "Got it—you want to open a game you already have. I cannot launch an app on your device from this chat, but I can guide you. Which device are you using: Windows PC, Android phone, PlayStation, or Xbox?"
+        elif game_choice_context and re.search(r"\\b(download|install|get)\\b.*\\b(game|gta)\\b", lower):
+            answer = "Got it—you want to download or install a game. Which device are you using: Windows PC, Android phone, PlayStation, or Xbox?"
+        elif game_choice_context and re.search(r"\\b(find|recommend|choose)\\b.*\\bgame\\b", lower):
+            answer = "I can help you find a game. What kind of games do you enjoy—action, racing, sports, adventure, or something else?"
         elif lower in {"gta", "grand theft auto"} and game_context:
             answer = "GTA usually means Grand Theft Auto. Which one do you mean—GTA V, GTA Online, or another GTA game?"
         elif re.search(r"\bwhat word comes next|predict the next word|next word after\b", lower):
