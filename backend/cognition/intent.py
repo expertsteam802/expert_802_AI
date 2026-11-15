@@ -62,6 +62,10 @@ def parse_intent(message):
     if re.search(r"\b(who are you|what are you|your name)\b", low):
         return IntentFrame("identity", text, confidence=0.99, slots={})
 
+    math = re.search(r"\b(?:what is|calculate|compute|solve)\s+([0-9().+\-*/%^ x]+(?:plus|minus|times|divided by)[0-9().+\-*/%^ x]*)\s*[?!.]*$", low)
+    if math:
+        return IntentFrame("calculation", text, target=math.group(1).strip(), confidence=0.95, slots={})
+
     patterns = [
         r"^(?:what is|what's|define|meaning of|definition of)\s+(.+?)(?:\s+in full(?: words)?)?$",
         r"^what does\s+(.+?)\s+mean$",
@@ -71,10 +75,6 @@ def parse_intent(message):
         match = re.match(pattern, low)
         if match:
             return IntentFrame("definition", text, target=_clean_target(match.group(1)), confidence=0.97, slots={})
-
-    math = re.search(r"\b(?:what is|calculate|compute|solve)\s+([0-9().+\-*/%^ x]+(?:plus|minus|times|divided by)[0-9().+\-*/%^ x]*)\s*[?!.]*$", low)
-    if math:
-        return IntentFrame("calculation", text, target=math.group(1).strip(), confidence=0.95, slots={})
 
     if re.search(r"\b(what about it|what about that|and it|why is that|how about it|tell me more)\b", low):
         return IntentFrame("followup", text, confidence=0.82, slots={})
