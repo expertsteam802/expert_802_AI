@@ -2,6 +2,7 @@
 import argparse
 import json
 import random
+import shutil
 from pathlib import Path
 import numpy as np
 from tokenizer import load_tokenizer
@@ -13,16 +14,20 @@ def prepare(input_path,output_dir,tokenizer_path,validation_fraction=0.05,seed=8
     separator=tokenizer.token_to_id("<|endoftext|>")
     source=Path(input_path)
     for line in source.read_text(encoding="utf-8",errors="ignore").splitlines():
-        try: record=json.loads(line)
-        except json.JSONDecodeError: continue
+        try:
+            record=json.loads(line)
+        except json.JSONDecodeError:
+            continue
         messages=record.get("messages",[]) if isinstance(record,dict) else []
         turns=[]
         for message in messages if isinstance(messages,list) else []:
-            if not isinstance(message,dict) or message.get("role") not in {"system","user","assistant"}: continue
+            if not isinstance(message,dict) or message.get("role") not in {"system","user","assistant"}:
+                continue
             body=message.get("content","")
             if isinstance(body,str) and body.strip():
                 turns.append("<|"+message["role"]+"|> "+body.strip())
-        if not turns: continue
+        if not turns:
+            continue
         ids=tokenizer.encode("\n".join(turns)).ids+[separator]
         split=record.get("split") if isinstance(record,dict) else None
         if split=="validation" or (split not in {"train","validation"} and randomizer.random()<validation_fraction):
@@ -30,9 +35,10 @@ def prepare(input_path,output_dir,tokenizer_path,validation_fraction=0.05,seed=8
         else:
             training.extend(ids)
     if len(training)<=513 or len(validation)<=513:
-        raise ValueError("Supply enough complete conversations for both train and validation splits (more than 513 tokens each).")
+        raise ValueError("Supply enough complete conversations for both splits (more than 513 tokens each).")
     output=Path(output_dir)
-    output.mkdir(parents=True,exist_ok=True)\n    shutil.copy2(tokenizer_path,output/"tokenizer.json")
+    output.mkdir(parents=True,exist_ok=True)
+    shutil.copy2(tokenizer_path,output/"tokenizer.json")
     dtype=np.uint16 if tokenizer.get_vocab_size()<=65535 else np.uint32
     np.asarray(training,dtype=dtype).tofile(output/"train.bin")
     np.asarray(validation,dtype=dtype).tofile(output/"val.bin")
