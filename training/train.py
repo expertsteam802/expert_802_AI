@@ -69,7 +69,7 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     print(json.dumps({"device":device,"parameters":model.parameter_count(),"config":model.config_dict(),"train_bytes":len(train_data),"validation_bytes":len(val_data)}))
 
-    for step in range(start_step, args.steps):
+    best_validation = float("inf")\n    for step in range(start_step, args.steps):
         progress = step / max(1, args.steps)
         learning_rate = args.learning_rate * 0.1 + 0.9 * args.learning_rate * 0.5 * (1 + math.cos(math.pi * progress))
         for group in optimizer.param_groups:
