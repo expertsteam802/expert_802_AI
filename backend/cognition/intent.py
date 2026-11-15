@@ -46,7 +46,7 @@ def normalize(text):
 def _clean_target(value):
     value = re.sub(r"[?!.]+$", "", value.strip())
     value = re.sub(r"\s+", " ", value)
-    value = re.sub(r"^(?:a|an|the)\\s+", "", value, flags=re.I)
+    value = re.sub(r"^(?:a|an|the)\s+", "", value, flags=re.I)
     return value.strip(" '""“”")
 
 def parse_intent(message):
