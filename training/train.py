@@ -69,7 +69,10 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     print(json.dumps({"device":device,"parameters":model.parameter_count(),"config":model.config_dict(),"train_bytes":len(train_data),"validation_bytes":len(val_data)}))
 
-    best_validation = float("inf")\n    for step in range(start_step, args.steps):
+    best_validation = float("inf")
+    if len(train_data) <= args.block_size + 1 or len(val_data) <= args.block_size + 1:
+        raise ValueError("Both train and validation splits must exceed block_size + 1 bytes.")
+    for step in range(start_step, args.steps):
         progress = step / max(1, args.steps)
         learning_rate = args.learning_rate * 0.1 + 0.9 * args.learning_rate * 0.5 * (1 + math.cos(math.pi * progress))
         for group in optimizer.param_groups:
@@ -87,7 +90,8 @@ def main():
             payload = {"model":model.state_dict(),"optimizer":optimizer.state_dict(),"step":step+1,
                        "config":model.config_dict(),"metrics":metrics,"tokenizer":"utf8-byte-v1"}
             torch.save(payload, output / "latest.pt")
-            if metrics["validation"] <= min(metrics.get("best_validation", float("inf")), metrics["validation"]):
+            if metrics["validation"] < best_validation:
+                best_validation = metrics["validation"]
                 torch.save(payload, output / "best.pt")
     print("Training complete. Checkpoints are stored outside the web application.")
 
