@@ -74,8 +74,8 @@ def prepare(sources, output_dir, validation_fraction=0.02, vocab_size=16000, see
     for document in validation_docs:
         validation_ids.extend(encode_text(tokenizer,document))
         validation_ids.append(separator)
-    if len(train_ids) <= 513 or len(validation_ids) <= 513:
-        raise ValueError("Both tokenized splits must exceed 513 tokens for the default context. Supply more documents.")
+    if len(train_ids) <= 1025 or len(validation_ids) <= 1025:
+        raise ValueError("Both tokenized splits must exceed 1025 tokens for the default 1,024-token context. Supply more documents.")
     dtype = np.uint16 if tokenizer.get_vocab_size() <= 65535 else np.uint32
     np.asarray(train_ids,dtype=dtype).tofile(output/"train.bin")
     np.asarray(validation_ids,dtype=dtype).tofile(output/"val.bin")
