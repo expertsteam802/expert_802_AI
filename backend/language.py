@@ -26,7 +26,8 @@ def load_wordnet():
     except (OSError, ValueError):
         return {}
 
-@lru_cache(maxsize=1)\ndef dictionary_words():
+@lru_cache(maxsize=1)
+def dictionary_words():
     words = set(load_dictionary())
     words.update(load_wordnet())
     words.update({"i", "a", "an", "the", "and", "or", "but", "to", "of", "in", "on",
@@ -100,7 +101,10 @@ def correct_spelling(text):
                 replacement = squeezed
             else:
                 max_distance = 1 if len(piece) < 7 else 2
-                index = words_by_length()\n                candidates = []\n                for size in range(max(1, len(piece) - max_distance), len(piece) + max_distance + 1):\n                    candidates.extend(index.get(size, []))
+                index = words_by_length()
+                candidates = []
+                for size in range(max(1, len(piece) - max_distance), len(piece) + max_distance + 1):
+                    candidates.extend(index.get(size, []))
                 ranked = sorted(((_distance(piece, w, max_distance), w) for w in candidates))
                 replacement = ranked[0][1] if ranked and ranked[0][0] <= max_distance else piece
             fixed.append(replacement)
