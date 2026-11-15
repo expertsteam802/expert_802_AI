@@ -54,7 +54,7 @@ class NeuralRuntime:
         prompt += "\n<|system|> " + SYSTEM_INSTRUCTION
         prompt += "\n<|user|> " + (message or "").strip()[:3000]
         prompt += "\n<|assistant|>"
-        body = json.dumps({"prompt": prompt, "max_new_tokens": int(os.environ.get("EXPERT802_MAX_NEW_TOKENS", "1024")), "temperature": 0.7}).encode("utf-8")
+        body = json.dumps({"prompt": prompt, "max_new_tokens": int(os.environ.get("EXPERT802_MAX_NEW_TOKENS", "2048")), "temperature": 0.7}).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
