@@ -164,7 +164,7 @@ button{cursor:pointer}
  const viewInfo = {
   chat:["Conversation","Talk naturally. Expert 802 AI will interpret your message."],
   dictionary:["Dictionary","Look up words from the project's local knowledge base."],
-  training:["Training","Inspect real dictionary, training and model status."]
+  training:["Architecture","Inspect the native cognitive pipeline and local learning data."]
  };
  function switchView(name){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
@@ -241,8 +241,8 @@ button{cursor:pointer}
   }catch(error){
    $("statusDot").classList.remove("ready");$("statusLabel").textContent="Backend offline";
    $("statusCaption").textContent="The live status endpoint could not be reached.";
-   $("modelPill").textContent="Model status unavailable";
-   $("modelStatusText").textContent="Could not retrieve the model connection status from the backend.";
+   $("modelPill").textContent="Core status unavailable";
+   $("modelStatusText").textContent="Could not retrieve the cognitive-core status from the backend.";
    $("artifactStatus").textContent="Could not retrieve training artifact information.";
   }
  }
