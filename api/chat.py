@@ -23,7 +23,7 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self._send(200, {
             "engine": "expert802-cognitive-core",
-            "architecture": ["normalization", "intent_analysis", "dialogue_state",
+            "architecture": ["normalization", "intent_analysis", "dialogue_state", "knowledge_graph",
                              "local_retrieval", "symbolic_reasoning"],
             "external_model_provider": False,
             "model_configured": False,
