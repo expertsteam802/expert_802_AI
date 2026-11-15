@@ -34,9 +34,9 @@ def build_handler(model,tokenizer,device,auth_token):
                 max_tokens=max(1,min(int(payload.get("max_new_tokens",256)),512))
                 temperature=max(0.1,min(float(payload.get("temperature",0.8)),1.5))
                 tokens=torch.tensor([prompt_ids],dtype=torch.long,device=device)
-                generated=model.generate(tokens,max_new_tokens=max_tokens,temperature=temperature)
+                generated=model.generate(tokens,max_new_tokens=max_tokens,temperature=temperature,stop_token_id=tokenizer.token_to_id("<|endoftext|>"))
                 new_ids=generated[0].tolist()[len(prompt_ids):]
-                answer=tokenizer.decode(new_ids,skip_special_tokens=False)
+                answer=tokenizer.decode(new_ids,skip_special_tokens=True)
                 self.send_json(200,{"reply":answer,"engine":"expert802-self-trained-transformer","generated_tokens":len(new_ids)})
             except (ValueError,TypeError,json.JSONDecodeError) as error:
                 self.send_json(400,{"error":str(error)})
