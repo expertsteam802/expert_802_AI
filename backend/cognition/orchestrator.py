@@ -12,13 +12,13 @@ class CognitiveEngine:
     def reply(self, message, history=None):
         original = (message or "").strip()
         parts = [
-            part.strip(" \\t\\r\\n")
+            part.strip(" \t\r\n")
             for part in re.split(
-                r"\\s{2,}|(?<=[?!])\\s+(?=(?:what|who|where|when|why|how)\\b)",
+                r"\s{2,}|(?<=[?!])\s+(?=(?:what|who|where|when|why|how)\\b)",
                 original,
                 flags=re.I,
             )
-            if part.strip(" \\t\\r\\n")
+            if part.strip(" \t\r\n")
         ]
         if len(parts) > 1:
             running = list(history) if isinstance(history, list) else []
@@ -26,9 +26,9 @@ class CognitiveEngine:
             for part in parts:
                 result = self._reply_single(part, running)
                 answer = result.get("reply", "")
-                rendered.append("You: " + part + "\\nExpert 802 AI: " + answer)
+                rendered.append("You: " + part + "\nExpert 802 AI: " + answer)
                 running.extend([{"role": "user", "text": part}, {"role": "assistant", "text": answer}])
-            return {"engine": "expert802-cognitive-core", "reply": "\\n\\n".join(rendered),
+            return {"engine": "expert802-cognitive-core", "reply": "\n\n".join(rendered),
                     "language": "English", "batch_processed": True, "batch_items": len(parts)}
         return self._reply_single(original, history)
 
