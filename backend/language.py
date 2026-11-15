@@ -33,7 +33,11 @@ def dictionary_words():
     words.update({"i", "a", "an", "the", "and", "or", "but", "to", "of", "in", "on",
                   "at", "for", "is", "am", "are", "was", "were", "be", "been", "being",
                   "my", "your", "his", "her", "its", "our", "their", "right", "now",
-                  "need", "want", "game", "please", "what", "where", "when", "why", "how"})
+                  "need", "want", "game", "please", "what", "where", "when", "why", "how",
+                  "does", "did", "mean", "define", "definition", "explain", "help", "looking",
+                  "find", "show", "make", "build", "create", "hello", "thanks", "because",
+                  "with", "about", "that", "it", "they", "them", "not", "yes", "no", "if",
+                  "then", "which", "whose", "who", "could", "would", "should", "can"})
     return words
 
 @lru_cache(maxsize=1)
