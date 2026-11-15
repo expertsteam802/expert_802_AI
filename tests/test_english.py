@@ -70,6 +70,29 @@ class EnglishFoundationTests(unittest.TestCase):
         answer = self.engine.reply("What is the capital of France?")["reply"]
         self.assertIn("should not invent", answer)
 
+
+    def test_fbi_full_form(self):
+        answer = self.engine.reply("what is FBI in full words")["reply"]
+        self.assertIn("Federal Bureau of Investigation", answer)
+
+    def test_non_acronym_in_full_words_is_defined(self):
+        answer = self.engine.reply("what is kill in full words")["reply"].lower()
+        self.assertIn("cause the death", answer)
+        self.assertNotIn("words is a noun", answer)
+
+    def test_standalone_concept_is_explained(self):
+        answer = self.engine.reply("Artificial intelligence")["reply"].lower()
+        self.assertIn("field of creating computer systems", answer)
+
+    def test_open_game_resolves_previous_assistant_question(self):
+        history = [
+            {"role": "user", "text": "I need my game right now"},
+            {"role": "assistant", "text": "Are you trying to open a game you already have, download one, or find a game to play?"},
+        ]
+        answer = self.engine.reply("open a game", history)["reply"].lower()
+        self.assertIn("which device are you using", answer)
+        self.assertIn("windows pc", answer)
+
     def test_chat_http_endpoint_returns_json_reply(self):
         server = HTTPServer(("127.0.0.1", 0), ChatHandler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
