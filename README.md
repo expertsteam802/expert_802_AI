@@ -31,6 +31,7 @@ The word-bigram artifact in `backend/language_model.json` is only a next-word st
 - `backend/language.py` — lexical data loading and spelling/grammar helpers.
 - `knowledge/` — English dictionary, imported WordNet and the small starter corpus.
 - `learning/` — reproducible corpus and WordNet import workflows.
+- `training/README.md` — pinned, from-scratch neural-training path using MIT-licensed source code; not yet run or connected.
 - `tests/` — behavior and HTTP integration tests.
 
 ## Run locally
