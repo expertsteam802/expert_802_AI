@@ -41,7 +41,12 @@ class NeuralRuntime:
         if not self.configured:
             return {"ok": False, "error": "The private Expert 802 neural runtime is not configured."}
         turns = []
-        for item in (history or [])[-8:]:
+        history_items = list(history or [])[-8:]
+        if history_items and isinstance(history_items[-1], dict) and history_items[-1].get("role") == "user":
+            last_text = history_items[-1].get("text", history_items[-1].get("content", ""))
+            if isinstance(last_text, str) and last_text.strip() == (message or "").strip():
+                history_items = history_items[:-1]
+        for item in history_items:
             if isinstance(item, dict) and item.get("role") in {"user", "assistant"}:
                 text = item.get("text", item.get("content", ""))
                 if isinstance(text, str) and text.strip():
