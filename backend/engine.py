@@ -2,7 +2,8 @@
 import re
 import json
 from pathlib import Path
-from .model_client import is_configured, configured_model_name, generate_reply\nfrom .language import (
+from .model_client import is_configured, configured_model_name, generate_reply
+from .language import (
     tokens, load_dictionary, correct_common_grammar, correct_spelling,
     dictionary_lookup,
 )
