@@ -256,7 +256,7 @@ button{cursor:pointer}
   $("runCodeTests").disabled=true;$("codeAnalysisStatus").textContent="Starting the selected isolated check…";
   try{
    const projectFiles=await Promise.all(files.slice(0,40).map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
-   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_run",command:$("codeRunCommand").value,target:$("codeRunTarget").value.trim(),files:projectFiles}),headers:{"Content-Type":"application/json","X-Expert802-CSRF":statusData.csrf_token}});
+   const response=await fetch("/api/chat",{method:"POST",body:JSON.stringify({action:"code_run",command:$("codeRunCommand").value,target:$("codeRunTarget").value.trim(),files:projectFiles}),headers:{"Content-Type":"application/json","X-Expert802-CSRF":statusData.csrf_token}});
    const data=await response.json();if(!response.ok&&data.error)throw new Error(data.error);
    $("codeRunResult").style.display="block";
    $("codeRunSummary").textContent=(data.ok?"PASSED":"FAILED")+" · exit code "+data.exit_code+" · "+data.duration_seconds+" seconds · network disabled · read-only workspace";
