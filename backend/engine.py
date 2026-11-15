@@ -1,8 +1,11 @@
-"""Transparent English conversation engine; deliberately not marketed as human-level AI."""
+"""Transparent English conversation engine with dictionary and spelling recovery."""
 import re
 import json
 from pathlib import Path
-from .language import tokens, load_dictionary, correct_common_grammar, dictionary_lookup
+from .language import (
+    tokens, load_dictionary, correct_common_grammar, correct_spelling,
+    dictionary_lookup,
+)
 
 class ExpertLanguageEngine:
     def __init__(self):
@@ -32,54 +35,80 @@ class ExpertLanguageEngine:
         return f"From my training examples, a likely next word after '{words[-1]}' is '{word}'. This is a statistical guess, not a guarantee of meaning."
 
     def reply(self, message, history=None):
-        text = message.strip()
+        original = (message or "").strip()
+        if not original:
+            return {"reply": "Please type a message so I can try to understand it.", "engine": "python-english-v1"}
+        normalized, spelling_changes = correct_spelling(original)
+        text = normalized
         lower = text.lower()
         words = tokens(text)
-        if not text:
-            return {"reply": "Please type a message so I can try to understand it.", "engine": "python-english-v1"}
+        correction_note = ""
+        if spelling_changes:
+            correction_note = "I think you meant: **" + text + "**\n\n"
+
         if re.search(r"what word comes next|predict the next word|next word after", lower):
             phrase = text.split("after", 1)[-1].strip(" :") if "after" in lower else ""
             answer = self._predict_next_word(phrase)
         elif re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening)[!. ]*", lower):
             answer = "Hello! I'm Expert 802 AI. We can talk in English. What would you like to discuss?"
-        elif re.search(r"\b(who are you|what are you|your name)\b", lower):
-            answer = "I'm Expert 802 AI. I am a project-owned English language program. I process words, grammar patterns, and conversation context using code and data in this repository. I am still an early system, not a human or a large trained language model."
-        elif re.search(r"\b(what does|meaning of|define|definition of)\b", lower):
+        elif re.search(r"\\b(who are you|what are you|your name)\\b", lower):
+            answer = "I'm Expert 802 AI, a project-owned English language program. I use dictionaries, spelling recovery, grammar rules, and language patterns stored in this project. I am still developing and do not have human-level understanding."
+        elif re.search(r"\\b(what does|meaning of|define|definition of)\\b", lower):
             answer = self._define(text, words)
-        elif re.search(r"\b(check|correct|grammar|grammatically|is this sentence)\b", lower):
+        elif re.search(r"\\b(check|correct|grammar|grammatically|is this sentence)\\b", lower):
             corrected, notes = correct_common_grammar(text)
             if notes:
                 answer = "A possible correction is:\n“" + corrected + "”\n\n" + " ".join(notes)
+            elif spelling_changes:
+                answer = "The spelling and word spacing look corrected above. I did not find another error covered by my current grammar rules."
             else:
-                answer = "I did not detect an error covered by my current grammar rules. That does not prove the sentence is fully correct; my grammar coverage is still limited."
-        elif re.search(r"\b(noun|verb|adjective|adverb|pronoun|tense)\b", lower) and re.search(r"\b(what is|explain|define)\b", lower):
+                answer = "I did not detect an error covered by my current grammar rules. That does not prove the sentence is fully correct; my grammar coverage is still growing."
+        elif re.search(r"\\b(noun|verb|adjective|adverb|pronoun|tense|preposition|conjunction|article|clause|phrase|subject|predicate|object)\\b", lower) and re.search(r"\\b(what is|explain|define|meaning)\\b", lower):
             answer = self._explain_grammar(lower)
-        elif re.search(r"\b(affect and effect|difference between affect and effect)\b", lower):
+        elif re.search(r"\\b(i need my game right now|i need a game right now)\\b", lower):
+            answer = "Got it—you need your game right now. Are you trying to open a game you already have, download one, or find a game to play?"
+        elif re.search(r"\\b(affect and effect|difference between affect and effect)\\b", lower):
             answer = "“Affect” is usually a verb meaning to influence: “Rain can affect traffic.” “Effect” is usually a noun meaning a result: “The effect was a delay.”"
-        elif re.search(r"\b(thank you|thanks)\b", lower):
+        elif re.search(r"\\b(thank you|thanks)\\b", lower):
             answer = "You're welcome. What else would you like to talk about?"
-        elif re.search(r"\b(you are wrong|that's wrong|you don't understand|not what i asked)\b", lower):
-            answer = "Thanks for correcting me. I may have interpreted your words incorrectly. Please explain what you intended. This version can use the correction in the current request, but it does not permanently update its trained weights from feedback."
-        elif re.search(r"\b(what is|who is|where is|when did|how many|capital of|president of|latest|today)\b", lower):
-            answer = "I recognise this as a factual question, but my current English training data is small and does not contain a reliable world-knowledge system. I should not guess. You can teach me facts by adding trusted English training text and retraining the language model."
+        elif re.search(r"\\b(you are wrong|that's wrong|you don't understand|not what i asked)\\b", lower):
+            answer = "Thanks for correcting me. I may have interpreted your words incorrectly. Please explain what you intended. I can use that correction in this conversation, but this version does not permanently retrain itself from feedback."
+        elif re.search(r"\\b(what is|who is|where is|when did|how many|capital of|president of|latest|today)\\b", lower):
+            answer = "I recognise this as a factual question, but my current training does not provide a reliable world-knowledge system. I should not guess. I can explain English wording and definitions from my local knowledge."
         elif len(words) <= 2:
             answer = "Could you add a little more detail? A complete sentence or a little context will help me interpret your meaning."
         else:
             corrected, notes = correct_common_grammar(text)
             if notes:
                 answer = "I can identify a possible grammar issue. A suggested version is:\n“" + corrected + "”\n\n" + " ".join(notes) + "\n\nIs that what you meant?"
+            elif spelling_changes:
+                answer = "I recovered the likely spelling and word boundaries, but I am not yet confident about the request. Could you tell me what you want to do?"
             else:
                 answer = "I can process the English words and some sentence patterns in your message, but I cannot confidently infer the full meaning yet. Could you give me more context or ask a specific question? I would rather ask than invent an answer."
-        return {"reply": answer, "engine": "python-english-v1", "language": "English", "trained_model": bool(self.model), "training_vocabulary": self.model.get("vocabulary_size", 0) if self.model else 0}
+        return {
+            "reply": correction_note + answer,
+            "engine": "python-english-v1",
+            "language": "English",
+            "trained_model": bool(self.model),
+            "training_vocabulary": self.model.get("vocabulary_size", 0) if self.model else 0,
+            "spelling_recovered": bool(spelling_changes),
+        }
 
     def _define(self, text, words):
         quoted = re.findall(r"['\"“]([a-zA-Z'-]+)['\"”]", text)
         candidates = quoted + list(reversed(words))
         for word in candidates:
-            definition = self.dictionary.get(word.lower())
+            definition = dictionary_lookup(word.lower())
             if definition:
+                if isinstance(definition, dict):
+                    definitions = definition.get("definitions", [])
+                    pos = definition.get("part_of_speech", "word")
+                    synonyms = definition.get("synonyms", [])[:5]
+                    if definitions:
+                        extra = (" Related words: " + ", ".join(synonyms) + ".") if synonyms else ""
+                        return f"“{word.lower()}” is a {pos}. {definitions[0]}{extra}"
                 return f"“{word.lower()}” means {definition}"
-        return "I could not find that word in my starter English dictionary. Add a dictionary entry or training text containing the word and its meaning. A dictionary is a growing resource, not a complete representation of language understanding."
+        return "I could not find that word in my local dictionary yet. The dictionary is expandable, and I will say when I do not have a reliable definition."
 
     @staticmethod
     def _explain_grammar(text):
@@ -89,9 +118,17 @@ class ExpertLanguageEngine:
             "adjective": "An adjective describes a noun. In “a bright room”, bright describes room.",
             "adverb": "An adverb modifies a verb, adjective, or another adverb. In “She speaks clearly”, clearly tells how she speaks.",
             "pronoun": "A pronoun can stand in for a noun or noun phrase. Examples include I, you, she, it, we, and they.",
-            "tense": "Verb tense helps locate an action or state in time. Examples: I work (present), I worked (past), I will work (future construction).",
+            "tense": "Verb tense helps locate an action or state in time: “I work” (present), “I worked” (past), “I will work” (future construction).",
+            "preposition": "A preposition shows a relationship, often of place, time, or direction. Examples: in, on, under, before, after. “The book is on the table.”",
+            "conjunction": "A conjunction connects words, phrases, or clauses. Examples: and, but, because, although. “I stayed because it rained.”",
+            "article": "The articles are “a”, “an”, and “the”. “A/an” are indefinite; “the” points to something specific.",
+            "clause": "A clause is a group of words containing a subject and a verb. An independent clause can stand as a sentence; a dependent clause cannot.",
+            "phrase": "A phrase is a group of related words that works as a unit but does not contain a complete subject–verb clause.",
+            "subject": "The subject tells who or what the sentence is about. In “The child laughed”, “The child” is the subject.",
+            "predicate": "The predicate says something about the subject and normally contains the verb. In “The child laughed”, “laughed” is the predicate.",
+            "object": "An object receives the action of a verb or completes its meaning. In “She kicked the ball”, “the ball” is the direct object.",
         }
         for key, value in explanations.items():
-            if key in text:
+            if re.search(r"\\b" + key + r"\\b", text):
                 return value
-        return "English grammar describes how words combine into meaningful sentences: word classes, word order, agreement, tense, and punctuation."
+        return "English grammar explains how words form phrases and sentences through word classes, word order, agreement, tense, clauses, and punctuation."
