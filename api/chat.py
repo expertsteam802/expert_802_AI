@@ -6,9 +6,11 @@ from backend.engine import ExpertLanguageEngine
 from backend.language import dictionary_lookup, load_dictionary, load_wordnet
 from backend.cognition.agent import AgentPlanner, InspectionError
 from backend.cognition.programming import build_work_plan
+from backend.cognition.sandbox_runtime import SandboxRuntime
 
 _ENGINE = ExpertLanguageEngine()
 _AGENT = AgentPlanner()
+_SANDBOX = SandboxRuntime()
 _MODEL_PATH = Path(__file__).resolve().parents[1] / "backend" / "language_model.json"
 
 def _training_stats():
@@ -24,7 +26,7 @@ def _training_stats():
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
-        neural_health = _ENGINE.neural.health()
+        neural_health = _ENGINE.neural.health()\n        sandbox_health = _SANDBOX.health()
         self._send(200, {
             "engine": "expert802-cognitive-core",
             "architecture": ["normalization", "intent_analysis", "dialogue_state", "knowledge_graph",
@@ -32,7 +34,7 @@ class handler(BaseHTTPRequestHandler):
             "external_model_provider": False,
             "model_configured": _ENGINE.neural.configured,
             "neural_generator_ready": neural_health["ready"],
-            "neural_runtime": neural_health,
+            "neural_runtime": neural_health,\n            "sandbox_runtime": sandbox_health,
             "coding_agent_ready": True,
             "code_execution_enabled": False,
             "supported_code_inspection": ["Python", "JavaScript", "TypeScript", "HTML", "CSS", "JSON"],
@@ -58,6 +60,13 @@ class handler(BaseHTTPRequestHandler):
             if not isinstance(payload, dict):
                 return self._send(400, {"error": "The request body must be a JSON object."})
             action = payload.get("action", "chat")
+            if action == "code_run":
+                if not _SANDBOX.health()["ready"]:
+                    return self._send(503, {"error": "The private Docker sandbox is not ready. Configure the authenticated sandbox URL and start its runner."})
+                command = payload.get("command", "python_unittest")
+                target = payload.get("target", "")
+                result = _SANDBOX.run(payload.get("files", []), command, target)
+                return self._send(200 if result.get("ok") else 422, {"engine": "expert802-isolated-docker-runner", **result})
             if action == "code_generate":
                 if not _ENGINE.neural.health()["ready"]:
                     return self._send(503, {"error": "The private Expert 802 neural generator is not ready. Train a checkpoint and start the private inference service first."})
