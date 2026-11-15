@@ -51,8 +51,10 @@ def prepare(paths, output_dir, validation_fraction=0.02):
     raw = b"\n\n".join(chunks)
     if len(raw) < 2048:
         raise ValueError("Training data is too small. Supply a larger licensed corpus.")
-    split = max(1, int(len(raw) * (1 - validation_fraction)))
-    split = min(split, len(raw) - 1)
+    validation_size = max(513, int(len(raw) * validation_fraction))
+    split = len(raw) - validation_size
+    if split <= 513:
+        raise ValueError("Supply more data so both splits exceed the model context length.")
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     np.frombuffer(raw[:split], dtype=np.uint8).tofile(output / "train.bin")
