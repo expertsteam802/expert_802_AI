@@ -1,7 +1,7 @@
 """Programming task classification and engineering work planning."""
 import re
 CODE = re.compile(r"\b(code|coding|program|programming|software|website|app|api|python|javascript|typescript|html|css|sql|react|node|debug|bug|error|compile|build|deploy|repository|repo|function|class|database|script|terminal|git|github|refactor|test)\b", re.I)
-ACTION = re.compile(r"\b(build|make|create|write|implement|fix|debug|repair|explain|review|analy[sz]e|refactor|test|deploy|optimi[sz]e|add|remove|change|update)\b", re.I)
+ACTION = re.compile(r"\b(build|make|create|write|implement|fix|debug|repair|explain|review|analy[sz]e|refactor|test|deploy|optimi[sz]e|add|remove|change|update|help|broken|not working|fails?|crashes?)\b", re.I)
 PATTERNS = [
  ("debug", r"\b(fix|debug|repair|broken|error|exception|crash|not working|fails?)\b"),
  ("implement", r"\b(build|make|create|write|implement|add|develop)\b"),
