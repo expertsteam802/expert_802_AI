@@ -230,11 +230,11 @@ button{cursor:pointer}
    $("statusDot").classList.toggle("ready",true);
    $("statusLabel").textContent="Engine online";
    $("statusCaption").textContent=number(statusData.dictionary_entries)+" dictionary entries available.";
-   $("modelPill").textContent=statusData.model_configured?"Pretrained model connected":"Dictionary engine";
+   $("modelPill").textContent=statusData.model_configured?"Pretrained model configured":"Dictionary engine";
    $("modelPill").classList.toggle("live",!!statusData.model_configured);
    $("modelStatusText").textContent=statusData.model_configured
-    ?"Connected to "+statusData.model_name+" through the configured self-hosted inference server. Chat requests use this model with retrieved local dictionary context."
-    :"No pretrained neural model is connected yet. The selected integration target is Qwen3-1.7B, served on a separate self-hosted inference machine. Vercel continues to host the website and lightweight API only.";
+    ?"Configured to send chat requests to "+statusData.model_name+" through the self-hosted inference server. The model host must be online for generation to work."
+    :"No pretrained neural model is configured yet. The selected integration target is Qwen3-1.7B, served on a separate self-hosted inference machine. Vercel continues to host the website and lightweight API only.";
    $("artifactStatus").textContent=statusData.trained_artifact
     ? "Saved artifact: "+statusData.trained_artifact+". It contains "+number(statusData.training_sentences)+" training sentences and "+number(statusData.training_vocabulary)+" vocabulary items. This is a word-bigram statistical model, not a neural chatbot."
     :"No trained word-pattern artifact is currently available.";
