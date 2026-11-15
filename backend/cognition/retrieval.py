@@ -3,7 +3,7 @@ import math
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
-from backend.language import dictionary_lookup, tokens
+from backend.language import dictionary_lookup, load_wordnet, tokens
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "knowledge" / "english_corpus.txt"
@@ -34,9 +34,19 @@ class LocalRetriever:
         terms = list(dict.fromkeys(tokens(query)))
         if not terms or not self.documents:
             return []
+        # Expand with WordNet synonym evidence at a lower weight than exact terms.
+        weighted_terms = {term: 1.0 for term in terms}
+        wordnet = load_wordnet()
+        for term in terms:
+            entry = wordnet.get(term, {})
+            if isinstance(entry, dict):
+                for synonym in entry.get("synonyms", [])[:6]:
+                    synonym = str(synonym).lower()
+                    if synonym and synonym not in weighted_terms:
+                        weighted_terms[synonym] = 0.35
         scores = defaultdict(float)
         total = len(self.documents)
-        for term in terms:
+        for term, query_weight in weighted_terms.items():
             postings = self.index.get(term, [])
             if not postings:
                 continue
@@ -45,7 +55,7 @@ class LocalRetriever:
             for doc_id, frequency in postings:
                 length = self.lengths[doc_id]
                 denominator = frequency + 1.2 * (1 - 0.75 + 0.75 * length / max(1, self.average_length))
-                scores[doc_id] += idf * frequency * 2.2 / denominator
+                scores[doc_id] += query_weight * idf * frequency * 2.2 / denominator
         ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)[:limit]
         return [{"text": self.documents[i], "score": round(score, 4)} for i, score in ranked if score > 0]
 
