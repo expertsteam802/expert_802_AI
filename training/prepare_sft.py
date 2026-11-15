@@ -34,8 +34,8 @@ def prepare(input_path,output_dir,tokenizer_path,validation_fraction=0.05,seed=8
             validation.extend(ids)
         else:
             training.extend(ids)
-    if len(training)<=513 or len(validation)<=513:
-        raise ValueError("Supply enough complete conversations for both splits (more than 513 tokens each).")
+    if len(training)<=1025 or len(validation)<=1025:
+        raise ValueError("Supply enough complete conversations for both splits (more than 1025 tokens each).")
     output=Path(output_dir)
     output.mkdir(parents=True,exist_ok=True)
     shutil.copy2(tokenizer_path,output/"tokenizer.json")
