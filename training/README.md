@@ -6,6 +6,7 @@ Expert 802's neural layer is project-owned and trained from random initializatio
 
 - `training/tokenizer.py`: train a byte-level BPE vocabulary on the supplied corpus. No downloaded tokenizer vocabulary is required.
 - `training/model.py`: decoder-only causal Transformer with multi-head self-attention, residual blocks, feed-forward layers, learned positional embeddings and tied input/output embeddings.
+- `training/test_model.py`: forward, backward and generation smoke test run before GPU training.
 - `training/prepare_data.py`: tokenize explicitly selected text, documentation and source-code corpora; hold out validation documents.
 - `training/train.py`: pretrain from random weights, evaluate held-out loss, clip gradients, schedule learning rate and save resumable checkpoints.
 - `training/prepare_sft.py`: prepare supervised chat conversations while keeping whole conversations in one split.
