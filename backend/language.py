@@ -104,6 +104,10 @@ def correct_spelling(text):
         if original.isupper() and 2 <= len(original) <= 6:
             output.append(original)
             continue
+        # Keep title-cased tokens intact: they are often names or proper nouns.
+        if len(original) > 1 and original[0].isupper() and original[1:].islower():
+            output.append(original)
+            continue
         # Common informal chat spellings are normalized explicitly, not guessed.
         chat_aliases = {"ur": "your", "u": "you", "r": "are", "wht": "what", "thx": "thanks"}
         if lower in chat_aliases:
