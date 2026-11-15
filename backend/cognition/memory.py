@@ -53,7 +53,13 @@ def build_state(history):
         for index, pattern in enumerate(patterns):
             match = re.search(pattern, message, re.I)
             if match:
-                facts.append({"kind": "relation" if index == 0 else "preference", "text": message, "value": match.group(index + 1).strip()})
+                facts.append({
+                    "kind": "relation" if index == 0 else "preference",
+                    "subject": match.group(1).strip() if index == 0 else "user",
+                    "predicate": "is" if index == 0 else "preference",
+                    "text": message,
+                    "value": match.group(2 if index == 0 else 1).strip(),
+                })
     return DialogueState(
         topic=topic,
         previous_user_message=user_messages[-1] if user_messages else "",
