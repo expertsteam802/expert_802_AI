@@ -121,8 +121,6 @@ class handler(BaseHTTPRequestHandler):
                     return self._send(403, {"error": "The request did not pass same-origin approval. Reload the app and try again."})
                 if not _rate_allowed("code_run", self.client_address[0], limit=3):
                     return self._send(429, {"error": "Test-run limit reached. Wait five minutes before trying again."})
-                if not _SANDBOX.health()["ready"]:
-                    return self._send(503, {"error": "The private Docker sandbox is not ready. Configure the authenticated sandbox URL and start its runner."})
                 command = payload.get("command", "python_unittest")
                 target = payload.get("target", "")
                 result = _SANDBOX.run(payload.get("files", []), command, target)
