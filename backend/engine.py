@@ -81,11 +81,11 @@ class ExpertLanguageEngine:
         )
         if lower in {"yes", "yeah", "yep", "sure", "ok", "okay"} and game_context:
             answer = "Sure. Which do you mean: open a game you already have, download a game, or find a game to play?"
-        elif game_choice_context and re.search(r"\b(open|launch|start)\\b.*\\b(game|gta)\\b", lower):
+        elif game_choice_context and re.search(r"\b(open|launch|start)\b.*\b(game|gta)\b", lower):
             answer = "Got it—you want to open a game you already have. I cannot launch an app on your device from this chat, but I can guide you. Which device are you using: Windows PC, Android phone, PlayStation, or Xbox?"
-        elif game_choice_context and re.search(r"\b(download|install|get)\\b.*\\b(game|gta)\\b", lower):
+        elif game_choice_context and re.search(r"\b(download|install|get)\b.*\b(game|gta)\b", lower):
             answer = "Got it—you want to download or install a game. Which device are you using: Windows PC, Android phone, PlayStation, or Xbox?"
-        elif game_choice_context and re.search(r"\b(find|recommend|choose)\\b.*\\bgame\\b", lower):
+        elif game_choice_context and re.search(r"\b(find|recommend|choose)\b.*\bgame\b", lower):
             answer = "I can help you find a game. What kind of games do you enjoy—action, racing, sports, adventure, or something else?"
         elif lower in {"gta", "grand theft auto"} and game_context:
             answer = "GTA usually means Grand Theft Auto. Which one do you mean—GTA V, GTA Online, or another GTA game?"
