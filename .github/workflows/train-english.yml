@@ -49,5 +49,6 @@ jobs:
             echo "The model and dictionary have not changed."
           else
             git commit -m "Import Open English WordNet and train English model"
+            git pull --rebase origin main
             git push
           fi
