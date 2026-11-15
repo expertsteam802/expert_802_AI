@@ -51,7 +51,7 @@ def bracket_diagnostics(source, path):
                 quote = None
             index += 1
             continue
-        if ch in ("'", '"'):
+        if ch in ("'", '"', chr(96)):
             quote = ch
             index += 1
             continue
@@ -94,6 +94,16 @@ def inspect_python(path, source):
             imports.append(node.module or "")
         elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in {"eval","exec"}:
             diagnostics.append({"severity":"warning","code":"dynamic_"+node.func.id,"path":path,"line":node.lineno,"message":node.func.id+"() executes dynamic code; review its input trust boundary."})
+        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            owner = node.func.value.id if isinstance(node.func.value, ast.Name) else ""
+            if owner == "subprocess" and node.func.attr in {"run","Popen","call","check_call","check_output"}:
+                shell_true = any(keyword.arg == "shell" and isinstance(keyword.value, ast.Constant) and keyword.value.value is True for keyword in node.keywords)
+                if shell_true:
+                    diagnostics.append({"severity":"warning","code":"subprocess_shell_true","path":path,"line":node.lineno,"message":"Subprocess uses shell=True; validate interpolated arguments to avoid command injection."})
+            if owner == "requests" and node.func.attr in {"get","post","put","delete","patch"} and not any(keyword.arg == "timeout" for keyword in node.keywords):
+                diagnostics.append({"severity":"warning","code":"request_without_timeout","path":path,"line":node.lineno,"message":"HTTP request has no explicit timeout and may hang indefinitely."})
+            if owner == "pickle" and node.func.attr in {"load","loads"}:
+                diagnostics.append({"severity":"warning","code":"unsafe_pickle","path":path,"line":node.lineno,"message":"Unpickling untrusted data can execute code; use a safe serialization format."})
     return diagnostics, symbols, imports
 
 def inspect_project(files):
@@ -138,6 +148,15 @@ def inspect_project(files):
                 diagnostics.append({"severity":"error","code":"invalid_json","path":path,"line":error.lineno,"column":error.colno,"message":error.msg})
         elif suffix in {".js",".jsx",".mjs",".cjs",".ts",".tsx"}:
             diagnostics.extend(bracket_diagnostics(source, path))
+            security_patterns = [
+                (r"\\beval\\s*\\(", "javascript_eval", "eval() executes dynamically constructed code."),
+                (r"\\binnerHTML\\s*=", "unsafe_inner_html", "Untrusted innerHTML can create cross-site scripting."),
+                (r"dangerouslySetInnerHTML", "dangerous_html_injection", "Review the trust boundary for dangerouslySetInnerHTML."),
+            ]
+            for pattern, code, message in security_patterns:
+                for match in re.finditer(pattern, source):
+                    diagnostics.append({"severity":"warning","code":code,"path":path,
+                                        "line":source.count("\\n",0,match.start())+1,"message":message})
             for match in re.finditer(r"\b(?:function|class|interface|type|const|let|var)\s+([A-Za-z_$][\w$]*)", source):
                 symbols.append({"path":path,"kind":"declaration","name":match.group(1),"line":source.count("\n",0,match.start())+1})
         elif suffix == ".html":
