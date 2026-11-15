@@ -170,8 +170,8 @@ class CognitiveArchitectureTests(unittest.TestCase):
 
     def test_identity_describes_real_implemented_components(self):
         result = self.engine.reply("who are you")
-        self.assertIn("intent analysis", result["reply"].lower())
-        self.assertIn("still being developed", result["reply"].lower())
+        self.assertIn("programming assistant", result["reply"].lower())
+        self.assertIn("static code inspection", result["reply"].lower())
 
     def test_dictionary_lookup_still_works(self):
         self.assertIn("eager to know", dictionary_lookup("curious"))
