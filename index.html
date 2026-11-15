@@ -152,7 +152,11 @@ button{cursor:pointer}
     <div id="codeFileNames" style="font-size:11px;color:#7c879b;margin-top:7px">Choose a project folder or select source files. Maximum 40 files and 1 MB total.</div>
     <button class="primary-btn" id="analyzeCode" type="button" style="margin-top:14px">Analyze project</button>
     <button class="primary-btn" id="generateCode" type="button" style="margin:14px 0 0 8px;background:#52647f" disabled>Generate patch with trained model</button>
-    <button class="primary-btn" id="runCodeTests" type="button" style="margin:14px 0 0 8px;background:#19815f" disabled>Run tests in isolated Docker</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px">
+     <select id="codeRunCommand" style="height:42px;border:1px solid #dfe5ef;border-radius:10px;padding:0 10px;background:white"><option value="python_unittest">Python unit tests</option><option value="node_check">JavaScript syntax check</option></select>
+     <input id="codeRunTarget" placeholder="JS file path (for Node check)" style="height:42px;min-width:190px;flex:1;border:1px solid #dfe5ef;border-radius:10px;padding:0 10px">
+     <button class="primary-btn" id="runCodeTests" type="button" style="background:#19815f" disabled>Run isolated check</button>
+    </div>
     <div id="codeAnalysisStatus" style="font-size:12px;color:#68758c;margin-top:10px" aria-live="polite"></div>
    </div>
    <div class="info-block" id="codeAnalysisResult" style="display:none"><h2>Project analysis</h2><div id="codeAnalysisSummary" style="font-size:13px;line-height:1.7"></div><div id="codeDiagnostics" style="margin-top:12px"></div><details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Detected symbols and files</summary><pre id="codeSymbols" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.6;max-height:340px;overflow:auto"></pre></details><details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Engineering work plan</summary><ol id="codePlan" style="font-size:12px;line-height:1.7"></ol></details></div>
@@ -248,11 +252,11 @@ button{cursor:pointer}
  $("runCodeTests").addEventListener("click",async()=>{
   if(!statusData?.sandbox_runtime?.ready){$("codeAnalysisStatus").textContent="The private isolated Docker runner is not connected.";return;}
   const files=Array.from(codeFilesInput.files||[]);
-  if(!files.length){$("codeAnalysisStatus").textContent="Select a project folder including its tests/ directory.";return;}
-  $("runCodeTests").disabled=true;$("codeAnalysisStatus").textContent="Starting isolated Python unit tests…";
+  if(!files.length){$("codeAnalysisStatus").textContent="Select the project folder and include the required tests or JavaScript file.";return;}
+  $("runCodeTests").disabled=true;$("codeAnalysisStatus").textContent="Starting the selected isolated check…";
   try{
    const projectFiles=await Promise.all(files.slice(0,40).map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
-   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_run",command:"python_unittest",files:projectFiles})});
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_run",command:$("codeRunCommand").value,target:$("codeRunTarget").value.trim(),files:projectFiles})});
    const data=await response.json();if(!response.ok&&data.error)throw new Error(data.error);
    $("codeRunResult").style.display="block";
    $("codeRunSummary").textContent=(data.ok?"PASSED":"FAILED")+" · exit code "+data.exit_code+" · "+data.duration_seconds+" seconds · network disabled · read-only workspace";
