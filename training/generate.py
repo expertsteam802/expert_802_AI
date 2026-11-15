@@ -25,8 +25,8 @@ def main():
     tokenizer=load_tokenizer(args.tokenizer)
     prompt_ids=tokenizer.encode(args.prompt).ids[-model.config.block_size:]
     context=torch.tensor([prompt_ids],dtype=torch.long,device=device)
-    result=model.generate(context,max_new_tokens=max(1,min(args.tokens,512)),temperature=args.temperature)
-    print(tokenizer.decode(result[0].tolist()[len(prompt_ids):],skip_special_tokens=False))
+    result=model.generate(context,max_new_tokens=max(1,min(args.tokens,512)),temperature=args.temperature,stop_token_id=tokenizer.token_to_id("<|endoftext|>"))
+    print(tokenizer.decode(result[0].tolist()[len(prompt_ids):],skip_special_tokens=True))
 
 if __name__=="__main__":
     main()
