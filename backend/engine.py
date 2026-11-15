@@ -8,16 +8,6 @@ from .language import (
     dictionary_lookup,
 )
 
-CURATED_DEFINITIONS = {
-    "ai": ("abbreviation", "AI stands for artificial intelligence: computer systems designed to perform tasks that normally require human intelligence, such as understanding language, recognizing patterns and solving problems."),
-    "food": ("noun", "Food is any nutritious substance that people or animals eat or drink to provide energy and support life."),
-    "car": ("noun", "A car is a road vehicle, usually with four wheels, powered by an engine or electric motor and used to carry people."),
-    "artificial intelligence": ("noun phrase", "Artificial intelligence (AI) is the field of creating computer systems that can perform tasks associated with human intelligence."),
-    "gta": ("abbreviation / title", "GTA commonly refers to Grand Theft Auto, a video-game series. The exact game can be identified by its subtitle or number."),
-    "fbi": ("abbreviation", "FBI stands for Federal Bureau of Investigation, the United States federal law-enforcement and domestic intelligence agency."),
-    "kill": ("verb", "To kill means to cause the death of a living thing. The word can also have figurative meanings, such as stopping or defeating something."),
-}
-
 class ExpertLanguageEngine:
     def __init__(self):
         self.dictionary = load_dictionary()
@@ -58,11 +48,9 @@ class ExpertLanguageEngine:
     def reply(self, message, history=None):
         original = (message or "").strip()
         if not original:
-            return {"reply": "Please type a message so I can try to understand it.", "engine": "python-english-v2"}
+            return {"reply": "Please enter a word or message.", "engine": "dictionary-only"}
 
-        # If several utterances are pasted into one message, process them in order.
-        # Double-space/newline separators are treated as deliberate boundaries;
-        # question punctuation also separates consecutive questions.
+        # Preserve ordered processing when a user pastes several separate turns.
         batch_parts = [
             part.strip(" \t\r\n")
             for part in re.split(
@@ -85,14 +73,12 @@ class ExpertLanguageEngine:
                 ])
             return {
                 "reply": "\n\n".join(rendered),
-                "engine": "python-english-v2",
+                "engine": "dictionary-only" if not is_configured() else "qwen3-self-hosted",
                 "language": "English",
                 "batch_processed": True,
                 "batch_items": len(batch_parts),
             }
 
-        # Prefer a real pretrained model when a self-hosted inference server is configured.
-        # The dictionary is retrieved inside model_client and supplied as evidence, not as canned replies.
         if is_configured():
             try:
                 answer = generate_reply(original, history)
@@ -102,11 +88,11 @@ class ExpertLanguageEngine:
                     "model": configured_model_name(),
                     "language": "English",
                     "trained_model": True,
-                    "knowledge_source": "local_dictionary",
+                    "knowledge_source": "local_dictionary_and_wordnet",
                 }
             except Exception:
                 return {
-                    "reply": "The pretrained language model is configured but its inference server did not respond. Please check the model host; I will not silently substitute scripted answers.",
+                    "reply": "The pretrained model endpoint is configured but did not respond. Please check the model host; no scripted fallback was used.",
                     "engine": "qwen3-self-hosted",
                     "model": configured_model_name(),
                     "model_error": True,
@@ -114,98 +100,24 @@ class ExpertLanguageEngine:
 
         normalized, spelling_changes = correct_spelling(original)
         text = normalized.strip()
-        lower = text.lower()
         words = tokens(text)
-        correction_note = ("I think you meant: " + text + "\n\n") if spelling_changes else ""
-        history_text = self._history_text(history)
-        previous_user = history_text[-1].strip().lower() if history_text else ""
-        game_context = self._in_game_context(history)
-
-        # Interpret replies using the assistant's immediately preceding question.
-        last_assistant = next(
-            (str(item.get("text", "")).strip().lower()
-             for item in reversed(history or [])
-             if isinstance(item, dict) and item.get("role") == "assistant"),
-            ""
-        )
-        game_choice_context = game_context and any(
-            phrase in last_assistant
-            for phrase in ("open a game you already have", "download a game", "find a game to play")
-        )
-        if lower in {"yes", "yeah", "yep", "sure", "ok", "okay"} and game_context:
-            answer = "Sure. Which do you mean: open a game you already have, download a game, or find a game to play?"
-        elif game_choice_context and re.search(r"\b(open|launch|start)\b.*\b(game|gta)\b", lower):
-            answer = "Got it—you want to open a game you already have. I cannot launch an app on your device from this chat, but I can guide you. Which device are you using: Windows PC, Android phone, PlayStation, or Xbox?"
-        elif game_choice_context and re.search(r"\b(download|install|get)\b.*\b(game|gta)\b", lower):
-            answer = "Got it—you want to download or install a game. Which device are you using: Windows PC, Android phone, PlayStation, or Xbox?"
-        elif game_choice_context and re.search(r"\b(find|recommend|choose)\b.*\bgame\b", lower):
-            answer = "I can help you find a game. What kind of games do you enjoy—action, racing, sports, adventure, or something else?"
-        elif lower in {"gta", "grand theft auto"} and game_context:
-            answer = "GTA usually means Grand Theft Auto. Which one do you mean—GTA V, GTA Online, or another GTA game?"
-        elif re.search(r"\bwhat word comes next|predict the next word|next word after\b", lower):
-            phrase = text.split("after", 1)[-1].strip(" :") if "after" in lower else ""
-            answer = self._predict_next_word(phrase)
-        elif re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening)[!. ]*", lower):
-            answer = "Hello! I'm Expert 802 AI. We can talk in English. What would you like to discuss?"
-        elif re.search(r"\b(who are you|what are you|your name)\b", lower):
-            answer = "I'm Expert 802 AI, a project-owned English language assistant. I help with word meanings, spelling, grammar and conversation."
-        elif re.search(r"^what is .+? in full(?: words)?[?!.]*$", lower) or re.search(r"^full form of .+[?!.]*$", lower):
-            target = re.sub(r"^what is\s+|^full form of\s+", "", lower)
-            target = re.sub(r"\s+in full(?: words)?[?!.]*$", "", target).strip(" ?.!'\"" )
-            if target in CURATED_DEFINITIONS and CURATED_DEFINITIONS[target][0].startswith("abbreviation"):
-                expansions = {"ai": "artificial intelligence", "fbi": "Federal Bureau of Investigation", "gta": "Grand Theft Auto"}
-                answer = target.upper() + " stands for " + expansions[target] + "."
-            else:
-                answer = self._define_target(target)
-        elif re.search(r"\b(what does|meaning of|define|definition of)\b", lower):
-            answer = self._define(text, words)
-        elif re.search(r"\bwhat is\b", lower):
-            # Definitions are local; named world facts must not be mistaken for dictionary entries.
-            target = self._definition_target(text)
-            if target and re.match(r"(?:the )?(?:capital|president|population|weather|price|score|latest)\b", target, re.I):
-                answer = "I recognise this as a factual question, but I do not have a connected current-world knowledge source in this version. I should not invent an answer."
-            elif target:
-                answer = self._define_target(target)
-            else:
-                answer = "I can explain a word or concept if you tell me which one you mean."
-        elif re.search(r"\b(check|correct|grammar|grammatically|is this sentence)\b", lower):
-            corrected, notes = correct_common_grammar(text)
-            if notes:
-                answer = "A possible correction is:\n“" + corrected + "”\n\n" + " ".join(notes)
-            elif spelling_changes:
-                answer = "The spelling and word spacing look corrected above. I did not find another error covered by my current grammar rules."
-            else:
-                answer = "I did not detect an error covered by my current grammar rules. That does not prove the sentence is fully correct; my grammar coverage is still growing."
-        elif re.search(r"\b(noun|verb|adjective|adverb|pronoun|tense|preposition|conjunction|article|clause|phrase|subject|predicate|object|word order|sentence structure|active voice|passive voice|conditional|modal verb|gerund|infinitive|punctuation|agreement)\b", lower) and re.search(r"\b(explain|grammar|what is|meaning|how does|how do)\b", lower):
-            answer = self._explain_grammar(lower)
-        elif re.search(r"\b(i need my game right now|i need a game right now)\b", lower):
-            answer = "Got it—you need your game right now. Are you trying to open a game you already have, download one, or find a game to play?"
-        elif re.search(r"\b(affect and effect|difference between affect and effect)\b", lower):
-            answer = "“Affect” is usually a verb meaning to influence: “Rain can affect traffic.” “Effect” is usually a noun meaning a result: “The effect was a delay.”"
-        elif lower.strip(" .!?") in CURATED_DEFINITIONS:
-            answer = self._define_target(lower.strip(" .!?"))
-        elif re.search(r"\b(thank you|thanks)\b", lower):
-            answer = "You're welcome. What else would you like to talk about?"
-        elif re.search(r"\b(you are wrong|that's wrong|you don't understand|not what i asked)\b", lower):
-            answer = "Thanks for correcting me. I may have interpreted your words incorrectly. Tell me what you intended and I will use that correction in this conversation."
-        elif re.search(r"\b(where is|when did|how many|capital of|president of|latest|today)\b", lower):
-            answer = "I recognise this as a factual question, but I do not have a connected current-world knowledge source in this version. I should not invent an answer."
+        target = self._definition_target(text)
+        if target:
+            answer = self._define_target_from_dictionary(target)
         elif len(words) == 1:
-            answer = self._define_target(words[0]) + "\n\nWould you like an example sentence, pronunciation help, or a grammar explanation?"
+            answer = self._define_target_from_dictionary(words[0])
         else:
-            corrected, notes = correct_common_grammar(text)
-            if notes:
-                answer = "A possible correction is:\n“" + corrected + "”\n\n" + " ".join(notes) + "\n\nIs that what you meant?"
-            elif spelling_changes:
-                answer = "I recovered the likely spelling and word spacing. What would you like to know or do with this?"
-            else:
-                answer = "I can help explain words, grammar and sentence structure. Could you tell me what you want to do with this sentence?"
+            answer = (
+                "The pretrained conversational model is not connected yet. "
+                "I can retrieve definitions from the local dictionary and WordNet, "
+                "but I will not pretend to understand a full sentence using scripted replies."
+            )
+        correction_note = ("Recovered spelling: " + text + "\n\n") if spelling_changes else ""
         return {
             "reply": correction_note + answer,
-            "engine": "python-english-v2",
+            "engine": "dictionary-only",
             "language": "English",
-            "trained_model": bool(self.model),
-            "training_vocabulary": self.model.get("vocabulary_size", 0) if self.model else 0,
+            "model_configured": False,
             "spelling_recovered": bool(spelling_changes),
         }
 
@@ -224,11 +136,7 @@ class ExpertLanguageEngine:
         return None
 
     def _define_target(self, target):
-        key = re.sub(r"\s+", " ", target.lower().strip(" ?.!'“”\""))
-        if key in CURATED_DEFINITIONS:
-            pos, definition = CURATED_DEFINITIONS[key]
-            return f"“{key}” ({pos}): {definition}"
-        return self._define(target, tokens(target))
+        return self._define_target_from_dictionary(target)
 
     def _define(self, text, words):
         target = self._definition_target(text)
@@ -250,24 +158,18 @@ class ExpertLanguageEngine:
         return "I could not find that word in my local dictionary yet. I can still help if you give me an example sentence."
 
     def _define_target_from_dictionary(self, target):
-        key = re.sub(r"\s+", " ", target.lower().strip(" ?.!'“”\""))
-        if key in CURATED_DEFINITIONS:
-            pos, definition = CURATED_DEFINITIONS[key]
-            return f"“{key}” ({pos}): {definition}"
-        # Prefer the actual requested phrase, not the final word in the question.
-        if " " in key:
-            return f"I do not yet have a reliable entry for the full phrase “{key}”. I can define its individual words if you want."
+        key = re.sub(r"\s+", " ", target.lower().strip(" ?.!'“”\\""))
         definition = dictionary_lookup(key)
         if isinstance(definition, dict):
             definitions = definition.get("definitions", [])
             pos = definition.get("part_of_speech", "word")
-            synonyms = definition.get("synonyms", [])[:4]
+            synonyms = definition.get("synonyms", [])[:5]
             if definitions:
                 extra = (" Related words: " + ", ".join(synonyms) + ".") if synonyms else ""
                 return f"“{key}” is a {pos}. {definitions[0]}{extra}"
-        if definition:
+        if isinstance(definition, str) and definition:
             return f"“{key}” means {definition}"
-        return f"I do not have a reliable definition for “{key}” in my local dictionary yet."
+        return f"I do not have a reliable dictionary entry for “{key}” yet."
 
     @staticmethod
     def _explain_grammar(text):
