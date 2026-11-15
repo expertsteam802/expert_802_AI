@@ -31,7 +31,8 @@ def build_handler(model,tokenizer,device,auth_token):
                 if not isinstance(prompt,str) or not prompt.strip():
                     return self.send_json(400,{"error":"A prompt is required."})
                 prompt_ids=tokenizer.encode(prompt).ids[-model.config.block_size:]
-                configured_max=max(1,min(int(os.environ.get("EXPERT802_MAX_NEW_TOKENS","2048")),8192))\n                max_tokens=max(1,min(int(payload.get("max_new_tokens",1024)),configured_max))
+                configured_max=max(1,min(int(os.environ.get("EXPERT802_MAX_NEW_TOKENS","2048")),8192))
+                max_tokens=max(1,min(int(payload.get("max_new_tokens",1024)),configured_max))
                 temperature=max(0.1,min(float(payload.get("temperature",0.8)),1.5))
                 tokens=torch.tensor([prompt_ids],dtype=torch.long,device=device)
                 generated=model.generate(tokens,max_new_tokens=max_tokens,temperature=temperature,stop_token_id=tokenizer.token_to_id("<|endoftext|>"))
