@@ -9,12 +9,21 @@ from backend.cognition.intent import normalize, parse_intent
 from backend.cognition.reasoning import calculate
 from backend.cognition.code_intelligence import inspect_project, InspectionError
 from backend.cognition.programming import build_work_plan, is_programming_request
+from sandbox.runner import validate_files, execute
 from backend.language import correct_common_grammar, dictionary_lookup
 from api.chat import handler as ChatHandler
 
 class CognitiveArchitectureTests(unittest.TestCase):
     def setUp(self):
         self.engine = ExpertLanguageEngine()
+
+    def test_sandbox_rejects_unregistered_commands(self):
+        with self.assertRaises(ValueError):
+            execute([{"path":"app.py","content":"print('safe')"}],"shell")
+
+    def test_sandbox_validates_paths_before_container_start(self):
+        with self.assertRaises(InspectionError):
+            validate_files([{"path":"../outside.py","content":"print('unsafe')"}])
 
     def test_programming_request_is_classified_and_planned(self):
         self.assertTrue(is_programming_request("Please build a Python API"))
@@ -159,6 +168,22 @@ class CognitiveArchitectureTests(unittest.TestCase):
                 self.assertFalse(data["external_model_provider"])
                 self.assertIn("symbolic_reasoning", data["architecture"])
                 self.assertIn("knowledge_graph", data["architecture"])
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
+    def test_http_code_run_requires_private_sandbox_configuration(self):
+        server = HTTPServer(("127.0.0.1", 0), ChatHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            payload = json.dumps({"action":"code_run","command":"python_unittest","files":[]}).encode()
+            request = Request(f"http://127.0.0.1:{server.server_port}/api/chat",data=payload,
+                              headers={"Content-Type":"application/json"},method="POST")
+            with self.assertRaises(Exception) as context:
+                urlopen(request,timeout=5)
+            self.assertIn("503",str(context.exception))
         finally:
             server.shutdown()
             server.server_close()
