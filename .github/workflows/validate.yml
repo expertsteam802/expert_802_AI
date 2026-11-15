@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: "22"
       - name: Compile Python modules
-        run: python -m compileall -q api backend learning tests
+        run: python -m compileall -q api backend learning tests training sandbox
       - name: Run English engine tests
         run: python -m unittest discover -s tests -v
       - name: Check browser JavaScript syntax
