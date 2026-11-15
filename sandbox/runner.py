@@ -48,6 +48,7 @@ def execute(files,command,target=""):
             raise ValueError("Choose an included .js, .mjs or .cjs file.")
     with tempfile.TemporaryDirectory(prefix="expert802-sandbox-") as temporary:
         root=Path(temporary)
+        root.chmod(0o755)
         for relative,content in normalized:
             destination=root/relative
             destination.parent.mkdir(parents=True,exist_ok=True)
