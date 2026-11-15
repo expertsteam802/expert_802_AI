@@ -71,8 +71,8 @@ class handler(BaseHTTPRequestHandler):
                     snippets = []
                     for item in files[:5]:
                         if isinstance(item, dict) and isinstance(item.get("path"), str) and isinstance(item.get("content"), str):
-                            snippets.append("FILE: " + item["path"] + "\\n" + item["content"][:1800])
-                    project_context = "\\n\\n".join(snippets)
+                            snippets.append("FILE: " + item["path"] + "\n" + item["content"][:1800])
+                    project_context = "\n\n".join(snippets)
                 generated = _ENGINE.neural.generate("Implement this programming task and return a focused patch or complete file as appropriate: " + task, [], project_context)
                 if not generated["ok"]:
                     return self._send(502, {"error": generated["error"]})
