@@ -1,43 +1,75 @@
-# Train Expert 802's own neural generator (no provider API)
+# Expert 802 native neural training
 
-This is the planned neural-generation layer for the native cognition stack. It is deliberately separate from Vercel: model weights and training dependencies do not belong in a serverless web deployment.
+Expert 802's neural layer is project-owned and trained from random initialization. It does not call Qwen, OpenAI, or any hosted model API. The Vercel application does not install PyTorch or download model weights.
 
-## Selected source-code foundation
+## Architecture in this repository
 
-Use [karpathy/nanochat](https://github.com/karpathy/nanochat), pinned to commit `92d63d4e8bb4df75c3b71618f31ddde2378b2bcd`. The repository is MIT-licensed; keep its MIT notice with any copied or modified source. It contains the tokenizer, GPT architecture, pretraining, supervised fine-tuning, evaluation, checkpointing and inference engine. This is source code, not a hosted inference service and not a pretrained Qwen model.
+- `training/tokenizer.py`: train a byte-level BPE vocabulary on the supplied corpus. No downloaded tokenizer vocabulary is required.
+- `training/model.py`: decoder-only causal Transformer with multi-head self-attention, residual blocks, feed-forward layers, learned positional embeddings and tied input/output embeddings.
+- `training/prepare_data.py`: tokenize explicitly selected text, documentation and source-code corpora; hold out validation documents.
+- `training/train.py`: pretrain from random weights, evaluate held-out loss, clip gradients, schedule learning rate and save resumable checkpoints.
+- `training/prepare_sft.py`: prepare supervised chat conversations while keeping whole conversations in one split.
+- `training/generate.py`: local checkpoint inference.
+- `training/serve.py`: private HTTP inference process for a trained checkpoint.
+- `training/checkpoints/`: model weights and tokenizer, excluded from Git.
 
-Pinned upstream commit: `92d63d4e8bb4df75c3b71618f31ddde2378b2bcd`
+The starter configuration is intentionally modest: 6 Transformer blocks, width 256, 8 attention heads, a 1,024-token context and a corpus-trained vocabulary up to 16,000 tokens. Change the training arguments only when the available GPU memory and dataset justify it.
 
-## What training actually requires
+## Install training dependencies
 
-The upstream reference run trains a GPT-2-capability model from scratch using an 8xH100 GPU node and reports roughly 1.5–2 hours for its speedrun. Its own README describes that model as a very small, weak assistant. That is a useful first self-owned neural generator, **not** GPT-4/5/6 capability and not a promise of human-level reasoning. GPU rental, storage, bandwidth and later inference hosting are separate costs.
+Use a machine or rented GPU runner with a compatible PyTorch build. Training dependencies are isolated from the Vercel application:
 
-The current Expert 802 GitHub Actions runners are CPU runners. They can test code and train the small lexical baseline, but they cannot reproduce the 8xH100 run. Do not start the expensive run until a GPU host and budget are explicitly chosen.
-
-## Expert 802 training stages
-
-1. **Base pretraining:** train random-initialized weights on a large, legally usable general-language corpus. The upstream speedrun uses its own ClimbMix dataset; this is not Expert 802 user data.
-2. **Conversation fine-tuning:** adapt the SFT task mixture to include the Expert 802 conversation dataset described below. Keep general conversation, instruction following, clarification, tool-use and refusal examples balanced.
-3. **Evaluation:** hold out complete conversations and evaluate typo recovery, multi-turn references, factual grounding, arithmetic, tool selection and hallucination rate. Never train on the held-out split.
-4. **Checkpointing:** store tokenizer and model checkpoints in external object storage or a persistent GPU volume, not Git history.
-5. **Inference:** run the trained model on a private GPU service. Vercel should remain the frontend and lightweight orchestration layer. The symbolic graph and deterministic tools remain authoritative for facts and calculations.
-
-## Conversation dataset format
-
-Use JSON Lines. One line is one complete conversation:
-
-```json
-{"messages":[{"role":"system","content":"You are Expert 802 AI. Use evidence, ask when context is missing, and never claim an action you did not perform."},{"role":"user","content":"i nned my gamerightnoww"},{"role":"assistant","content":"Do you want help finding a game, launching one, or fixing a problem with a game?"}],"split":"train","skills":["typo_recovery","intent","clarification"]}
+```bash
+python -m venv .venv
+# Linux/macOS
+source .venv/bin/activate
+# Windows PowerShell: .venv\Scripts\Activate.ps1
+pip install -r training/requirements.txt
 ```
 
-Rules:
-- Include varied paraphrases, misspellings, abbreviations, joined words and natural multi-turn references.
-- Include tool-call traces and tool results as structured examples; do not teach the model to invent tool outcomes.
-- Include uncertainty and clarification examples.
-- Keep personal conversations out of the dataset unless the user explicitly chooses to contribute them.
-- Split by whole conversation, not by individual message.
-- Store source/license metadata for every imported dataset.
+For CUDA, install the PyTorch wheel matching the GPU host's CUDA runtime as directed by the official PyTorch installation selector, then install the remaining requirements.
 
-## Current status
+## Stage 1 — prepare and pretrain
 
-The live app currently uses the native symbolic cognition engine. No neural weights are installed, no Qwen endpoint is configured, and no provider token is required. The training harness above is a documented next stage; it has **not** been run or connected to the live app yet.
+Choose legally usable general-language and programming corpora. You may supply documentation, your own code, public-domain books, and properly licensed code. Keep source/license records. Do not silently train on private customer data or personal conversations.
+
+```bash
+python training/prepare_data.py ./licensed-text ./licensed-code --output training/data --vocab-size 16000
+python training/train.py --data training/data --output training/checkpoints --steps 10000
+```
+
+Training starts with random weights. It does not load Qwen or any other pretrained checkpoint. The validation split is held out by document. The output contains `latest.pt`, `best.pt` and the matching `tokenizer.json`.
+
+## Stage 2 — conversation and coding fine-tuning
+
+Create a JSONL file with one complete conversation per line:
+
+```json
+{"messages":[{"role":"system","content":"You are Expert 802 AI. Be accurate, explain uncertainty, and never invent tool results."},{"role":"user","content":"Write a Python function that validates an email address."},{"role":"assistant","content":"Here is a function with a clear validation boundary..."}],"split":"train","skills":["python","coding","instruction_following"]}
+```
+
+Use real, reviewed examples with varied instructions, explanations, code, debugging traces, test design, tool-use records, clarification and refusals. Do not train the model to claim it executed code when it did not. The `split` field may be `train` or `validation`; otherwise the script assigns whole conversations to splits.
+
+```bash
+python training/prepare_sft.py conversations.jsonl --tokenizer training/checkpoints/tokenizer.json --output training/sft_data
+python training/train.py --data training/sft_data --output training/sft-checkpoints --resume training/checkpoints/best.pt --steps 20000
+```
+
+The fine-tuning tokenizer must match the base checkpoint. `--steps` is the total target step number, so choose a number greater than the checkpoint's saved step.
+
+## Stage 3 — test generation and serve privately
+
+```bash
+python training/generate.py --checkpoint training/sft-checkpoints/best.pt --tokenizer training/sft-checkpoints/tokenizer.json --prompt "<|user|> Explain a Python decorator.\n<|assistant|>"
+python training/serve.py --checkpoint training/sft-checkpoints/best.pt --tokenizer training/sft-checkpoints/tokenizer.json --host 127.0.0.1 --port 8787
+```
+
+The inference service exposes `GET /health` and `POST /generate`. It binds to localhost by default. Remote binding requires a 32-character `EXPERT802_INFERENCE_TOKEN` and a TLS reverse proxy. Do not expose the process directly to the public internet.
+
+## What this does and does not mean
+
+This is a real trainable Transformer architecture, not a dictionary lookup or bigram trick. But the starter model is small and begins with random weights. It will initially produce poor language. It needs a large, high-quality, legally usable corpus, substantial GPU training, reviewed coding examples, held-out evaluation and repeated improvements. It is **not GPT-equivalent** simply because it uses attention or because its checkpoint becomes large.
+
+The symbolic cognition and Code Lab layers can provide deterministic calculations, conversation-state tracking, evidence retrieval, task plans and static source inspection. The neural model is intended to improve open-ended language and code generation after it has actually been trained.
+
+The neural inference service is not yet connected to the production Vercel chat route. It is kept separate until a real trained checkpoint exists and can be evaluated. No model weights or corpora are committed to Git.
