@@ -1,0 +1,37 @@
+name: Validate Expert 802 AI
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Compile Python modules
+        run: python -m compileall -q api backend learning tests
+      - name: Run English engine tests
+        run: python -m unittest discover -s tests -v
+      - name: Check browser JavaScript syntax
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          html = Path("index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script>(.*?)</script>", html, re.S)
+          if not scripts:
+              raise SystemExit("No inline chat script found")
+          Path("/tmp/expert802-chat.js").write_text(scripts[-1], encoding="utf-8")
+          PY
+          node --check /tmp/expert802-chat.js
