@@ -151,9 +151,11 @@ button{cursor:pointer}
     <input id="codeFiles" type="file" multiple webkitdirectory accept=".py,.js,.jsx,.mjs,.cjs,.ts,.tsx,.html,.css,.json,.sql,.md,.txt,.yml,.yaml" style="display:block;width:100%;padding:12px;border:1px dashed #bdc9dc;border-radius:11px;background:#f8faff">
     <div id="codeFileNames" style="font-size:11px;color:#7c879b;margin-top:7px">Choose a project folder or select source files. Maximum 40 files and 1 MB total.</div>
     <button class="primary-btn" id="analyzeCode" type="button" style="margin-top:14px">Analyze project</button>
+    <button class="primary-btn" id="generateCode" type="button" style="margin:14px 0 0 8px;background:#52647f" disabled>Generate patch with trained model</button>
     <div id="codeAnalysisStatus" style="font-size:12px;color:#68758c;margin-top:10px" aria-live="polite"></div>
    </div>
    <div class="info-block" id="codeAnalysisResult" style="display:none"><h2>Project analysis</h2><div id="codeAnalysisSummary" style="font-size:13px;line-height:1.7"></div><div id="codeDiagnostics" style="margin-top:12px"></div><details style="margin-top:14px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Detected symbols and files</summary><pre id="codeSymbols" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:11px;line-height:1.6;max-height:340px;overflow:auto"></pre></details><details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Engineering work plan</summary><ol id="codePlan" style="font-size:12px;line-height:1.7"></ol></details></div>
+   <div class="info-block" id="codePatchResult" style="display:none"><h2>Generated patch draft</h2><p id="codePatchWarning" style="font-size:12px;color:#7c879b"></p><pre id="codePatchText" style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.6;max-height:460px;overflow:auto"></pre></div>
    <div class="notice">This first coding layer performs static analysis and task planning. It does not yet generate arbitrary code, run uploaded programs, or make changes to your repository.</div>
   </div></div></section>
   <section class="view content-view" id="trainingView"><div class="page-scroll"><div class="page-inner">
@@ -241,6 +243,20 @@ button{cursor:pointer}
   const files=Array.from(codeFilesInput.files||[]);
   $("codeFileNames").textContent=files.length?files.length+" file(s) selected · "+files.map(file=>file.webkitRelativePath||file.name).slice(0,8).join(", ")+(files.length>8?" …":""):"Choose a project folder or select source files.";
  });
+ $("generateCode").addEventListener("click",async()=>{
+  if(!statusData?.neural_generator_ready){$("codeAnalysisStatus").textContent="No trained private neural checkpoint is connected yet. The analyzer remains available.";return;}
+  const files=Array.from(codeFilesInput.files||[]);
+  if(!files.length){$("codeAnalysisStatus").textContent="Select project files first so the model can use real code context.";return;}
+  $("generateCode").disabled=true;$("codeAnalysisStatus").textContent="Preparing a patch draft with the private Expert 802 model…";
+  try{
+   const projectFiles=await Promise.all(files.slice(0,40).map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_generate",task:$("codeTask").value.trim()||"Review this project and suggest the highest-priority safe improvement.",files:projectFiles})});
+   const data=await response.json();if(!response.ok)throw new Error(data.error||"Code generation failed.");
+   $("codePatchResult").style.display="block";$("codePatchText").textContent=data.patch;$("codePatchWarning").textContent=data.warning;
+   $("codeAnalysisStatus").textContent="Draft generated. It has not been applied or executed.";
+  }catch(error){$("codeAnalysisStatus").textContent=error.message||"Code generation failed.";}
+  finally{$("generateCode").disabled=!statusData?.neural_generator_ready;}
+ });
  $("analyzeCode").addEventListener("click",async()=>{
   const files=Array.from(codeFilesInput.files||[]);
   if(!files.length){$("codeAnalysisStatus").textContent="Choose a project folder or source files first.";return;}
@@ -293,9 +309,10 @@ button{cursor:pointer}
    $("statusDot").classList.toggle("ready",true);
    $("statusLabel").textContent="Cognitive core online";
    $("statusCaption").textContent=number(statusData.dictionary_entries)+" dictionary entries · "+number(statusData.corpus_documents)+" corpus passages.";
-   $("modelPill").textContent="Native cognition active";
+   $("modelPill").textContent=statusData.neural_generator_ready?"Private neural model active":"Native cognition active";
+   $("generateCode").disabled=!statusData.neural_generator_ready;
    $("modelPill").classList.add("live");
-    $("modelStatusText").textContent="Active pipeline: normalization, intent and slot analysis, dialogue-state tracking, local retrieval and symbolic reasoning. No external model API or provider token is used. A general neural text generator is not yet implemented.";
+    $("modelStatusText").textContent="Active pipeline: normalization, intent and slot analysis, dialogue-state tracking, knowledge graph, local retrieval, programming planner, safe code inspection and symbolic reasoning. External model providers are not used. Private neural runtime: "+(statusData.neural_generator_ready?"configured":"not connected");
    $("artifactStatus").textContent=statusData.trained_artifact
     ? "Saved artifact: "+statusData.trained_artifact+". It contains "+number(statusData.training_sentences)+" training sentences and "+number(statusData.training_vocabulary)+" vocabulary items. This is a word-bigram statistical model, not a neural chatbot."
     :"No trained word-pattern artifact is currently available.";
