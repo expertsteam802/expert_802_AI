@@ -44,7 +44,7 @@ class ExpertLanguageEngine:
         words = tokens(text)
         correction_note = ""
         if spelling_changes:
-            correction_note = "I think you meant: **" + text + "**\n\n"
+            correction_note = "I think you meant: " + text + "\n\n"
 
         if re.search(r"what word comes next|predict the next word|next word after", lower):
             phrase = text.split("after", 1)[-1].strip(" :") if "after" in lower else ""
