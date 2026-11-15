@@ -86,7 +86,7 @@ class Expert802GPT(nn.Module):
         return logits, loss
 
     @torch.no_grad()
-    def generate(self, tokens, max_new_tokens=300, temperature=0.8, top_k=40):
+    def generate(self, tokens, max_new_tokens=300, temperature=0.8, top_k=40, stop_token_id=None):
         self.eval()
         for _ in range(max_new_tokens):
             context = tokens[:, -self.config.block_size:]
