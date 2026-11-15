@@ -73,6 +73,9 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertEqual(result["resolved_topic"], "minecraft")
         self.assertIn("minecraft", result["reply"].lower())
 
+    def test_proper_names_are_not_autocorrected(self):
+        self.assertIn("Paris", normalize("Where is Paris?"))
+
     def test_explicit_user_facts_can_be_recalled(self):
         history = [
             {"role": "user", "text": "Paris is in France"},
