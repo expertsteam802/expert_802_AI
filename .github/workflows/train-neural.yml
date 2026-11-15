@@ -58,7 +58,6 @@ jobs:
       - name: Prepare BPE corpus
         env:
           DATASET_PATH: ${{ inputs.dataset_path }}
-        env:
           VOCAB_SIZE: ${{ inputs.vocab_size }}
         run: python training/prepare_data.py "$DATASET_PATH" --output training/data --vocab-size "$VOCAB_SIZE"
       - name: Train from random initialization
