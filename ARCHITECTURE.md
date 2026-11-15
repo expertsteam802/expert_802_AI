@@ -20,7 +20,8 @@ HTTP request
 
 - `intent.py`: normalizes chat language and classifies the user's communicative act.
 - `memory.py`: builds a bounded dialogue state from the history supplied by the client. It is not yet durable cross-session memory.
-- `retrieval.py`: indexes local corpus passages with BM25-style term ranking and retrieves dictionary/WordNet entries.
+- `retrieval.py`: indexes local corpus passages with BM25-style term ranking and expands queries with WordNet synonyms.
+- `knowledge_graph.py`: extracts explicit relations from conversation history and performs conservative transitive location reasoning while surfacing conflicting facts.
 - `reasoning.py`: evaluates a restricted arithmetic AST and refuses arbitrary code.
 - `orchestrator.py`: routes frames through capabilities, combines evidence and reports uncertainty.
 - `backend/engine.py`: stable import facade for the API.
