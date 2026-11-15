@@ -5,6 +5,7 @@ from .memory import build_state, resolve_reference
 from .retrieval import LocalRetriever
 from .reasoning import calculate, derive_simple_facts
 from backend.language import tokens
+from .knowledge_graph import KnowledgeGraph
 
 class CognitiveEngine:
     def __init__(self):
@@ -36,6 +37,7 @@ class CognitiveEngine:
     def _reply_single(self, message, history=None):
         frame = parse_intent(message)
         state = build_state(history)
+        knowledge_graph = KnowledgeGraph.from_history(history)
         base = {
             "engine": "expert802-cognitive-core",
             "language": "English",
@@ -93,6 +95,9 @@ class CognitiveEngine:
             return {**base, "reply": "I can analyze the question, but my current local knowledge does not contain enough evidence for a dependable explanation. Give me the specific term, system, or example you want examined.", "confidence": 0.25}
 
         if frame.kind == "question":
+            graph_answer = knowledge_graph.answer(frame.normalized)
+            if graph_answer:
+                return {**base, **graph_answer, "memory_used": True, "reasoning": {"method": "explicit_fact_graph"}}
             remembered = self._match_fact(frame.normalized, state.facts)
             if remembered:
                 return {**base, "reply": "From your earlier message: " + remembered["text"],
