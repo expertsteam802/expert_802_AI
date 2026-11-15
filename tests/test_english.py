@@ -54,6 +54,13 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertIn("game", result["reply"].lower())
         self.assertNotIn("pretrained conversational model", result["reply"].lower())
 
+    def test_multiple_turns_are_processed_in_order(self):
+        result = self.engine.reply("what does curious mean?    what does grammar mean?")
+        self.assertTrue(result.get("batch_processed"))
+        self.assertEqual(result.get("batch_items"), 2)
+        self.assertIn("eager to know", result["reply"].lower())
+        self.assertIn("system and rules", result["reply"].lower())
+
     def test_followup_resolves_previous_topic(self):
         history = [
             {"role": "user", "text": "I need help with Minecraft"},
