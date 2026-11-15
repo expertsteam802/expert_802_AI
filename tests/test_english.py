@@ -41,6 +41,9 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertEqual(calculate(frame.target), 20)
         self.assertIn("20", self.engine.reply("what is 12 plus 8?")["reply"])
 
+    def test_arithmetic_supports_percentages(self):
+        self.assertEqual(calculate("20 percent of 50"), 10)
+
     def test_arithmetic_supports_precedence_and_parentheses(self):
         self.assertEqual(calculate("18 * (4 + 2)"), 108)
 
@@ -69,6 +72,15 @@ class CognitiveArchitectureTests(unittest.TestCase):
         result = self.engine.reply("what about it?", history)
         self.assertEqual(result["resolved_topic"], "minecraft")
         self.assertIn("minecraft", result["reply"].lower())
+
+    def test_explicit_user_facts_can_be_recalled(self):
+        history = [
+            {"role": "user", "text": "Paris is in France"},
+            {"role": "assistant", "text": "Got it."},
+        ]
+        result = self.engine.reply("Where is Paris?", history)
+        self.assertTrue(result.get("memory_used"))
+        self.assertIn("Paris is in France", result["reply"])
 
     def test_identity_describes_real_implemented_components(self):
         result = self.engine.reply("who are you")
