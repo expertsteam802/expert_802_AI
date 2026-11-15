@@ -1,53 +1,59 @@
 # Expert 802 AI
 
-An API-free, English-only language learning project with its own Python backend.
+Expert 802 AI is a provider-independent English cognitive system with a lightweight web interface and a Python reasoning backend.
 
-## What is in this version
+## Current architecture
 
-- Static chat interface in `index.html`.
-- Vercel Python serverless endpoints: `/api/chat` and `/api/health`.
-- Project-owned English processing code in `backend/`.
-- A starter English dictionary in `knowledge/english_dictionary.json`.
-- A small English teaching corpus in `knowledge/english_corpus.txt`.
-- A reproducible word-level bigram training script in `learning/train.py`.
-- No external AI inference APIs, no database integration, and no third-party model dependency.
+The live chat endpoint runs the project-owned pipeline in `backend/cognition/`:
+
+1. **Normalization** — common chat shorthand, spelling recovery and joined-word recovery.
+2. **Intent and slot analysis** — turns a message into a structured frame (definition, calculation, request, follow-up, explanation, question or statement).
+3. **Dialogue state** — extracts the current topic and resolves simple references such as “it” and “that” against supplied conversation history.
+4. **Local retrieval** — ranks passages from the project corpus and retrieves dictionary / WordNet entries as evidence.
+5. **Symbolic reasoning** — evaluates safe arithmetic expressions with a restricted AST; it never evaluates arbitrary Python.
+6. **Response orchestration** — combines the frame, context, retrieved evidence and computed results, and exposes confidence/evidence metadata to callers.
+
+There is no Qwen integration, external model endpoint, API key, or provider token in the active chat path.
+
+## Important capability boundary
+
+This is a real logic-based cognitive pipeline, but it is **not yet a general neural language generator** and it is not GPT-equivalent. It can normalize language, recognize supported intents, resolve limited dialogue references, retrieve local evidence and perform bounded symbolic calculations. For an open-ended question outside its local knowledge, it should say what evidence is missing rather than fabricate an answer.
+
+The word-bigram artifact in `backend/language_model.json` is only a next-word statistical baseline. It is not the cognitive engine and it does not provide general language understanding.
+
+## Repository layout
+
+- `index.html` — fixed-layout chat, dictionary and architecture-status views.
+- `api/chat.py` — Vercel HTTP endpoint and live architecture status.
+- `backend/engine.py` — compatibility facade for the native engine.
+- `backend/cognition/` — normalization, intent analysis, dialogue memory, retrieval, reasoning and orchestration.
+- `backend/language.py` — lexical data loading and spelling/grammar helpers.
+- `knowledge/` — English dictionary, imported WordNet and the small starter corpus.
+- `learning/` — reproducible corpus and WordNet import workflows.
+- `tests/` — behavior and HTTP integration tests.
 
 ## Run locally
 
 Requires Python 3.10+.
 
 ```bash
+python -m compileall -q api backend learning tests
+python -m unittest discover -s tests -v
 python -m learning.train
-python -m http.server 8000
 ```
 
-The static page can be opened at `http://localhost:8000`. The Python chat API itself is deployed as a Vercel Function; to test the complete application locally, install the Vercel CLI and run `vercel dev`.
+For the complete Vercel function environment, install the Vercel CLI and run `vercel dev`.
 
-## Deploy on Vercel
+## Deploy
 
-Import this repository. Use the Other framework preset and leave the build command empty. Vercel detects Python files under `api/` as serverless functions. The site is served from the repository root.
+Import this repository into Vercel. Use the Other framework preset and leave the build command empty. Vercel detects Python files under `api/` as serverless functions.
 
-## Add English knowledge and train
+GitHub Actions runs validation on pushes to `main`. The separate training workflow runs on GitHub-hosted CPU compute and updates the small word-bigram baseline and WordNet import; it does not train a neural conversational model.
 
-1. Add trusted, legally usable English text to `knowledge/english_corpus.txt` (or pass another UTF-8 text file to the trainer).
-2. Run `python -m learning.train`.
-3. The trainer writes `backend/language_model.json`, containing word frequencies and next-word transition counts.
+## Roadmap
 
-For example:
-
-```bash
-python -m learning.train knowledge/english_corpus.txt
-```
-
-The starter trainer is a statistical word-bigram model. It learns word co-occurrence and next-word probabilities from the supplied text. It is **not** a neural network, does not automatically acquire human-like understanding, and is not yet used as a free-form chat generator. The conversation endpoint combines explicit English vocabulary, grammar patterns, intent handling, and (for next-word prediction prompts) the trained word-bigram model when its artifact exists. This is an honest first foundation, not a finished general intelligence.
-
-## Training compute limitation
-
-Vercel Functions are for short request/response work, not long model training. A GitHub Actions workflow at `.github/workflows/train-english.yml` runs the trainer on GitHub-hosted CPU compute when English training files change, and can also be started manually from the Actions tab. It commits the generated model artifact back to the repository. This avoids requiring your PC to perform training. The workflow uses GitHub-hosted runner limits; it is suitable for this small statistical model, not for training a large neural model.
-
-## Next milestones
-
-- Expand the dictionary with licensed lexical data and word forms.
-- Add sentence parsing, morphology, grammar tests, and user correction datasets.
-- Add a hosted, resumable training workflow and versioned checkpoints.
-- Upgrade from n-gram statistics to a small neural language model when a suitable training runtime and corpus are available.
+- Improve robust parsing with a tested grammar and labeled semantic-frame data.
+- Add durable, user-controlled memory storage rather than relying only on browser-supplied recent history.
+- Expand the knowledge base with licensed, source-attributed documents and retrieval evaluations.
+- Add explicit multi-step planning, tool permissions, execution traces and recovery.
+- Train a native neural generator only when a suitable GPU training runtime, large legally usable corpus, checkpoint storage and held-out evaluation set are available. Source code alone is not trained intelligence.
