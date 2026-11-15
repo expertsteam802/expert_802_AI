@@ -72,7 +72,7 @@ python training/generate.py --checkpoint training/sft-checkpoints/best.pt --toke
 python training/serve.py --checkpoint training/sft-checkpoints/best.pt --tokenizer training/sft-checkpoints/tokenizer.json --host 127.0.0.1 --port 8787
 ```
 
-The inference service exposes `GET /health` and `POST /generate`. It binds to localhost by default. Remote binding requires a 32-character `EXPERT802_INFERENCE_TOKEN` and a TLS reverse proxy. Do not expose the process directly to the public internet.
+The inference service exposes `GET /health` and `POST /generate`. It binds to localhost by default. Generation length is controlled by `EXPERT802_MAX_NEW_TOKENS` (default 2,048, hard ceiling 8,192). There is no hosted-provider token quota, but context size, GPU memory, runtime and hardware capacity remain finite. Remote binding requires a 32-character `EXPERT802_INFERENCE_TOKEN` and a TLS reverse proxy. Do not expose the process directly to the public internet.
 
 ## What this does and does not mean
 
