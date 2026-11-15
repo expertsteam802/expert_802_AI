@@ -30,7 +30,7 @@ STOP = {
     "do","does","did","to","of","in","on","at","for","with","and","or",
     "but","what","who","where","when","why","how","please","can","could",
     "would","should","will","now","just","really","very","about","this",
-    "that","these","those","there","here","have","has","had"
+    "that","these","those","there","here","have","has","had","right"
 }
 
 def normalize(text):
@@ -46,6 +46,7 @@ def normalize(text):
 def _clean_target(value):
     value = re.sub(r"[?!.]+$", "", value.strip())
     value = re.sub(r"\s+", " ", value)
+    value = re.sub(r"^(?:a|an|the)\\s+", "", value, flags=re.I)
     return value.strip(" '""“”")
 
 def parse_intent(message):
@@ -62,9 +63,13 @@ def parse_intent(message):
     if re.search(r"\b(who are you|what are you|your name)\b", low):
         return IntentFrame("identity", text, confidence=0.99, slots={})
 
-    math = re.search(r"\b(?:what is|calculate|compute|solve)\s+([0-9().+\-*/%^ x]+(?:plus|minus|times|divided by)[0-9().+\-*/%^ x]*)\s*[?!.]*$", low)
-    if math:
-        return IntentFrame("calculation", text, target=math.group(1).strip(), confidence=0.95, slots={})
+    math_match = re.match(r"^(?:what is|calculate|compute|solve)\s+(.+?)[?!.]*$", low)
+    if math_match:
+        expression = math_match.group(1).strip()
+        has_number = bool(re.search(r"\d", expression))
+        has_operator = bool(re.search(r"[+\-*/%^]|\b(plus|minus|times|divided by|over)\b", expression))
+        if has_number and has_operator:
+            return IntentFrame("calculation", text, target=expression, confidence=0.95, slots={})
 
     patterns = [
         r"^(?:what is|what's|define|meaning of|definition of)\s+(.+?)(?:\s+in full(?: words)?)?$",
