@@ -2,6 +2,7 @@
 from dataclasses import dataclass, asdict
 from .programming import build_work_plan
 from .code_intelligence import inspect_project, InspectionError
+from .sandbox_runtime import SandboxRuntime
 
 @dataclass
 class ToolResult:
@@ -12,10 +13,32 @@ class ToolResult:
 
 class ToolRegistry:
     def __init__(self):
-        self._tools = {"inspect_project": inspect_project}
+        self.sandbox = SandboxRuntime()
+        self._tools = {"inspect_project": inspect_project, "run_python_tests": self.run_python_tests, "check_javascript": self.check_javascript}
 
     def describe(self):
-        return [{"name":name,"description":"Statically inspect a bounded source snapshot; never execute uploaded code."} for name in sorted(self._tools)]
+        descriptions = {
+            "inspect_project": "Statically inspect a bounded source snapshot without executing it.",
+            "run_python_tests": "Explicitly run Python unittest discovery in a private network-disabled Docker container.",
+            "check_javascript": "Explicitly run Node syntax checking for one supplied JavaScript file in a private container.",
+        }
+        return [{"name":name,"description":descriptions[name],"ready":True if name=="inspect_project" else self.sandbox.health()["ready"]} for name in sorted(self._tools)]
+
+    def run_python_tests(self, files):
+        if not self.sandbox.health()["ready"]:
+            raise InspectionError("Private Docker test runner is not ready.")
+        result = self.sandbox.run(files, "python_unittest")
+        if not result.get("ok"):
+            raise InspectionError(result.get("error") or result.get("stderr") or "Python tests failed.")
+        return result
+
+    def check_javascript(self, files, target):
+        if not self.sandbox.health()["ready"]:
+            raise InspectionError("Private Docker test runner is not ready.")
+        result = self.sandbox.run(files, "node_check", target)
+        if not result.get("ok"):
+            raise InspectionError(result.get("error") or result.get("stderr") or "JavaScript syntax check failed.")
+        return result
 
     def call(self, name, arguments):
         tool = self._tools.get(name)
