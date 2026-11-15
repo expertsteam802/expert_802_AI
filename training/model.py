@@ -98,6 +98,8 @@ class Expert802GPT(nn.Module):
             probabilities = F.softmax(logits, dim=-1)
             next_token = torch.multinomial(probabilities, num_samples=1)
             tokens = torch.cat((tokens, next_token), dim=1)
+            if stop_token_id is not None and int(next_token[0, 0]) == int(stop_token_id):
+                break
         return tokens
 
     def parameter_count(self):
