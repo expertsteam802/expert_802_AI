@@ -126,6 +126,7 @@ class CognitiveArchitectureTests(unittest.TestCase):
                 self.assertEqual(data["engine"], "expert802-cognitive-core")
                 self.assertFalse(data["external_model_provider"])
                 self.assertIn("symbolic_reasoning", data["architecture"])
+                self.assertIn("knowledge_graph", data["architecture"])
         finally:
             server.shutdown()
             server.server_close()
