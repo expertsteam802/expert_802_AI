@@ -1,0 +1,62 @@
+name: Fine-tune Expert 802 native model
+
+on:
+  workflow_dispatch:
+    inputs:
+      dataset_path:
+        description: Path to the reviewed JSONL conversation dataset on the GPU runner
+        required: true
+        default: /mnt/expert802/conversations.jsonl
+      base_checkpoint_path:
+        description: Path to the trained base model checkpoint on the GPU runner
+        required: true
+        default: /mnt/expert802/base/best.pt
+      tokenizer_path:
+        description: Path to the exact tokenizer used by the base checkpoint
+        required: true
+        default: /mnt/expert802/base/tokenizer.json
+      steps:
+        description: Total target training step number (must exceed checkpoint step)
+        required: true
+        default: "20000"
+
+permissions:
+  contents: read
+
+jobs:
+  finetune:
+    runs-on: [self-hosted, linux, x64, gpu]
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install isolated training dependencies
+        run: python -m pip install -r training/requirements.txt
+      - name: Validate mounted training inputs
+        env:
+          DATASET_PATH: ${{ inputs.dataset_path }}
+          BASE_CHECKPOINT: ${{ inputs.base_checkpoint_path }}
+          TOKENIZER_PATH: ${{ inputs.tokenizer_path }}
+        run: |
+          test -f "$DATASET_PATH"
+          test -f "$BASE_CHECKPOINT"
+          test -f "$TOKENIZER_PATH"
+      - name: Prepare held-out conversation dataset
+        env:
+          DATASET_PATH: ${{ inputs.dataset_path }}
+          TOKENIZER_PATH: ${{ inputs.tokenizer_path }}
+        run: python training/prepare_sft.py "$DATASET_PATH" --tokenizer "$TOKENIZER_PATH" --output training/sft_data
+      - name: Fine-tune from the base checkpoint
+        env:
+          BASE_CHECKPOINT: ${{ inputs.base_checkpoint_path }}
+          TARGET_STEPS: ${{ inputs.steps }}
+        run: python training/train.py --data training/sft_data --output training/sft-checkpoints --resume "$BASE_CHECKPOINT" --steps "$TARGET_STEPS"
+      - name: Upload fine-tuned checkpoint artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: expert802-sft-checkpoint
+          path: training/sft-checkpoints/
+          if-no-files-found: error
+          retention-days: 7
