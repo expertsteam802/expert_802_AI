@@ -39,7 +39,7 @@ def main():
     parser.add_argument("--output", default="training/checkpoints")
     parser.add_argument("--steps", type=int, default=10000)
     parser.add_argument("--batch-size", type=int, default=32)
-    parser.add_argument("--block-size", type=int, default=512)
+    parser.add_argument("--block-size", type=int, default=1024)
     parser.add_argument("--layers", type=int, default=6)
     parser.add_argument("--heads", type=int, default=8)
     parser.add_argument("--width", type=int, default=256)
@@ -51,7 +51,7 @@ def main():
     torch.manual_seed(802)
     random.seed(802)
     device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
-    config = ModelConfig(block_size=args.block_size, n_layer=args.layers, n_head=args.heads, n_embd=args.width)
+    data_dir = Path(args.data)\n    metadata = json.loads((data_dir / "metadata.json").read_text(encoding="utf-8"))\n    config = ModelConfig(vocab_size=int(metadata["vocab_size"]), block_size=args.block_size, n_layer=args.layers, n_head=args.heads, n_embd=args.width)
     model = Expert802GPT(config).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, betas=(0.9, 0.95), weight_decay=0.1)
     start_step = 0
@@ -66,7 +66,7 @@ def main():
     train_data = load_tokens(data_dir / "train.bin")
     val_data = load_tokens(data_dir / "val.bin")
     output = Path(args.output)
-    output.mkdir(parents=True, exist_ok=True)
+    output.mkdir(parents=True, exist_ok=True)\n    shutil.copy2(data_dir / "tokenizer.json", output / "tokenizer.json")
     print(json.dumps({"device":device,"parameters":model.parameter_count(),"config":model.config_dict(),"train_bytes":len(train_data),"validation_bytes":len(val_data)}))
 
     best_validation = float("inf")
