@@ -53,13 +53,18 @@ def main():
     device="cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
     data_dir=Path(args.data)
     metadata=json.loads((data_dir/"metadata.json").read_text(encoding="utf-8"))
-    config=ModelConfig(vocab_size=int(metadata["vocab_size"]),block_size=args.block_size,
-                       n_layer=args.layers,n_head=args.heads,n_embd=args.width)
+    checkpoint = torch.load(args.resume,map_location=device,weights_only=False) if args.resume else None
+    if checkpoint:
+        config=ModelConfig(**checkpoint["config"])
+        if config.vocab_size != int(metadata["vocab_size"]):
+            raise ValueError("The fine-tuning tokenizer vocabulary must match the base checkpoint.")
+    else:
+        config=ModelConfig(vocab_size=int(metadata["vocab_size"]),block_size=args.block_size,
+                           n_layer=args.layers,n_head=args.heads,n_embd=args.width)
     model=Expert802GPT(config).to(device)
     optimizer=torch.optim.AdamW(model.parameters(),lr=args.learning_rate,betas=(0.9,0.95),weight_decay=0.1)
     start_step=0
-    if args.resume:
-        checkpoint=torch.load(args.resume,map_location=device,weights_only=False)
+    if checkpoint:
         model.load_state_dict(checkpoint["model"])
         if "optimizer" in checkpoint:
             optimizer.load_state_dict(checkpoint["optimizer"])
