@@ -32,6 +32,8 @@ def prepare(input_path, output_dir, validation_fraction=0.05, seed=802):
             training.append(conversation)
     if not training or not validation:
         raise ValueError("Provide enough conversations for both train and validation splits.")
+    if sum(map(len, training)) <= 513 or sum(map(len, validation)) <= 513:
+        raise ValueError("Both conversation splits must exceed 513 bytes for the default context.")
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
     train_bytes, val_bytes = b"".join(training), b"".join(validation)
