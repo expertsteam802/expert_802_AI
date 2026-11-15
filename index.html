@@ -159,7 +159,12 @@ button{cursor:pointer}
  "use strict";
  const $ = id => document.getElementById(id);
  const messages = $("messages"), input = $("messageInput"), send = $("sendButton");
- const history = [];
+ const HISTORY_KEY = "expert802.conversation.v1";
+ let history = [];
+ try {
+  const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+  if (Array.isArray(saved)) history = saved.filter(item => item && (item.role === "user" || item.role === "assistant") && typeof item.text === "string").slice(-100);
+ } catch (_) { history = []; }
  let statusData = null;
  const viewInfo = {
   chat:["Conversation","Talk naturally. Expert 802 AI will interpret your message."],
@@ -180,19 +185,28 @@ button{cursor:pointer}
   const bubble=document.createElement("div"); bubble.className="bubble"; bubble.textContent=text;
   row.append(avatar,bubble); messages.appendChild(row); messages.scrollTop=messages.scrollHeight; return row;
  }
+ function persistHistory(){
+  try{localStorage.setItem(HISTORY_KEY,JSON.stringify(history.slice(-100)));}catch(_){}
+ }
+ function restoreHistory(){
+  if(!history.length)return;
+  const welcome=$("welcome");if(welcome)welcome.remove();
+  history.forEach(item=>appendMessage(item.role,item.text));
+ }
+ restoreHistory();
  async function sendMessage(raw){
   const message=String(raw??input.value).trim();
   if(!message||send.disabled)return;
   const welcome=$("welcome"); if(welcome)welcome.remove();
-  appendMessage("user",message); history.push({role:"user",text:message});
+  appendMessage("user",message); history.push({role:"user",text:message}); persistHistory();
   input.value="";input.style.height="auto";send.disabled=true;send.textContent="…";
   const pending=appendMessage("assistant","Thinking…");
   try{
-   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-12)})});
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-30)})});
    const data=await response.json();
    if(!response.ok||typeof data.reply!=="string"||!data.reply.trim())throw new Error(data.error||"The language engine returned no answer.");
    pending.querySelector(".bubble").textContent=data.reply;
-   history.push({role:"assistant",text:data.reply});
+   history.push({role:"assistant",text:data.reply}); persistHistory();
   }catch(error){
    pending.classList.add("error");
    pending.querySelector(".bubble").textContent="I couldn't reach the language engine. "+(error.message||"Please try again.");
@@ -202,7 +216,7 @@ button{cursor:pointer}
  input.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage();}});
  input.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,150)+"px";});
  $("newChat").addEventListener("click",()=>{
-  history.length=0;
+  history.length=0; localStorage.removeItem(HISTORY_KEY);
   messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask a question, explore a word, explain an idea or continue a conversation. This workspace keeps the conversation in its own scrollable area.</p><div class="welcome-note">Your messages are sent to the Expert 802 AI language engine.</div></div>';
   input.value="";input.focus();switchView("chat");
  });
