@@ -67,7 +67,7 @@ def parse_intent(message):
     if math_match:
         expression = math_match.group(1).strip()
         has_number = bool(re.search(r"\d", expression))
-        has_operator = bool(re.search(r"[+\-*/%^]|\b(plus|minus|times|divided by|over)\b", expression))
+        has_operator = bool(re.search(r"[+\-*/%^]|\b(plus|minus|times|divided by|over|percent of|x)\b", expression))
         if has_number and has_operator:
             return IntentFrame("calculation", text, target=expression, confidence=0.95, slots={})
 
