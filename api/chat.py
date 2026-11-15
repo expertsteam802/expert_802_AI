@@ -24,13 +24,15 @@ def _training_stats():
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        neural_health = _ENGINE.neural.health()
         self._send(200, {
             "engine": "expert802-cognitive-core",
             "architecture": ["normalization", "intent_analysis", "dialogue_state", "knowledge_graph",
                              "local_retrieval", "symbolic_reasoning", "programming_planner", "safe_code_inspection", "tool_registry"],
             "external_model_provider": False,
             "model_configured": _ENGINE.neural.configured,
-            "neural_generator_ready": _ENGINE.neural.configured,
+            "neural_generator_ready": neural_health["ready"],
+            "neural_runtime": neural_health,
             "coding_agent_ready": True,
             "code_execution_enabled": False,
             "supported_code_inspection": ["Python", "JavaScript", "TypeScript", "HTML", "CSS", "JSON"],
@@ -57,8 +59,8 @@ class handler(BaseHTTPRequestHandler):
                 return self._send(400, {"error": "The request body must be a JSON object."})
             action = payload.get("action", "chat")
             if action == "code_generate":
-                if not _ENGINE.neural.configured:
-                    return self._send(503, {"error": "The private Expert 802 neural generator is not connected. Train a checkpoint and configure the private inference URL first."})
+                if not _ENGINE.neural.health()["ready"]:
+                    return self._send(503, {"error": "The private Expert 802 neural generator is not ready. Train a checkpoint and start the private inference service first."})
                 task = payload.get("task", "")
                 if not isinstance(task, str) or not task.strip():
                     return self._send(400, {"error": "Describe the code change you want."})
