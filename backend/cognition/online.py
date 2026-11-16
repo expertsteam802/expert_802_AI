@@ -329,12 +329,38 @@ def answer_from_web_results(message, results):
     ranked.sort(key=lambda row: row[0], reverse=True)
     passages = []
     for score, item, body in ranked[:3]:
+        title = _clean(item.get("page_title") or item.get("title"), 220)
+        title_words = set(re.findall(r"[a-z0-9]+", title.lower()))
+        sentences = re.split(r"(?<=[.!?])\s+|[\r\n]+", body)
+        sentence_scores = []
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if len(sentence) < 35:
+                continue
+            sentence_words = set(re.findall(r"[a-z0-9]+", sentence.lower()))
+            hits = len(terms & sentence_words)
+            title_hits = len(terms & title_words)
+            sentence_score = (hits * 2 + title_hits) / max(1, len(terms) * 3)
+            if hits or title_hits:
+                sentence_scores.append((sentence_score, sentence))
+        sentence_scores.sort(key=lambda row: row[0], reverse=True)
+        selected = []
+        seen_sentences = set()
+        for _, sentence in sentence_scores:
+            normalized = sentence.lower()
+            if normalized in seen_sentences:
+                continue
+            seen_sentences.add(normalized)
+            selected.append(sentence)
+            if len(selected) == 5:
+                break
+        excerpt = " ".join(selected) if selected else body[:1400]
         passages.append({
             "source": item.get("source", "web"),
-            "title": item.get("page_title") or item.get("title", ""),
+            "title": title,
             "url": item.get("url", ""),
             "score": round(score, 3),
-            "text": body[:5000],
+            "text": excerpt[:5000],
         })
     return passages
 
