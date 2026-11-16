@@ -167,7 +167,7 @@ button{cursor:pointer}
      <input id="bookSearch" placeholder="Search titles or authors…" style="height:42px;flex:1;min-width:190px;border:1px solid #dfe5ef;border-radius:10px;padding:0 12px">
      <button class="primary-btn" id="importBooksButton" type="button" disabled>Import 100 books</button>
     </div>
-    <div id="bookImportProgress" role="status" aria-live="polite" style="font-size:12px;color:#68758c;margin-top:12px">The catalogue will load automatically. Choose Import 100 books to download full text to this browser.</div>
+    <div id="bookImportProgress" role="status" aria-live="polite" style="font-size:12px;color:#68758c;margin-top:12px">On launch, the catalogue loads and missing book texts import automatically into this browser. The Import button remains available for a manual retry.</div>
     <div id="bookCatalogList" style="display:grid;gap:8px;margin-top:14px"></div>
    </div>
    <div class="info-block"><h2>How this library works</h2><p>Books are downloaded from Project Gutenberg only after you choose import. Text is split into passages and saved in IndexedDB, then retrieved locally as evidence for Expert 802 AI. No book text is uploaded to the Expert 802 server. Large books may be skipped if they exceed the safe per-book size limit; scanned-image books need OCR and are not imported as searchable text.</p></div>
@@ -423,9 +423,10 @@ button{cursor:pointer}
    const unique=new Map();results.forEach(book=>{if(book.formats&&Object.keys(book.formats).some(key=>key.startsWith("text/plain")))unique.set(book.id,book);});
    openBooks=Array.from(unique.values()).slice(0,100);catalogLoaded=true;
    if(!openBooks.length)throw new Error("No downloadable plain-text books were returned.");
-   renderBookCatalog();$("bookImportProgress").textContent="Loaded "+openBooks.length+" downloadable English public-domain book records. Import is manual and runs on this device.";
+   renderBookCatalog();$("bookImportProgress").textContent="Loaded "+openBooks.length+" public-domain books. Automatically importing missing books into this browser…";
   }catch(error){$("bookCatalogCount").textContent="Catalogue unavailable";$("bookImportProgress").textContent=error.message||"Could not load the public book catalogue.";}
   finally{$("loadBooksButton").disabled=false;}
+  if(catalogLoaded&&openBooks.length)await importOpenBooks();
  }
  function plainTextUrl(book){
   const formats=book.formats||{};
