@@ -99,16 +99,6 @@ def _duckduckgo_search(query, limit):
     return _normalize_results(parser.items, "DuckDuckGo", limit)
 
 
-def _google_search(query, limit):
-    """Google Programmable Search JSON API. Requires a Google API key and Search Engine ID."""
-    key = os.environ.get("GOOGLE_CSE_API_KEY", "").strip()
-    engine_id = os.environ.get("GOOGLE_CSE_ID", "").strip()
-    if not key or not engine_id:
-        return None
-    params = urllib.parse.urlencode({"key": key, "cx": engine_id, "q": query, "num": min(limit, 10), "safe": "active"})
-    data = _json_request("https://www.googleapis.com/customsearch/v1?" + params, {"Accept": "application/json"})
-    return _normalize_results(data.get("items", []), "Google Search", limit)
-
 
 def _brave_search(query, limit):
     key = os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
