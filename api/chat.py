@@ -196,7 +196,7 @@ class handler(BaseHTTPRequestHandler):
                 return self._send(429, {"error": "Conversation generation is temporarily rate limited. Please wait and try again."})
             browser_memory = payload.get("memory", [])
             if isinstance(browser_memory, list):
-                memory_turns = [{"role": "user", "text": item[:500]} for item in browser_memory[-80:]
+                memory_turns = [{"role": "memory", "text": item[:500]} for item in browser_memory[-80:]
                                 if isinstance(item, str) and item.strip()]
                 history = memory_turns + history
             return self._send(200, _ENGINE.reply(message[:4000], history[-100:]))
