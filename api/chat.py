@@ -283,16 +283,10 @@ class handler(BaseHTTPRequestHandler):
                         result["answer_basis"] = "self-hosted Expert 802 reasoning over retrieved website content"
                     else:
                         result["reply"] = (
-                            "I found relevant website content, but the private Expert 802 language "
-                            "generator is not ready to synthesize it into a reliable answer. "
-                            "Here is the relevant source material:\n\n" +
-                            "\n\n".join(
-                                "[" + str(item.get("title") or item.get("source") or "Source") +
-                                "] " + str(item.get("text", ""))[:1400]
-                                for item in evidence[:2]
-                            )
+                            "I found relevant web sources, but no language generator is currently "
+                            "available to synthesize them. The source links are shown below."
                         )
-                        result["answer_basis"] = "retrieved website evidence; private generation unavailable"
+                        result["answer_basis"] = "retrieved website evidence; generation unavailable"
                 else:
                     result["reply"] = (
                         "I searched and read the available pages, but couldn't identify evidence "
