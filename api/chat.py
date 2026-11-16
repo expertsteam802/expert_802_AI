@@ -15,7 +15,7 @@ from backend.language import dictionary_lookup, load_dictionary, load_wordnet
 from backend.cognition.agent import AgentPlanner, InspectionError
 from backend.cognition.programming import build_work_plan
 from backend.cognition.sandbox_runtime import SandboxRuntime
-from backend.cognition.online import search_web, should_search_web, online_model_config, generate_online_reply
+from backend.cognition.online import search_web, should_search_web
 
 _ENGINE = ExpertLanguageEngine()
 _AGENT = AgentPlanner()
@@ -81,16 +81,15 @@ class handler(BaseHTTPRequestHandler):
         neural_health = _ENGINE.neural.health()
         sandbox_health = _SANDBOX.health()
         csrf_token = _make_csrf_token()
-        online_config = online_model_config()
         search_provider = ("Brave Search" if os.environ.get("BRAVE_SEARCH_API_KEY") else "Tavily" if os.environ.get("TAVILY_API_KEY") else "Bing" if os.environ.get("BING_SEARCH_V7_SUBSCRIPTION_KEY") else "Wikipedia fallback")
         sandbox_health["ready"] = bool(sandbox_health["ready"] and _CODE_RUN_ENABLED and csrf_token)
         self._send(200, {
             "engine": "expert802-cognitive-core",
             "architecture": ["normalization", "intent_analysis", "dialogue_state", "knowledge_graph",
-                             "local_retrieval", "symbolic_reasoning", "programming_planner", "safe_code_inspection", "tool_registry", "live_web_search", "optional_hosted_language_model", "private_neural_runtime", "isolated_test_runner"],
-            "external_model_provider": bool(online_config["configured"]),
-            "online_model_configured": bool(online_config["configured"]),
-            "online_model": online_config.get("model"),
+                             "local_retrieval", "symbolic_reasoning", "programming_planner", "safe_code_inspection", "tool_registry", "live_web_search", "private_self_trained_neural_runtime", "isolated_test_runner"],
+            "external_model_provider": False,
+            "online_model_configured": False,
+            "online_model": None,
             "web_search_ready": True,
             "web_search_provider": search_provider,
             "model_configured": _ENGINE.neural.configured,
@@ -190,31 +189,26 @@ class handler(BaseHTTPRequestHandler):
                             web_results = search_web(task[:300], 5)
                         except Exception:
                             logging.exception("Expert 802 coding web search failed")
-                online_model_fallback = bool(online_model_config()["configured"])
-                if online_model_config()["configured"] and _rate_allowed("hosted_chat", self.client_address[0], limit=18, window=300):
-                    try:
-                        source_context = [
-                            {"source": "Uploaded source file: " + str(item.get("path", "source")),
-                             "text": str(item.get("content", ""))[:3500]}
-                            for item in files[:4] if isinstance(item, dict)
-                        ]
-                        source_context.append({"source": "Static code inspection",
-                                               "text": json.dumps(result["output"], ensure_ascii=False)[:3500]})
-                        source_context.append({"source": "Engineering plan",
-                                               "text": json.dumps(plan, ensure_ascii=False)[:2000]})
-                        online_reply = generate_online_reply(
-                            "Engineering task: " + task[:4000] +
-                            "\n\nAnalyze the supplied project and static findings. Give prioritized concrete fixes, corrected code or patches where useful, and verification steps. Do not claim files were changed or code was executed.",
-                            code_history[-200:], payload.get("mode", "coding"), web_results, source_context)
-                        return self._send(200, {"engine": "expert802-coding-agent",
-                                                "analysis": result["output"], "plan": plan,
-                                                "reply": online_reply, "online_model_used": True,
-                                                "web_results": web_results})
-                    except Exception:
-                        logging.exception("Expert 802 hosted coding response failed; using local model")
-                return self._send(200, {"engine": "expert802-coding-agent",
-                                        "analysis": result["output"], "plan": plan,
-                                        "online_model_used": False, "online_model_fallback": online_model_fallback, "web_results": web_results})
+                source_context = [
+                    {"source": "Uploaded source file: " + str(item.get("path", "source")),
+                     "text": str(item.get("content", ""))[:3500]}
+                    for item in files[:4] if isinstance(item, dict)
+                ]
+                source_context.append({"source": "Static code inspection",
+                                       "text": json.dumps(result["output"], ensure_ascii=False)[:3500]})
+                source_context.append({"source": "Engineering plan",
+                                       "text": json.dumps(plan, ensure_ascii=False)[:2000]})
+                neural_reply = _ENGINE.neural.generate(
+                    "Analyze this project and its static findings. Give prioritized concrete fixes, corrected code or patches where useful, and verification steps. Do not claim files were changed or code was executed. Task: " + task[:4000],
+                    code_history[-200:], "\n\n".join("SOURCE: " + item["source"] + "\n" + item["text"] for item in source_context))
+                response = {"engine": "expert802-coding-agent", "analysis": result["output"],
+                            "plan": plan, "neural_model_used": bool(neural_reply.get("ok")),
+                            "web_results": web_results}
+                if neural_reply.get("ok"):
+                    response["reply"] = neural_reply["reply"]
+                else:
+                    response["reply"] = "I inspected the supplied files and prepared an engineering plan. The private Expert 802 model is not ready to generate a full natural-language review yet; the static findings and plan are available above."
+                return self._send(200, response)
             if action == "plan":
                 task = payload.get("task", "")
                 if not isinstance(task, str) or not task.strip():
@@ -261,29 +255,13 @@ class handler(BaseHTTPRequestHandler):
                         web_search_performed = True
                     except Exception:
                         logging.exception("Expert 802 web search failed")
-            online_model_used = False
-            online_model_error = False
-            if online_model_config()["configured"] and _rate_allowed("hosted_chat", self.client_address[0], limit=18, window=300):
-                try:
-                    online_reply = generate_online_reply(
-                        message[:4000], history[-200:], payload.get("mode", "general"),
-                        web_results, payload.get("knowledge", []))
-                    result = {"reply": online_reply, "intent": {"kind": "online_assistant"},
-                              "reasoning": {"method": "hosted_language_model"}}
-                    online_model_used = True
-                except Exception:
-                    logging.exception("Expert 802 hosted model failed; falling back to local cognition")
-                    result = _ENGINE.reply(message[:4000], history[-200:])
-                    online_model_error = True
-            else:
-                online_model_error = bool(online_model_config()["configured"])
-                result = _ENGINE.reply(message[:4000], history[-200:])
+            result = _ENGINE.reply(message[:4000], history[-200:])
             if not isinstance(result, dict):
                 result = {"reply": str(result)}
             result["web_results"] = web_results
             result["web_search_performed"] = web_search_performed
-            result["online_model_used"] = online_model_used
-            result["online_model_fallback"] = online_model_error
+            result["online_model_used"] = False
+            result["online_model_fallback"] = False
             return self._send(200, result)
         except Exception as error:
             logging.exception("Expert 802 cognitive core error (action=%s)", action if "action" in locals() else "unknown")
