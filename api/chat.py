@@ -5,6 +5,7 @@ import time
 import hmac
 import hashlib
 import secrets
+import logging
 from collections import defaultdict, deque
 from urllib.parse import urlparse
 from http.server import BaseHTTPRequestHandler
@@ -195,7 +196,7 @@ class handler(BaseHTTPRequestHandler):
                 return self._send(429, {"error": "Conversation generation is temporarily rate limited. Please wait and try again."})
             return self._send(200, _ENGINE.reply(message[:4000], history[-30:]))
         except Exception as error:
-            print("Expert 802 cognitive core error:", repr(error))
+            logging.exception("Expert 802 cognitive core error (action=%s)", action if "action" in locals() else "unknown")
             return self._send(500, {"error": "The cognitive engine encountered an internal error."})
 
     def _send(self, status, data):
