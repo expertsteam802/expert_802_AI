@@ -28,7 +28,7 @@ class OnlineAssistantTests(unittest.TestCase):
     def test_grounded_answer_selects_relevant_web_evidence(self):
         results = [
             {"title": "List of presidents of the United States",
-             "snippet": "Donald Trump is the 47th president of the United States.",
+             "snippet": "Donald Trump is the 47th and current president of the United States.",
              "url": "https://example.org/presidents", "source": "test"},
             {"title": "Thomas Jefferson",
              "snippet": "Thomas Jefferson was the third president.",
