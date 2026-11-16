@@ -214,7 +214,20 @@ button{cursor:pointer}
   try{localStorage.setItem(HISTORY_KEY,JSON.stringify(history.slice(-100)));localStorage.setItem(MEMORY_KEY,JSON.stringify(learnedMemory.slice(-80)));}catch(_){}
  }
  function rememberMeaning(text){
-  if(/\b(?:means|refers to)\b/i.test(text)){learnedMemory.push(text);learnedMemory=learnedMemory.slice(-80);}
+  const previous=history.slice(0,-1).filter(item=>item.role==="user").slice(-4);
+  const latest=previous[previous.length-1]?.text||"";
+  const priorTopic=latest.match(/\b(?:know|about|is|does|mean(?:ing)? of)\s+([A-Z][A-Z0-9-]{1,10})\b/)?.[1]
+    || (/^[A-Za-z][A-Za-z0-9+#.-]{1,20}$/.test(latest.trim())?latest.trim():null)
+    || latest.match(/\bwhat\s+is\s+([A-Za-z][A-Za-z0-9-]{1,20})\b/i)?.[1];
+  let fact=text.trim();
+  if(priorTopic && /^(?:it is|it's|its|it means|also it means)\s+/i.test(fact)){
+   const value=fact.replace(/^(?:it is|it's|its|it means|also it means)\s+/i,"").replace(/[.!?]+$/,"");
+   if(value)fact=priorTopic+" means "+value;
+  }
+  if(/\b(?:means|refers to)\b/i.test(fact)){
+   if(!learnedMemory.includes(fact))learnedMemory.push(fact);
+   learnedMemory=learnedMemory.slice(-80);
+  }
  }
  function typeReply(node,text){
   return new Promise(resolve=>{let index=0;const step=()=>{const remaining=text.length-index;const chunk=Math.max(1,Math.ceil(remaining/Math.max(1,Math.min(90,text.length/24))));index=Math.min(text.length,index+chunk);node.textContent=text.slice(0,index);messages.scrollTop=messages.scrollHeight;if(index<text.length)window.setTimeout(step,18);else resolve();};step();});
