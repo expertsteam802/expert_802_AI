@@ -43,8 +43,8 @@ def prepare(sources, output_dir, validation_fraction=0.02, vocab_size=16000, see
     for source in sources:
         path = Path(source)
         candidates = [path] if path.is_file() else (
-            [item for item in path.rglob("*") if item.is_file() and not item.is_symlink()
-             and item.suffix.lower() in TEXT_SUFFIXES] if path.is_dir() else [])
+            sorted((item for item in path.rglob("*") if item.is_file() and not item.is_symlink()
+                    and item.suffix.lower() in TEXT_SUFFIXES), key=lambda item: item.as_posix()) if path.is_dir() else [])
         for candidate in candidates:
             if candidate.stat().st_size > 20_000_000:
                 continue
