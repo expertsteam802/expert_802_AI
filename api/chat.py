@@ -204,7 +204,8 @@ class handler(BaseHTTPRequestHandler):
                 if neural_reply.get("ok"):
                     response["reply"] = neural_reply["reply"]
                 else:
-                    response["reply"] = "I inspected the supplied files and prepared an engineering plan. The private Expert 802 model is not ready to generate a full natural-language review yet; the static findings and plan are available above."
+                    response["reply"] = ""
+                    response["generation_ready"] = False
                 return self._send(200, response)
             if action == "plan":
                 task = payload.get("task", "")
