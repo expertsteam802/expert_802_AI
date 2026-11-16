@@ -256,7 +256,10 @@ class CognitiveEngine:
         for text in turns:
             clean = text.strip()
             match = re.search(r"\b([A-Za-z][A-Za-z0-9 +.-]{0,24})\s+(?:means|refers to)\s+(.+)$", clean, re.I)
-            if match:
+            if match and match.group(1).strip().lower() in {"it", "this", "that", "also it"} and previous_topic:
+                key = re.sub(r"\s+", "", previous_topic).lower()
+                meanings[key] = match.group(2).strip(" .!?")
+            elif match:
                 meanings[re.sub(r"\s+", "", match.group(1)).lower()] = match.group(2).strip(" .!?")
             elif previous_topic and re.match(r"^(?:it is|it's|its)\s+", clean, re.I):
                 value = re.sub(r"^(?:it is|it's|its)\s+", "", clean, flags=re.I).strip(" .!?")
