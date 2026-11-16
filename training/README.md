@@ -109,7 +109,7 @@ The Vercel chat route does not call OpenAI, Gemini, Groq, or another hosted lang
 
 ## Free-GPU training with Kaggle
 
-If you do not have a GPU server, use the importable notebook at [`training/kaggle_train.ipynb`](kaggle_train.ipynb). It uses Kaggle's optional free GPU accelerator and trains this repository's own randomly initialized model; it does not use a hosted generation API or swap in a pretrained model.
+If you do not have a GPU server, use the importable notebook at [`training/kaggle_train.ipynb`](kaggle_train.ipynb). The notebook embeds the exact training source, so it does not need to clone GitHub during execution. It uses Kaggle's optional free GPU accelerator and trains this repository's own randomly initialized model; it does not use a hosted generation API or swap in a pretrained model. PyTorch, NumPy and `tokenizers` must already be available in the Kaggle image; the notebook checks these instead of trying an Internet-dependent package install.
 
 1. Create a **private Kaggle Dataset** whose root contains a `corpus/` folder and `corpus_manifest.csv`. The manifest must list every corpus file using a path relative to `corpus/`, its license, source URL and permission basis. Only include material whose terms permit machine-learning training. The notebook does not download or scrape a corpus for you.
 2. Import `training/kaggle_train.ipynb` into Kaggle. Enable Internet for cloning this public repository and installing dependencies, and select **GPU** as the notebook accelerator.
