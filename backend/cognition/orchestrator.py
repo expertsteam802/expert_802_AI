@@ -103,8 +103,8 @@ class CognitiveEngine:
             # A bare topic is an invitation to converse, not a dictionary lookup.
             # Ask a natural, focused question instead of returning an unrelated
             # lexical match from the corpus.
-            return {**base, "reply": f"You're bringing up {topic}. What would you like to know or do with it?",
-                    "topic": topic, "reasoning": {"method": "topic_conversation"}}
+            return {**base, 'reply': self._respond_to_topic(topic), 'topic': topic,
+                    'reasoning': {'method': 'topic_conversation'}}
         if frame.kind == "action_request":
             action, target = frame.action, frame.target
             evidence = self._retrieve_topic_evidence(target) if target else []
@@ -344,8 +344,26 @@ class CognitiveEngine:
         return None
 
     @staticmethod
+    def _respond_to_topic(topic):
+        low = topic.strip().lower()
+        descriptions = {
+            'html': 'HTML structures the content of web pages.',
+            'css': 'CSS controls the layout and visual design of web pages.',
+            'javascript': 'JavaScript adds behavior and interactivity to websites.',
+            'js': 'JavaScript adds behavior and interactivity to websites.',
+            'python': 'Python is a general-purpose language used for automation, apps, data and AI.',
+        }
+        if low in descriptions:
+            return descriptions[low] + ' I can help you learn it or build a working project with it. What should we make?'
+        if low in {'code', 'coding', 'programming'}:
+            return 'Absolutely - let us build something. I can write and explain code, debug errors, or create a website, app or script. What do you want to make?'
+        return '{} - got it. Are you asking for an explanation, or do you want to build something with it?'.format(topic)
+
+    @staticmethod
     def _respond_to_request(target):
-        low = target.lower()
+        low = re.sub(r'^to\s+', '', target.strip().lower())
+        if low in {'code', 'coding', 'program', 'programming'}:
+            return 'Great - let us code. What are we building: a website, an app, a game, or a script? If you already have code, paste it and I will work from it.'
         if re.search(r"\b(game|gta|fifa|minecraft)\b", low):
             return f"You need help with {target}. I can help plan, choose, build, or troubleshoot it. What outcome do you want?"
         return f"You want help with {target}. Tell me the result you want, and I'll break the task into steps."
