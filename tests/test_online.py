@@ -36,6 +36,20 @@ class OnlineAssistantTests(unittest.TestCase):
         self.assertFalse(hasattr(online, "online_model_config"))
         self.assertFalse(hasattr(online, "generate_online_reply"))
 
+    def test_google_search_uses_programmable_search_and_normalizes_results(self):
+        payload = {"items": [{"title": "Python documentation", "snippet": "Official Python docs.", "link": "https://docs.python.org/3/"}]}
+        with patch.dict(os.environ, {"GOOGLE_CSE_API_KEY": "google-test-key", "GOOGLE_CSE_ID": "engine-test-id"}, clear=True), patch.object(online, "_json_request", return_value=payload) as request:
+            results = online.search_web("Python documentation", 5)
+        self.assertEqual(results[0]["source"], "Google Search")
+        self.assertEqual(results[0]["url"], "https://docs.python.org/3/")
+        self.assertIn("key=google-test-key", request.call_args.args[0])
+        self.assertIn("cx=engine-test-id", request.call_args.args[0])
+
+    def test_google_search_falls_through_when_not_configured(self):
+        with patch.dict(os.environ, {}, clear=True), patch.object(online, "_google_search", return_value=None), patch.object(online, "_wikipedia_search", return_value=[]) as fallback:
+            online.search_web("example", 3)
+        fallback.assert_called_once_with("example", 3)
+
     def test_search_uses_wikipedia_when_no_paid_provider_is_configured(self):
         with patch.dict(os.environ, {}, clear=True), patch.object(
             online, "_wikipedia_search", return_value=[{
