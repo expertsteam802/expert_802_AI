@@ -68,6 +68,15 @@ class KnowledgeGraph:
                         destination[subject].append({"type": target, "source": sentence})
                     continue
 
+                property_fact = re.match(r"^(.+?)\s+(?:is|are|was|were)\s+(not\s+)?(.+)$", sentence, re.I)
+                if property_fact:
+                    subject, negated, target = property_fact.groups()
+                    subject, target = cls.canonical(subject), cls.canonical(target)
+                    if subject and target and subject not in {"i", "you", "we", "they", "he", "she", "it"}:
+                        destination = graph.negative_types if negated else graph.type_rules
+                        destination[subject].append({"type": cls._singular(target), "source": sentence})
+                    continue
+
                 relation = re.match(r"^(.+?)\s+(?:has|have)\s+(.+)$", sentence, re.I)
                 if relation:
                     subject, target = map(cls.canonical, relation.groups())
@@ -167,6 +176,13 @@ class KnowledgeGraph:
         typed = re.match(r"^(?:is|are)\s+(?:a|an|the\s+)?(.+?)\s+(?:a|an)\s+(.+)$", text)
         if typed:
             return self._type_answer(typed.group(1), typed.group(2))
+
+        typed_simple = re.match(r"^is\s+(.+?)\s+([a-z ]+)$", text)
+        if typed_simple and typed_simple.group(2) not in {"in", "there", "here"}:
+            return self._type_answer(typed_simple.group(1), typed_simple.group(2))
+        typed_plural = re.match(r"^are\s+(.+?)\s+([a-z ]+)$", text)
+        if typed_plural:
+            return self._type_answer(typed_plural.group(1), typed_plural.group(2))
 
         for subject, facts in self.meanings.items():
             if re.search(r"\b" + re.escape(subject) + r"\b", text) and re.match(r"^(?:what|which)\s+", text):
