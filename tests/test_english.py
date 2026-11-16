@@ -109,6 +109,32 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertNotIn("local references", result["reply"].lower())
         self.assertIn("what would you like to know", result["reply"].lower())
 
+    def test_user_correction_is_acknowledged_in_context(self):
+        history = [
+            {"role": "user", "text": "do you know PS5"},
+            {"role": "assistant", "text": "Which part of it?"},
+        ]
+        result = self.engine.reply("its play station 5, a gaming device", history)
+        self.assertIn("ps5 means", result["reply"].lower())
+        self.assertIn("gaming device", result["reply"].lower())
+        self.assertEqual(result["reasoning"]["method"], "user_correction_attached_to_active_topic")
+
+    def test_chat_slang_and_interjections_are_not_spell_corrected(self):
+        self.assertEqual(normalize("bro"), "bro")
+        self.assertEqual(normalize("brooo"), "brooo")
+        self.assertEqual(normalize("hhhh"), "hhhh")
+        self.assertEqual(parse_intent("brooo").kind, "greeting")
+        self.assertEqual(parse_intent("hhhh").kind, "laughter")
+
+    def test_user_criticism_and_positive_feedback_are_understood(self):
+        self.assertEqual(parse_intent("you fool").kind, "criticism")
+        self.assertEqual(parse_intent("why are you a foolish").kind, "criticism")
+        self.assertEqual(parse_intent("you are a better learner").kind, "positive_feedback")
+        self.assertIn("misread your meaning", self.engine.reply("you fool")["reply"].lower())
+
+    def test_kill_some_one_spelling_is_recognized_as_harm_risk(self):
+        self.assertEqual(parse_intent("i want to kill some one").kind, "harm_risk")
+
     def test_knowledge_question_is_not_misread_as_a_command(self):
         frame = parse_intent("do you know PS5")
         self.assertEqual(frame.kind, "knowledge_check")
