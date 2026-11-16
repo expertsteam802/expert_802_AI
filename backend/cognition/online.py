@@ -116,6 +116,7 @@ _FRESH_RE = re.compile(
 _EXPLICIT_RE = re.compile(r"\b(search (?:the )?web|search online|look (?:it )?up online|"
                           r"find online|browse the internet|check online|verify online)\b", re.I)
 _FACTUAL_RE = re.compile(r"^\s*(?:what|who|when|where|which|why|how)\b", re.I)
+_RESEARCH_RE = re.compile(r"^\s*(?:explain|describe|compare|define|summari[sz]e|tell me about|give me an overview of)\b", re.I)
 _CODING_RE = re.compile(r"\b(api|sdk|package|library|framework|documentation|docs|"
                         r"error|exception|version|install|npm|pip|python|javascript|"
                         r"typescript|react|vercel|supabase|github|security advisory)\b", re.I)
@@ -129,7 +130,7 @@ def should_search_web(message):
         return False
     if _EXPLICIT_RE.search(text) or _FRESH_RE.search(text):
         return True
-    if _FACTUAL_RE.search(text) and not re.search(r"\b(you|yourself|my previous|in this chat)\b", text, re.I):
+    if (_FACTUAL_RE.search(text) or _RESEARCH_RE.search(text)) and not re.search(r"\b(you|yourself|my previous|in this chat)\b", text, re.I):
         return True
     if _CODING_RE.search(text) and re.search(r"\b(why|how|fix|error|issue|install|configure|latest|version|docs?)\b", text, re.I):
         return True
