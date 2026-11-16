@@ -80,6 +80,13 @@ def parse_intent(message, history=None):
         return IntentFrame("gratitude", text, confidence=0.99, slots={})
 
 
+    if re.fullmatch(r"h{3,}|(?:ha){2,}[!. ]*", low):
+        return IntentFrame("laughter", text, confidence=0.9, slots={})
+    if re.search(r"\b(?:you fool|you idiot|you are foolish|why are you (?:a )?foolish)\b", low):
+        return IntentFrame("criticism", text, confidence=0.95, slots={})
+    if re.search(r"\b(?:you are a better learner|you learn well|good job|well done)\b", low):
+        return IntentFrame("positive_feedback", text, confidence=0.9, slots={})
+
     # Recognize knowledge questions before lexical verb/object parsing.
     if re.match(r"^(?:do you know|have you heard of|are you familiar with)\s+", risk_text):
         target = re.sub(r"^(?:do you know|have you heard of|are you familiar with)\s+", "", low).strip(" ?!.")
