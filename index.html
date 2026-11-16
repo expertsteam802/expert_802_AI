@@ -69,7 +69,6 @@ button{cursor:pointer}
 .send:hover{background:var(--blue-dark)}.send:disabled{opacity:.45;cursor:wait}
 .composer-meta{width:min(920px,100%);margin:7px auto 0;display:flex;justify-content:space-between;gap:10px;color:#9aa3b5;font-size:10px;padding:0 4px}
 .content-view{flex-direction:column;min-height:0}
-#dictionaryView,#codelabView,#trainingView{display:none!important}
 .attach{height:42px;width:42px;flex:0 0 42px;border:1px solid #e2e8f2;border-radius:12px;background:#f7f9fc;color:#56647b;font-size:20px}
 .attach:hover{background:#edf3ff;color:var(--blue-dark)}
 .attachment-status{width:min(920px,100%);margin:0 auto 6px;color:#65748c;font-size:11px;padding:0 5px;display:none}
@@ -142,9 +141,10 @@ button{cursor:pointer}
   <button class="new-chat" id="newChat"><span>＋</span> New conversation</button>
   <div><div class="nav-label">Workspace</div><nav class="nav" aria-label="Main navigation">
    <button class="nav-btn active" data-view="chat"><span class="nav-icon">◉</span><span>Chat</span></button>
-   
-   
-   
+   <button class="nav-btn" data-view="library"><span class="nav-icon">▤</span><span>Library</span></button>
+   <button class="nav-btn" data-view="codelab"><span class="nav-icon">⌘</span><span>Code Lab</span></button>
+   <button class="nav-btn" data-view="dictionary"><span class="nav-icon">Aa</span><span>Dictionary</span></button>
+   <button class="nav-btn" data-view="training"><span class="nav-icon">◈</span><span>System</span></button>
   </nav></div>
   <div class="sidebar-spacer"></div>
   <div class="engine-card"><div class="engine-line"><span class="status-dot" id="statusDot"></span><span id="statusLabel">Checking engine…</span></div><div class="engine-caption" id="statusCaption">Reading live backend status.</div></div>
@@ -156,6 +156,22 @@ button{cursor:pointer}
    <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, explore ideas, build software, debug problems and continue naturally. Programming belongs here in the conversation too.</p><div class="welcome-note">Your chat history and learned meanings are saved in this browser. Language generation runs on your device after the model is cached — no cloud GPU inference.</div></div></div>
    <div class="composer-wrap"><div class="attachment-status" id="chatAttachmentStatus"></div><div class="composer-tools"><select id="expertMode" aria-label="Expert 802 AI mode"><option value="general">General assistant</option><option value="coding">Coding & software</option><option value="pos">POS & business</option><option value="hospital">Hospital systems</option><option value="school">School systems</option></select><button class="knowledge-button" id="addKnowledge" type="button">＋ Add books & manuals</button><input id="knowledgeFiles" type="file" multiple accept=".pdf,.txt,.md,.csv,.json,.html" hidden><span id="knowledgeStatus">Knowledge library · this browser</span></div><div class="composer"><button class="attach" id="chatAttachButton" type="button" aria-label="Attach source files" title="Attach source files">＋</button><input id="chatFiles" type="file" multiple accept=".py,.js,.jsx,.mjs,.cjs,.ts,.tsx,.html,.css,.json,.sql,.md,.txt,.yml,.yaml" hidden><textarea id="messageInput" rows="1" aria-label="Message Expert 802 AI" placeholder="Message Expert 802 AI…"></textarea><button class="send" id="sendButton" aria-label="Send message">↑</button></div><div class="composer-meta"><span>Enter to send · Shift + Enter for a new line · ＋ attach code</span><span>Your chat and learned meanings stay in this browser</span></div></div>
   </section>
+  <section class="view content-view" id="libraryView"><div class="page-scroll"><div class="page-inner">
+   <div class="page-heading"><h1>Open knowledge library</h1><p>Discover 100 English public-domain books and import their searchable text into this browser. Your library stays on this device.</p></div>
+   <div class="lookup-card">
+    <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+     <div><strong id="bookCatalogCount">Preparing the collection…</strong><div style="font-size:11px;color:#7c879b;margin-top:3px">Project Gutenberg catalogue · public-domain status reported for the United States</div></div>
+     <button class="primary-btn" id="loadBooksButton" type="button">Load 100 free books</button>
+    </div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:13px">
+     <input id="bookSearch" placeholder="Search titles or authors…" style="height:42px;flex:1;min-width:190px;border:1px solid #dfe5ef;border-radius:10px;padding:0 12px">
+     <button class="primary-btn" id="importBooksButton" type="button" disabled>Import 100 books</button>
+    </div>
+    <div id="bookImportProgress" role="status" aria-live="polite" style="font-size:12px;color:#68758c;margin-top:12px">The catalogue will load automatically. Choose Import 100 books to download full text to this browser.</div>
+    <div id="bookCatalogList" style="display:grid;gap:8px;margin-top:14px"></div>
+   </div>
+   <div class="info-block"><h2>How this library works</h2><p>Books are downloaded from Project Gutenberg only after you choose import. Text is split into passages and saved in IndexedDB, then retrieved locally as evidence for Expert 802 AI. No book text is uploaded to the Expert 802 server. Large books may be skipped if they exceed the safe per-book size limit; scanned-image books need OCR and are not imported as searchable text.</p></div>
+  </div></div></section>
   <section class="view content-view" id="dictionaryView"><div class="page-scroll"><div class="page-inner">
    <div class="page-heading"><h1>English dictionary</h1><p>Search the actual local dictionary and WordNet knowledge imported into this project.</p></div>
    <div class="lookup-card"><form class="lookup-form" id="lookupForm"><input id="lookupInput" autocomplete="off" placeholder="Enter a word, for example: curious"><button class="primary-btn" type="submit">Look up word</button></form><div class="lookup-result" id="lookupResult"><div class="result-word" id="resultWord"></div><div class="result-pos" id="resultPos"></div><div class="result-definition" id="resultDefinition"></div><div class="result-synonyms" id="resultSynonyms"></div></div></div>
@@ -222,6 +238,7 @@ button{cursor:pointer}
  } catch (_) { history = []; }
  let statusData = null;
  const viewInfo = {
+  library:["Knowledge library","Browse and import public-domain books for local retrieval."],
   chat:["Conversation","Ask anything. Discuss ideas, build software and solve problems in one conversation."],
   dictionary:["Dictionary","Look up words from the project's local knowledge base."],
   training:["Architecture","Inspect the native cognitive pipeline and local learning data."],
@@ -345,6 +362,80 @@ button{cursor:pointer}
  async function addKnowledgeFiles(files){const chosen=Array.from(files||[]);if(!chosen.length)return;$("addKnowledge").disabled=true;$("knowledgeStatus").textContent="Reading and indexing…";try{const db=await openKnowledgeDb(),items=[];for(const file of chosen.slice(0,30)){if(file.size>20*1024*1024)throw Error(file.name+" exceeds 20 MB.");const text=await extractKnowledgeFile(file);items.push(...splitKnowledgeText(text,file.name,$("expertMode").value));}if(!items.length)throw Error("No readable text found.");await new Promise((resolve,reject)=>{const tx=db.transaction("chunks","readwrite");items.forEach(item=>tx.objectStore("chunks").add(item));tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});await loadKnowledge();}catch(e){$("knowledgeStatus").textContent=e.message||"Import failed";}finally{$("addKnowledge").disabled=false;$("knowledgeFiles").value="";}}
  function retrieveKnowledge(query,mode){const terms=[...new Set(tokenize(query))];return knowledgeChunks.map(item=>{if(item.domain!=="general"&&item.domain!==mode)return null;const counts=new Map();(item.terms||[]).forEach(t=>counts.set(t,(counts.get(t)||0)+1));let score=0;terms.forEach(t=>{const n=counts.get(t)||0;if(n)score+=1+Math.min(n,4)*.25;});if(String(item.text).toLowerCase().includes(query.toLowerCase()))score+=3;return score?{...item,score}:null;}).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,5);}
  $("addKnowledge").addEventListener("click",()=>$("knowledgeFiles").click());$("knowledgeFiles").addEventListener("change",e=>addKnowledgeFiles(e.target.files));loadKnowledge();
+
+ let openBooks=[],catalogLoaded=false;
+ function renderBookCatalog(){
+  const list=$("bookCatalogList"),query=$("bookSearch").value.trim().toLowerCase();list.replaceChildren();
+  const shown=openBooks.filter(book=>(book.title+" "+(book.authors||[]).map(a=>a.name).join(" ")).toLowerCase().includes(query)).slice(0,100);
+  shown.forEach(book=>{
+   const row=document.createElement("div");row.style.cssText="display:flex;gap:10px;align-items:flex-start;padding:11px;border:1px solid #e6eaf1;border-radius:10px;background:#fff";
+   const copy=document.createElement("div");copy.style.cssText="min-width:0;flex:1";
+   const title=document.createElement("strong");title.textContent=book.title;
+   const author=document.createElement("div");author.style.cssText="font-size:11px;color:#778198;margin-top:3px";author.textContent=(book.authors||[]).map(a=>a.name).join(", ")||"Unknown author";
+   const meta=document.createElement("div");meta.style.cssText="font-size:10px;color:#9aa3b5;margin-top:3px";meta.textContent=(book.download_count||0).toLocaleString()+" downloads · Project Gutenberg #"+book.id;
+   copy.append(title,author,meta);row.append(copy);list.append(row);
+  });
+  $("bookCatalogCount").textContent=shown.length+" of "+openBooks.length+" books shown";
+  $("importBooksButton").disabled=!catalogLoaded||!openBooks.length;
+ }
+ async function loadOpenBooks(){
+  $("loadBooksButton").disabled=true;$("bookCatalogCount").textContent="Loading public-domain catalogue…";
+  try{
+   let next="https://gutendex.com/books/?languages=en&copyright=false&mime_type=text%2Fplain",results=[],pages=0;
+   while(next&&results.length<100&&pages<8){
+    const response=await fetch(next,{headers:{Accept:"application/json"}});
+    if(!response.ok)throw new Error("Book catalogue returned HTTP "+response.status);
+    const data=await response.json();results.push(...(data.results||[]));next=data.next;pages++;
+   }
+   const unique=new Map();results.forEach(book=>{if(book.formats&&Object.keys(book.formats).some(key=>key.startsWith("text/plain")))unique.set(book.id,book);});
+   openBooks=Array.from(unique.values()).slice(0,100);catalogLoaded=true;
+   if(!openBooks.length)throw new Error("No downloadable plain-text books were returned.");
+   renderBookCatalog();$("bookImportProgress").textContent="Loaded "+openBooks.length+" downloadable English public-domain book records. Import is manual and runs on this device.";
+  }catch(error){$("bookCatalogCount").textContent="Catalogue unavailable";$("bookImportProgress").textContent=error.message||"Could not load the public book catalogue.";}
+  finally{$("loadBooksButton").disabled=false;}
+ }
+ function plainTextUrl(book){
+  const formats=book.formats||{};
+  const key=Object.keys(formats).find(k=>k.toLowerCase().startsWith("text/plain")&&!k.toLowerCase().includes("zip"));
+  return key?formats[key]:null;
+ }
+ async function importOpenBooks(){
+  if(!catalogLoaded||!openBooks.length)return;
+  $("importBooksButton").disabled=true;$("loadBooksButton").disabled=true;
+  const db=await openKnowledgeDb();let imported=0,skipped=0,failed=0,totalBytes=0;
+  const existing=new Set(knowledgeChunks.map(item=>item.source));
+  try{
+   for(let i=0;i<openBooks.length;i++){
+    const book=openBooks[i],source="Project Gutenberg: "+book.title+" (#"+book.id+")";
+    if(existing.has(source)){skipped++;continue;}
+    const url=plainTextUrl(book);if(!url){skipped++;continue;}
+    $("bookImportProgress").textContent="Downloading "+(i+1)+"/"+openBooks.length+": "+book.title+" · "+imported+" imported";
+    try{
+     const response=await fetch(url);if(!response.ok)throw new Error("HTTP "+response.status);
+     const blob=await response.blob();
+     if(blob.size>8*1024*1024||totalBytes+blob.size>120*1024*1024){skipped++;continue;}
+     const raw=await blob.text();
+     const clean=raw.replace(/^\uFEFF/,"").replace(/\*\*\* START OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[\s\S]*?\*\*\*\s*/i,"").replace(/\*\*\* END OF (?:THE|THIS) PROJECT GUTENBERG EBOOK[\s\S]*$/i,"").trim();
+     if(clean.length<1000){skipped++;continue;}
+     const chunks=splitKnowledgeText(clean,source,"general");if(!chunks.length){skipped++;continue;}
+     await new Promise((resolve,reject)=>{
+      const tx=db.transaction("chunks","readwrite"),store=tx.objectStore("chunks");
+      chunks.forEach(chunk=>store.add(chunk));
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error||new Error("Library write aborted"));
+     });
+     existing.add(source);imported++;totalBytes+=blob.size;
+    }catch(error){failed++;}
+   }
+   await loadKnowledge();
+   $("bookImportProgress").textContent="Import finished · "+imported+" new books · "+skipped+" already saved or skipped · "+failed+" download failures · "+(totalBytes/1024/1024).toFixed(1)+" MB downloaded. You can safely import again; saved books are not duplicated.";
+  }catch(error){$("bookImportProgress").textContent="Import stopped: "+(error.message||"storage error");}
+  finally{$("importBooksButton").disabled=false;$("loadBooksButton").disabled=false;}
+ }
+ $("loadBooksButton").addEventListener("click",loadOpenBooks);
+ $("importBooksButton").addEventListener("click",importOpenBooks);
+ $("bookSearch").addEventListener("input",renderBookCatalog);
+
+ loadOpenBooks();
  let localGenerator=null, localModelName="", localDevice="";
  async function initializeLocalAI(){
   try{
@@ -486,7 +577,9 @@ button{cursor:pointer}
     const localAnswer=await generateLocalReply(message||"Review these source files and explain what they do, what is wrong, and how to improve them.",data,files,showLocalTokens);
     if(localAnswer)data.reply=localAnswer;
    }else{
-    const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-80),memory:learnedMemory,mode:$("expertMode").value,knowledge:retrieved.map(x=>({source:x.source,text:x.text.slice(0,1500)}))})});
+    const mode=$("expertMode").value;
+   const retrieved=retrieveKnowledge(message,mode);
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-80),memory:learnedMemory,mode,knowledge:retrieved.map(x=>({source:x.source,text:x.text.slice(0,1500)}))})});
     data=await response.json();
     if(!response.ok||typeof data.reply!=="string"||!data.reply.trim())throw new Error(data.error||"The language engine returned no answer.");
     const localAnswer=await generateLocalReply(message,data,[],showLocalTokens);
@@ -625,6 +718,9 @@ button{cursor:pointer}
   }
  }
  loadStatus().finally(initializeLocalAI);
+ window.addEventListener("online",()=>{ $("statusCaption").textContent="Network restored · local inference and saved knowledge remain available.";loadStatus(); });
+ window.addEventListener("offline",()=>{ $("statusCaption").textContent="Offline · saved knowledge and cached local model remain available."; });
+ window.setInterval(loadStatus,60000);
 })();
 </script>
 </body>
