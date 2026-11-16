@@ -70,18 +70,19 @@ class CognitiveEngine:
         }
         if frame.kind == "empty":
             return {**base, "reply": "Send me a message and I'll work with it."}
-        if frame.kind == "greeting":
-            return {**base, "reply": "Hello. What are you working on or thinking about?"}
-        if frame.kind == "gratitude":
-            return {**base, "reply": "You're welcome. What would you like to work on next?"}
-        if frame.kind == "laughter":
-            return {**base, "reply": "Haha — I'm listening. What were you going to say?"}
-        if frame.kind == "criticism":
-            return {**base, "reply": "You're right to call that out. I misread your meaning and fell back on weak matching instead of understanding the conversation. I'll correct the interpretation rather than argue with you."}
-        if frame.kind == "positive_feedback":
-            return {**base, "reply": "Thanks. The corrections you give me are useful context, and I'll keep applying them consistently in this conversation."}
-        if frame.kind == "acknowledgement":
-            return {**base, "reply": "Got it. I'll keep that in mind as we continue."}
+        if frame.kind in {"greeting", "gratitude", "laughter", "criticism", "positive_feedback", "acknowledgement"}:
+            neural = self._generate_natural(message, history, frame.kind)
+            if neural:
+                return {**base, **neural}
+            fallback = {
+                "greeting": "Hello. What are you working on or thinking about?",
+                "gratitude": "You're welcome.",
+                "laughter": "Haha — I'm listening.",
+                "criticism": "You're right to call that out. I'll correct the interpretation rather than argue with you.",
+                "positive_feedback": "Thanks. I'll apply that feedback consistently.",
+                "acknowledgement": "Got it.",
+            }
+            return {**base, "reply": fallback[frame.kind]}
         if frame.kind == "harm_risk" or contextual_weapon_request:
             return {**base, "reply": "I'm taking that seriously. I can't help find weapons or materials to hurt someone. If someone may be in immediate danger, move away from them and from anything that could be used as a weapon, and contact local emergency services or a trusted person who can intervene now. If you can, tell me whether anyone is in immediate danger right now."}
         if frame.kind == "knowledge_check":
@@ -103,8 +104,11 @@ class CognitiveEngine:
             # A bare topic is an invitation to converse, not a dictionary lookup.
             # Ask a natural, focused question instead of returning an unrelated
             # lexical match from the corpus.
+            neural = self._generate_natural(message, history, "topic:" + topic)
+            if neural:
+                return {**base, **neural, "topic": topic}
             return {**base, 'reply': self._respond_to_topic(topic), 'topic': topic,
-                    'reasoning': {'method': 'topic_conversation'}}
+                    'reasoning': {'method': 'topic_fallback'}}
         if frame.kind == "action_request":
             action, target = frame.action, frame.target
             evidence = self._retrieve_topic_evidence(target) if target else []
@@ -187,6 +191,9 @@ class CognitiveEngine:
         if frame.kind == "request":
             target = frame.target
             topic = resolve_reference(target, state) or target
+            neural = self._generate_natural(message, history, "request:" + topic)
+            if neural:
+                return {**base, **neural, "resolved_topic": topic}
             return {**base, "reply": self._respond_to_request(topic), "resolved_topic": topic, "confidence": frame.confidence}
 
         if frame.kind == "followup":
@@ -281,6 +288,23 @@ class CognitiveEngine:
         if neural["ok"]:
             return {**base, "engine": neural["engine"], "reply": neural["reply"], "neural_generated": True}
         return {**base, "reply": self._interpret_statement(frame.normalized), "confidence": frame.confidence}
+
+    def _generate_natural(self, message, history, dialogue_act):
+        """Use the self-trained model for open-ended dialogue when its checkpoint is ready."""
+        if not self.neural.health()["ready"]:
+            return None
+        context = (
+            "Dialogue analysis: " + dialogue_act + ". "
+            "Respond to the user's actual meaning in a natural, direct way. "
+            "Do not repeat a generic menu or ask what they want to know when the context already makes it clear. "
+            "Use the conversation history, and do not invent facts."
+        )
+        generated = self.neural.generate(message, history, context)
+        if not generated.get("ok"):
+            return None
+        return {"engine": generated["engine"], "reply": generated["reply"],
+                "neural_generated": True,
+                "reasoning": {"method": "self_trained_contextual_generation", "dialogue_act": dialogue_act}}
 
     @staticmethod
     def _learned_meanings(history):
