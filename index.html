@@ -66,6 +66,11 @@ button{cursor:pointer}
 .send:hover{background:var(--blue-dark)}.send:disabled{opacity:.45;cursor:wait}
 .composer-meta{width:min(920px,100%);margin:7px auto 0;display:flex;justify-content:space-between;gap:10px;color:#9aa3b5;font-size:10px;padding:0 4px}
 .content-view{flex-direction:column;min-height:0}
+#dictionaryView,#codelabView,#trainingView{display:none!important}
+.attach{height:42px;width:42px;flex:0 0 42px;border:1px solid #e2e8f2;border-radius:12px;background:#f7f9fc;color:#56647b;font-size:20px}
+.attach:hover{background:#edf3ff;color:var(--blue-dark)}
+.attachment-status{width:min(920px,100%);margin:0 auto 6px;color:#65748c;font-size:11px;padding:0 5px;display:none}
+.attachment-status.visible{display:block}
 .page-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:clamp(20px,4vw,44px)}
 .page-inner{width:min(100%,980px);margin:0 auto}
 .page-heading{margin-bottom:25px}
@@ -124,7 +129,7 @@ button{cursor:pointer}
   <div><div class="nav-label">Workspace</div><nav class="nav" aria-label="Main navigation">
    <button class="nav-btn active" data-view="chat"><span class="nav-icon">◉</span><span>Chat</span></button>
    
-   <button class="nav-btn" data-view="training"><span class="nav-icon">⌁</span><span>Architecture</span></button>
+   
    
   </nav></div>
   <div class="sidebar-spacer"></div>
@@ -135,7 +140,7 @@ button{cursor:pointer}
   <header class="topbar"><div><div class="top-title" id="pageTitle">Conversation</div><div class="top-subtitle" id="pageSubtitle">A conversational and programming assistant built around reasoning, tools and its own trainable model.</div></div><div class="top-right"><span class="pill" id="modelPill">Checking model</span></div></header>
   <section class="view chat-view active" id="chatView">
    <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, explore ideas, build software, debug problems and continue naturally. Programming belongs here in the conversation too.</p><div class="welcome-note">Your conversation history and learned meanings stay in this browser. No online GPU is needed for local conversation memory.</div></div></div>
-   <div class="composer-wrap"><div class="composer"><textarea id="messageInput" rows="1" aria-label="Message Expert 802 AI" placeholder="Message Expert 802 AI…"></textarea><button class="send" id="sendButton" aria-label="Send message">↑</button></div><div class="composer-meta"><span>Enter to send · Shift + Enter for a new line</span><span>Your chat history is saved in this browser</span></div></div>
+   <div class="composer-wrap"><div class="attachment-status" id="chatAttachmentStatus"></div><div class="composer"><button class="attach" id="chatAttachButton" type="button" aria-label="Attach source files" title="Attach source files">＋</button><input id="chatFiles" type="file" multiple accept=".py,.js,.jsx,.mjs,.cjs,.ts,.tsx,.html,.css,.json,.sql,.md,.txt,.yml,.yaml" hidden><textarea id="messageInput" rows="1" aria-label="Message Expert 802 AI" placeholder="Message Expert 802 AI…"></textarea><button class="send" id="sendButton" aria-label="Send message">↑</button></div><div class="composer-meta"><span>Enter to send · Shift + Enter for a new line · ＋ attach code</span><span>Your chat and learned meanings stay in this browser</span></div></div>
   </section>
   <section class="view content-view" id="dictionaryView"><div class="page-scroll"><div class="page-inner">
    <div class="page-heading"><h1>English dictionary</h1><p>Search the actual local dictionary and WordNet knowledge imported into this project.</p></div>
@@ -182,6 +187,16 @@ button{cursor:pointer}
  "use strict";
  const $ = id => document.getElementById(id);
  const messages = $("messages"), input = $("messageInput"), send = $("sendButton");
+ let chatFiles = [];
+ $("chatAttachButton").addEventListener("click",()=> $("chatFiles").click());
+ $("chatFiles").addEventListener("change",()=>{
+  chatFiles=Array.from($("chatFiles").files||[]).slice(0,40);
+  const total=chatFiles.reduce((sum,file)=>sum+file.size,0);
+  const status=$("chatAttachmentStatus");
+  if(total>1000000){chatFiles=[];$("chatFiles").value="";status.textContent="Select up to 40 source files and keep the total below 1 MB.";}
+  else status.textContent=chatFiles.length?chatFiles.length+" source file(s) ready: "+chatFiles.map(file=>file.name).slice(0,5).join(", ")+(chatFiles.length>5?" …":""):"";
+  status.classList.toggle("visible",!!status.textContent);
+ });
  const HISTORY_KEY = "expert802.conversation.v2";
  const MEMORY_KEY = "expert802.learned-meanings.v1";
  let learnedMemory = [];
@@ -242,20 +257,46 @@ button{cursor:pointer}
  restoreHistory();
  async function sendMessage(raw){
   const message=String(raw??input.value).trim();
-  if(!message||send.disabled)return;
+  if((!message&&!chatFiles.length)||send.disabled)return;
   const welcome=$("welcome"); if(welcome)welcome.remove();
-  appendMessage("user",message); history.push({role:"user",text:message}); rememberMeaning(message); persistHistory();
+  appendMessage("user",message||"Please inspect the attached source files.");
+  history.push({role:"user",text:message||"Please inspect the attached source files."});
+  rememberMeaning(message); persistHistory();
+  const filesToInspect=chatFiles.slice();
+  chatFiles=[];$("chatFiles").value="";$("chatAttachmentStatus").textContent="";$("chatAttachmentStatus").classList.remove("visible");
   input.value="";input.style.height="auto";send.disabled=true;send.textContent="…";
   const pending=appendMessage("assistant","Thinking…");
   try{
-   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-80),memory:learnedMemory})});
-   const data=await response.json();
-   if(!response.ok||typeof data.reply!=="string"||!data.reply.trim())throw new Error(data.error||"The language engine returned no answer.");
+   let data;
+   if(filesToInspect.length){
+    const files=await Promise.all(filesToInspect.map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
+    const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_analyze",task:message||"Inspect these source files and explain their structure, defects and risks.",files})});
+    data=await response.json();
+    if(!response.ok)throw new Error(data.error||"The source inspection failed.");
+    const a=data.analysis||{}, summary=a.summary||{}, diagnostics=a.diagnostics||[];
+    const lines=[
+     "I inspected "+(a.file_count||files.length)+" source file(s) directly in this conversation.",
+     "Languages: "+Object.entries(a.languages||{}).map(([name,count])=>name+" ("+count+")").join(", "),
+     "Project size: "+(a.total_lines||0)+" lines.",
+     "Findings: "+(summary.errors||0)+" error(s), "+(summary.warnings||0)+" warning(s).",
+     "",
+     diagnostics.length?"Findings:":"No issues were detected by the available static checks."
+    ];
+    diagnostics.slice(0,30).forEach(item=>lines.push("- "+item.severity.toUpperCase()+" · "+item.path+(item.line?":"+item.line:"")+" · "+item.message));
+    if(diagnostics.length>30)lines.push("…and "+(diagnostics.length-30)+" more finding(s).");
+    lines.push("", "This inspection checks source structure and selected risks; it does not execute the project.");
+    if(data.plan?.steps?.length){lines.push("","Suggested engineering steps:");data.plan.steps.slice(0,8).forEach((step,index)=>lines.push((index+1)+". "+step));}
+    data.reply=lines.join("\n");
+   }else{
+    const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-80),memory:learnedMemory})});
+    data=await response.json();
+    if(!response.ok||typeof data.reply!=="string"||!data.reply.trim())throw new Error(data.error||"The language engine returned no answer.");
+   }
    await typeReply(pending.querySelector(".bubble"),data.reply);
    history.push({role:"assistant",text:data.reply}); persistHistory();
   }catch(error){
    pending.classList.add("error");
-   pending.querySelector(".bubble").textContent="I couldn't reach the language engine. "+(error.message||"Please try again.");
+   pending.querySelector(".bubble").textContent="I couldn't complete that request. "+(error.message||"Please try again.");
   }finally{send.disabled=false;send.textContent="↑";input.focus();messages.scrollTop=messages.scrollHeight;}
  }
  send.addEventListener("click",()=>sendMessage());
@@ -263,7 +304,7 @@ button{cursor:pointer}
  input.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,150)+"px";});
  $("newChat").addEventListener("click",()=>{
   history.length=0; localStorage.removeItem(HISTORY_KEY);
-  messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, discuss ideas, plan software and continue multi-turn conversations. Open Code Lab to inspect project files.</p><div class="welcome-note">Your conversation memory stays in this browser. Start a new chat without losing learned meanings.</div></div>';
+  messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, discuss ideas, plan software and continue multi-turn conversations. Attach source files to inspect them directly in this conversation.</p><div class="welcome-note">Your conversation memory stays in this browser. Start a new chat without losing learned meanings.</div></div>';
   input.value="";input.focus();switchView("chat");
  });
  const codeFilesInput=$("codeFiles");
