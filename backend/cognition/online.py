@@ -150,9 +150,52 @@ def _wikipedia_search(query, limit):
     return _normalize_results(items, "Wikipedia", limit)
 
 
+def normalize_search_query(message):
+    """Turn common conversational phrasing into a focused search query."""
+    text = _clean(message, 300)
+    lowered = text.lower()
+    if (re.search(r"\\b(president|head of state)\\b", lowered)
+            and re.search(r"\\b(usa|u\\.?s\\.?|united states|america)\\b", lowered)
+            and re.search(r"\\b(who|current|currently|today|now)\\b", lowered)):
+        return "current president of the United States"
+    return text
+
+
+def answer_from_web_results(message, results):
+    """Return a concise, source-grounded excerpt only when a result is clearly relevant."""
+    query = normalize_search_query(message)
+    stop_words = {"who", "what", "when", "where", "which", "why", "how", "is", "are",
+                  "the", "a", "an", "of", "in", "on", "for", "to", "and", "or",
+                  "current", "currently", "today", "now", "please", "tell", "me",
+                  "about", "usa", "u.s", "united", "states"}
+    terms = {word for word in re.findall(r"[a-z0-9]+", query.lower())
+             if len(word) > 2 and word not in stop_words}
+    if not terms:
+        return None
+    ranked = []
+    for item in results or []:
+        title = _clean(item.get("title"), 220)
+        snippet = _clean(item.get("snippet"), 1200)
+        title_words = set(re.findall(r"[a-z0-9]+", title.lower()))
+        body_words = set(re.findall(r"[a-z0-9]+", snippet.lower()))
+        title_hits = len(terms & title_words)
+        body_hits = len(terms & body_words)
+        score = (title_hits * 2 + body_hits) / max(1, len(terms) * 3)
+        if snippet and score >= 0.16:
+            ranked.append((score, item, snippet))
+    if not ranked:
+        return None
+    ranked.sort(key=lambda row: row[0], reverse=True)
+    _, item, snippet = ranked[0]
+    source = _clean(item.get("title"), 180)
+    if not snippet:
+        return None
+    return snippet + ((" (Source: " + source + ")") if source else "")
+
+
 def search_web(query, limit=5):
     """Use key-free public search first, then configured providers and Wikipedia fallback."""
-    query = _clean(query, 300)
+    query = normalize_search_query(query)
     if len(query) < 2:
         return []
     limit = max(1, min(int(limit), 6))
