@@ -38,7 +38,7 @@ class CognitiveEngine:
         return self._reply_single(original, history)
 
     def _reply_single(self, message, history=None):
-        frame = parse_intent(message)
+        frame = parse_intent(message, history)
         state = build_state(history)
         knowledge_graph = KnowledgeGraph.from_history(history)
         base = {
@@ -54,6 +54,31 @@ class CognitiveEngine:
             return {**base, "reply": "Hello. What are you working on or thinking about?"}
         if frame.kind == "gratitude":
             return {**base, "reply": "You're welcome. What would you like to work on next?"}
+        if frame.kind == "topic":
+            topic = frame.target
+            prompts = {
+                "html": "HTML—are you looking to learn it, build a webpage, or fix HTML you already have?",
+                "css": "Are you learning CSS, styling a page, or troubleshooting a layout?",
+                "javascript": "Are you learning JavaScript, building a feature, or debugging code?",
+                "typescript": "Do you want to learn TypeScript, build something, or fix an error?",
+                "python": "Are you learning Python, building a program, or debugging a project?",
+                "code": "Sure—what are we doing with code: building something, fixing a bug, or learning a concept?",
+                "coding": "What would you like to code? Tell me the app, feature, or problem.",
+                "programming": "Which programming task are you working on?",
+                "gui": "Are you designing a graphical user interface, implementing one, or fixing a GUI issue?",
+                "ui": "Are you working on interface design, layout, or implementation?",
+                "api": "Are you building an API, connecting to one, or debugging an API request?",
+                "sql": "Do you want to write SQL, design a database, or fix a query?",
+                "gta": "GTA—are you asking about the game, a mission, installation, or something else?",
+                "fbi": "Do you mean the FBI (the U.S. Federal Bureau of Investigation), or something else named FBI?"
+            }
+            return {**base, "reply": prompts.get(topic.lower(), f"Okay, let's talk about {topic}. What would you like to know or do?"), "topic": topic}
+        if frame.kind in {"confirmation", "decline"}:
+            if frame.kind == "decline":
+                return {**base, "reply": "No problem. What would you prefer to do instead?", "pending_question": frame.target}
+            return {**base, "reply": "Got it. What would you like me to do next?", "pending_question": frame.target}
+        if frame.kind == "acknowledgement":
+            return {**base, "reply": "Okay. What are you referring to or agreeing with?", "confidence": frame.confidence}
         if frame.kind == "identity":
             neural_status = "My private neural runtime is ready." if self.neural.health()["ready"] else "My private neural generator is not connected yet."
             return {**base, "reply": "I'm Expert 802 AI, a provider-independent conversational and programming assistant. My implemented core includes intent analysis, dialogue context, explicit-fact reasoning, local retrieval, engineering task planning, static code inspection and registered tools. " + neural_status + " Code execution is restricted to an optional isolated test runner; I do not claim to have run or changed code without a tool result."}
@@ -134,6 +159,9 @@ class CognitiveEngine:
             if neural["ok"]:
                 return {**base, "engine": neural["engine"], "reply": neural["reply"], "neural_generated": True}
             return {**base, "reply": "I can identify this as a question, but I don't yet have enough grounded information to answer it accurately. Add context or a source, and I'll analyze it rather than inventing an answer.", "confidence": 0.2}
+
+        if len(tokens(frame.normalized)) <= 1:
+            return {**base, "reply": f"I'll keep “{frame.normalized}” exactly as you typed it. What does it refer to, or what would you like to do with it?", "confidence": 0.45}
 
         # Statements are retained as context for later turns; do not mislabel them as questions.
         neural = self.neural.generate(message, history)
