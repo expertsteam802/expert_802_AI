@@ -71,6 +71,7 @@ class LocalRetriever:
                     if synonym and synonym not in weighted_terms:
                         weighted_terms[synonym] = 0.35
         scores = defaultdict(float)
+        exact_matches = defaultdict(set)
         total = len(self.documents)
         for term, weight in weighted_terms.items():
             postings = self.index.get(term, [])
@@ -79,15 +80,15 @@ class LocalRetriever:
             df = len(postings)
             idf = math.log(1 + (total - df + 0.5) / (df + 0.5))
             for doc_id, frequency in postings:
+                if weight == 1.0:
+                    exact_matches[doc_id].add(term)
                 length = self.lengths[doc_id]
                 denominator = frequency + 1.2 * (1 - 0.75 + 0.75 * length / max(1, self.average_length))
                 scores[doc_id] += weight * idf * frequency * 2.2 / denominator
         ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
         results = []
         for doc_id, score in ranked:
-            exact_overlap = sum(1 for term in terms if any(
-                indexed_id == doc_id for indexed_id, _ in self.index.get(term, [])
-            ))
+            exact_overlap = len(exact_matches[doc_id])
             if len(terms) >= 4 and exact_overlap < 2:
                 continue
             if len(terms) >= 7 and exact_overlap / len(terms) < 0.2:
