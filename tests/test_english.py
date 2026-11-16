@@ -368,6 +368,16 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertEqual(result["reasoning"]["method"], "type_inheritance")
         self.assertEqual(len(result["reasoning"]["inference_chain"]), 3)
 
+    def test_symbolic_reasoner_handles_property_inference_and_irregular_plural(self):
+        history = [
+            {"role": "user", "text": "Socrates is a man."},
+            {"role": "user", "text": "All men are mortal."},
+        ]
+        result = self.engine.reply("Is Socrates mortal?", history)
+        self.assertTrue(result.get("memory_used"))
+        self.assertIn("yes", result["reply"].lower())
+        self.assertEqual(result["reasoning"]["method"], "type_inheritance")
+
     def test_symbolic_reasoner_does_not_assume_unknown_relations(self):
         result = self.engine.reply("Is a dragon an animal?")
         self.assertFalse(result.get("memory_used"))
