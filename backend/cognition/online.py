@@ -161,8 +161,8 @@ def _current_us_president_search():
         page = response.read(2_000_000).decode("utf-8", "replace")
     plain = _clean(page, 200000)
     match = re.search(
-        r"Current president\\s+(?:The\\s+)?(?:\\d+(?:st|nd|rd|th)\\s+and\\s+)?"
-        r"current president of the United States is\\s+([A-Z][A-Za-z .'-]+?)\\.",
+        r"Current president\s+(?:The\s+)?(?:\d+(?:st|nd|rd|th)\s+and\s+)?"
+        r"current president of the United States is\s+([A-Z][A-Za-z .'-]+?)\.",
         plain,
         re.I,
     )
@@ -196,7 +196,7 @@ def answer_from_web_results(message, results):
         for item in results or []:
             if "usa.gov/presidents" in str(item.get("url", "")):
                 match = re.search(
-                    r"current president of the United States is\\s+([A-Z][A-Za-z .'-]+?)\\.",
+                    r"current president of the United States is\s+([A-Z][A-Za-z .'-]+?)\.",
                     _clean(item.get("snippet"), 1200),
                     re.I,
                 )
