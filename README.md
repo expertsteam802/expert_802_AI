@@ -71,9 +71,9 @@ GitHub Actions validates code on pushes to `main`. It does not train a capable c
 
 ## Private model and web-search configuration
 
-The chat backend does not call an external AI model API. To use Expert 802's own model, train a checkpoint using the instructions in [training/README.md](training/README.md), then run `training/serve.py` on a private inference host. Configure `EXPERT802_NEURAL_URL` and `EXPERT802_INFERENCE_TOKEN` on the server. Keep the inference endpoint private behind TLS and a strong token.
+The chat backend does not call an external AI model API. Google Programmable Search retrieves web pages only; it does not generate AI answers. To use Expert 802's own model, train a checkpoint using the instructions in [training/README.md](training/README.md), then run `training/serve.py` on a private inference host. Configure `EXPERT802_NEURAL_URL` and `EXPERT802_INFERENCE_TOKEN` on the server. Keep the inference endpoint private behind TLS and a strong token.
 
-Web search is a separate information-retrieval capability, not an AI model. Search priority is Brave, then Tavily, then Bing, then Wikipedia fallback. The first three require search-provider keys. The no-key Wikipedia fallback is not a full general-purpose web index. Search is automatically triggered for explicit web-search requests, freshness-sensitive questions, general factual questions and relevant programming/API questions. Results are bounded, rate-limited, treated as untrusted content and shown with clickable source links.
+Web search is a separate information-retrieval capability, not an AI model. Search priority is Google Programmable Search, then Brave, Tavily, Bing, then Wikipedia fallback. Google requires `GOOGLE_CSE_API_KEY` and `GOOGLE_CSE_ID`; the other full-web providers require their own search keys. The no-key Wikipedia fallback is not a full general-purpose web index. Search is automatically triggered for explicit web-search requests, freshness-sensitive questions, general factual questions and relevant programming/API questions. Results are bounded, rate-limited and treated as untrusted evidence. Expert 802 incorporates snippets into its local answer and renders result titles, excerpts and source domains directly inside the chat response.
 
 ## Engineering principles
 
