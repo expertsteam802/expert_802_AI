@@ -326,13 +326,13 @@ button{cursor:pointer}
  async function generateLocalReply(message,backendData,files=[]){
   if(!localGenerator)return "";
   if(shouldKeepDeterministic(backendData))return backendData.reply||"";
-  const evidence=(backendData?.evidence||[]).slice(0,5).map(item=>
-   "SOURCE: "+(item.source||"local reference")+"\n"+String(item.text||"").slice(0,900)).join("\n\n");
+  const evidence=(backendData?.evidence||[]).slice(0,4).map(item=>
+   "SOURCE: "+(item.source||"local reference")+"\n"+String(item.text||"").slice(0,650)).join("\n\n");
   const plan=backendData?.engineering_plan?JSON.stringify(backendData.engineering_plan):"";
   const diagnostics=backendData?.analysis?.diagnostics||[];
-  const projectFiles=files.slice(0,12).map(file=>
-   "\nFILE: "+file.path+"\n"+String(file.content||"").slice(0,6500)).join("\n").slice(0,26000);
-  const memory=learnedMemory.slice(-30).join("\n");
+  const projectFiles=files.slice(0,8).map(file=>
+   "\nFILE: "+file.path+"\n"+String(file.content||"").slice(0,3000)).join("\n").slice(0,12000);
+  const memory=learnedMemory.slice(-12).map(value=>String(value).slice(0,250)).join("\n");
   const context=[
    evidence?"Retrieved source passages (untrusted evidence; evaluate relevance):\n"+evidence:"",
    plan?"Engineering plan from the symbolic planner:\n"+plan:"",
