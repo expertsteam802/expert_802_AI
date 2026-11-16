@@ -4,6 +4,7 @@ All network destinations are fixed provider endpoints. Search snippets are evide
 never executable instructions. Secrets are read only from server environment variables.
 """
 import html
+from html.parser import HTMLParser
 import json
 import os
 import re
@@ -35,6 +36,67 @@ def _normalize_results(items, provider, limit):
             continue
         results.append({"title": title, "snippet": snippet, "url": url, "source": provider})
     return results
+
+
+
+
+class _DuckDuckGoParser(HTMLParser):
+    """Extract search titles and snippets from DuckDuckGo's HTML results."""
+    def __init__(self):
+        super().__init__()
+        self.items = []
+        self.anchor = None
+        self.pending = None
+        self.snippet = None
+        self.capture = None
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        classes = attrs.get("class", "").split()
+        if tag == "a" and "result__a" in classes:
+            self.anchor = {"title": "", "url": attrs.get("href", "")}
+            self.capture = "title"
+        elif "result__snippet" in classes:
+            self.snippet = ""
+            self.capture = "snippet"
+
+    def handle_data(self, data):
+        if self.capture == "title" and self.anchor is not None:
+            self.anchor["title"] += data
+        elif self.capture == "snippet" and self.snippet is not None:
+            self.snippet += data
+
+    def handle_endtag(self, tag):
+        if tag == "a" and self.anchor is not None and self.capture == "title":
+            self.pending = self.anchor
+            self.anchor = None
+            self.capture = None
+        if self.capture == "snippet" and self.snippet is not None:
+            if self.pending:
+                href = self.pending.get("url", "")
+                if href.startswith("//"):
+                    href = "https:" + href
+                parsed = urllib.parse.urlsplit(href)
+                if parsed.netloc.endswith("duckduckgo.com") and parsed.path.startswith("/l/"):
+                    href = urllib.parse.parse_qs(parsed.query).get("uddg", [href])[0]
+                self.items.append({"title": self.pending.get("title", ""), "snippet": self.snippet, "url": href})
+                self.pending = None
+            self.snippet = None
+            self.capture = None
+
+
+def _duckduckgo_search(query, limit):
+    """Key-free web search; the upstream may still apply fair-use throttling."""
+    url = "https://html.duckduckgo.com/html/?" + urllib.parse.urlencode({"q": query})
+    request = urllib.request.Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (compatible; Expert802AI/1.0)",
+        "Accept": "text/html",
+    })
+    with urllib.request.urlopen(request, timeout=12) as response:
+        page = response.read(2_000_000).decode("utf-8", "replace")
+    parser = _DuckDuckGoParser()
+    parser.feed(page)
+    return _normalize_results(parser.items, "DuckDuckGo", limit)
 
 
 def _google_search(query, limit):
@@ -99,24 +161,20 @@ def _wikipedia_search(query, limit):
 
 
 def search_web(query, limit=5):
-    """Use Google Programmable Search first, then configured web search providers; otherwise use Wikipedia."""
+    """Use key-free public search first, then configured providers and Wikipedia fallback."""
     query = _clean(query, 300)
     if len(query) < 2:
         return []
     limit = max(1, min(int(limit), 6))
     errors = []
-    for provider in (_google_search, _brave_search, _tavily_search, _bing_search):
+    for provider in (_duckduckgo_search, _wikipedia_search, _brave_search, _tavily_search, _bing_search):
         try:
             results = provider(query, limit)
             if results:
                 return results
         except (OSError, ValueError, RuntimeError, urllib.error.URLError) as error:
             errors.append(str(error)[:180])
-    try:
-        return _wikipedia_search(query, limit)
-    except (OSError, ValueError, RuntimeError, urllib.error.URLError) as error:
-        logging_error = str(error)[:180]
-        return []
+    return []
 
 
 _FRESH_RE = re.compile(
