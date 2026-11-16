@@ -37,6 +37,38 @@ class OnlineAssistantTests(unittest.TestCase):
         answer = online.answer_from_web_results("whos is the USA current President", results)
         self.assertIn("Donald Trump", answer)
 
+    def test_current_us_president_uses_official_usagov_source(self):
+        from io import BytesIO
+
+        page = (
+            "<h2>Current president</h2>"
+            "<p>The 47th and current president of the United States is "
+            "Donald John Trump.</p>"
+        ).encode("utf-8")
+        with patch.object(online.urllib.request, "urlopen", return_value=BytesIO(page)):
+            results = online._current_us_president_search()
+        self.assertEqual(len(results), 1)
+        self.assertIn("Donald John Trump", results[0]["snippet"])
+        self.assertEqual(results[0]["url"], "https://www.usa.gov/presidents")
+        answer = online.answer_from_web_results(
+            "whos is the USA current President", results
+        )
+        self.assertIn("Donald John Trump", answer)
+
+    def test_current_president_query_prefers_official_source(self):
+        official = [{
+            "title": "USAGov: Current president of the United States",
+            "snippet": "The current president of the United States is Donald John Trump.",
+            "url": "https://www.usa.gov/presidents",
+            "source": "USAGov (official U.S. government)",
+        }]
+        with patch.object(online, "_current_us_president_search", return_value=official), patch.object(
+            online, "_duckduckgo_search"
+        ) as search:
+            results = online.search_web("whos is the USA current President", 5)
+        search.assert_not_called()
+        self.assertEqual(results, official)
+
     def test_explicit_search_requests_trigger_web_search(self):
         self.assertTrue(online.should_search_web("Please search the web for current Vercel limits."))
         self.assertTrue(online.should_search_web("Search the internet for the official API docs."))
