@@ -71,15 +71,51 @@ def parse_intent(message, history=None):
         return IntentFrame(kind if pending else "acknowledgement", text, target=last_assistant if pending else "",
                            confidence=0.94 if pending else 0.7, slots={"pending_question": pending})
 
-    topic_terms = {
-        "html", "css", "javascript", "typescript", "python", "java", "c",
-        "c++", "c#", "code", "coding", "programming", "gui", "ui", "api",
-        "sql", "database", "website", "web", "app", "android", "ios",
-        "gta", "fifa", "minecraft", "fbi", "ai", "machine learning"
-    }
-    if low in topic_terms:
-        return IntentFrame("topic", text, target=text, action="discuss",
-                           confidence=0.9, slots={"topic": text})
+    # Extract a verb/object frame compositionally from the user's wording.
+    # Verb status comes from the local lexical database, not a hand-written
+    # list of supported topics or canned examples.
+    def lexical_is_verb(word):
+        from backend.language import dictionary_lookup
+        entry = dictionary_lookup(word)
+        if isinstance(entry, str):
+            return entry.strip().lower().startswith("to ")
+        if isinstance(entry, dict):
+            pos = str(entry.get("part_of_speech", "")).lower()
+            definitions = entry.get("definitions", [])
+            return pos.startswith("verb") or any(
+                isinstance(value, str) and value.strip().lower().startswith("to ")
+                for value in (definitions if isinstance(definitions, list) else [definitions])
+            )
+        return False
+
+    words_only = re.findall(r"[a-z][a-z'-]*", low)
+    start = 0
+    if words_only[:3] in (["i", "want", "to"], ["i", "need", "to"], ["i", "would", "like"]):
+        start = 3 if words_only[2] == "to" else 2
+    elif words_only[:2] in (["can", "you"], ["could", "you"], ["please", "help"]):
+        start = 2
+    elif words_only[:1] in (["please"],):
+        start = 1
+    if words_only:
+        candidate_indexes = [start] if start < len(words_only) else []
+        if not candidate_indexes and start == 0:
+            candidate_indexes = [0]
+        for verb_index in candidate_indexes:
+            verb = words_only[verb_index]
+            if lexical_is_verb(verb):
+                object_words = words_only[verb_index + 1:]
+                object_text = " ".join(object_words).strip()
+                return IntentFrame(
+                    "action_request", text, target=object_text, action=verb,
+                    confidence=0.82 if object_text else 0.68,
+                    slots={"verb": verb, "object": object_text, "syntax": "imperative_or_infinitive"}
+                )
+
+    # A single word or noun phrase is a topic candidate regardless of whether
+    # it appears in a preselected list. Its meaning is resolved by retrieval.
+    if len(words_only) <= 3 and not re.search(r"[?]", text):
+        return IntentFrame("topic", text, target=text, action="explore",
+                           confidence=0.55, slots={"topic_candidate": text})
 
     if re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening|howdy)[!. ]*", low):
         return IntentFrame("greeting", text, confidence=0.99, slots={})
