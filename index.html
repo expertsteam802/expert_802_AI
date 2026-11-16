@@ -590,7 +590,7 @@ button{cursor:pointer}
  }
   function appendWebSources(reply,results,fallback){return String(reply||"");}
  function renderWebResults(bubble,results){
-  const items=(Array.isArray(results)?results:[]).filter(item=>item&&item.title&&item.snippet&&/^https?:\\/\\//i.test(item.url)).slice(0,6);
+  const items=(Array.isArray(results)?results:[]).filter(item=>item&&item.title&&item.snippet&&/^https?:\/\//i.test(item.url)).slice(0,6);
   if(!items.length)return;
   const panel=document.createElement("section");panel.className="web-results";
   const head=document.createElement("div");head.className="web-results-head";
@@ -600,7 +600,7 @@ button{cursor:pointer}
    const card=document.createElement("article");card.className="web-result";
    const title=document.createElement("a");title.className="web-result-title";title.textContent=item.title;title.href=item.url;title.target="_blank";title.rel="noopener noreferrer";
    const snippet=document.createElement("p");snippet.className="web-result-snippet";snippet.textContent=item.snippet;
-   let domain="";try{domain=new URL(item.url).hostname.replace(/^www\\./,"");}catch(_){}
+   let domain="";try{domain=new URL(item.url).hostname.replace(/^www\./,"");}catch(_){}
    const source=document.createElement("small");source.className="web-result-domain";source.textContent=domain;
    card.append(title,snippet,source);panel.appendChild(card);
   });
