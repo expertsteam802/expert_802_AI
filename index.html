@@ -615,7 +615,7 @@ button{cursor:pointer}
     lines.push("", "This inspection checks source structure and selected risks; it does not execute the project.");
     if(data.plan?.steps?.length){lines.push("","Suggested engineering steps:");data.plan.steps.slice(0,8).forEach((step,index)=>lines.push((index+1)+". "+step));}
     data.reply=lines.join("\n");
-    const localAnswer=await generateLocalReply(message||"Review these source files and explain what they do, what is wrong, and how to improve them.",data,files,showLocalTokens);
+    const localAnswer=data.online_model_used?data.reply:await generateLocalReply(message||"Review these source files and explain what they do, what is wrong, and how to improve them.",data,files,showLocalTokens);
      if(localAnswer)data.reply=localAnswer;
      data.reply=appendWebSources(data.reply,data.web_results);
    }else{
@@ -626,6 +626,7 @@ button{cursor:pointer}
     if(!response.ok||typeof data.reply!=="string"||!data.reply.trim())throw new Error(data.error||"The language engine returned no answer.");
      const localAnswer=data.online_model_used?data.reply:await generateLocalReply(message,data,[],showLocalTokens);
     if(localAnswer)data.reply=localAnswer;
+     data.reply=appendWebSources(data.reply,data.web_results);
    }
    if(streamedLocal)renderMarkdown(pending.querySelector(".bubble"),data.reply);
    else await typeReply(pending.querySelector(".bubble"),data.reply);
