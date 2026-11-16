@@ -106,3 +106,16 @@ This is a real trainable Transformer architecture, not a dictionary lookup or bi
 The symbolic cognition and Code Lab layers can provide deterministic calculations, conversation-state tracking, evidence retrieval, task plans and static source inspection. The neural model is intended to improve open-ended language and code generation after it has actually been trained.
 
 The Vercel chat route does not call OpenAI, Gemini, Groq, or another hosted language-model API. Open-ended generation is routed to the private Expert 802 inference service only when a trained checkpoint is available; otherwise the deterministic cognition/retrieval fallback is used. Public web search is a separate retrieval capability and is not used to generate answers with another AI. No model weights or corpora are committed to Git.
+
+## Free-GPU training with Kaggle
+
+If you do not have a GPU server, use the importable notebook at [`training/kaggle_train.ipynb`](kaggle_train.ipynb). It uses Kaggle's optional free GPU accelerator and trains this repository's own randomly initialized model; it does not use a hosted generation API or swap in a pretrained model.
+
+1. Create a **private Kaggle Dataset** whose root contains a `corpus/` folder and `corpus_manifest.csv`. The manifest must list every corpus file using a path relative to `corpus/`, its license, source URL and permission basis. Only include material whose terms permit machine-learning training. The notebook does not download or scrape a corpus for you.
+2. Import `training/kaggle_train.ipynb` into Kaggle. Enable Internet for cloning this public repository and installing dependencies, and select **GPU** as the notebook accelerator.
+3. In the first cell, set `CORPUS_DATASET` to the exact mounted Kaggle dataset folder name. Run the notebook from top to bottom.
+4. At the end of a session, download `expert802-session.zip` from the notebook output. It contains checkpoints, tokenizer, evaluation and the corpus audit report—not the source corpus or prepared token data.
+5. Upload that ZIP as a private Kaggle Dataset named `expert802-previous-session`, attach it to the next notebook session, and keep the same corpus dataset attached. Increase `TOTAL_STEPS` to the desired cumulative step count (for example, from 3,000 to 6,000) and run again. The notebook verifies the corpus file hashes, restores the checkpoint, and reuses the saved tokenizer so token IDs remain compatible. Set `START_FRESH = True` only when intentionally beginning a new run with a new corpus.
+
+Kaggle free GPU access, quotas and session limits vary. Save each output bundle outside the running session; files left only in a temporary notebook session can be lost. This is an experimental small model, not a ChatGPT-scale system. Training loss and perplexity do not establish factual accuracy or useful reasoning; inspect evaluation samples and test real tasks before serving a checkpoint.
+
