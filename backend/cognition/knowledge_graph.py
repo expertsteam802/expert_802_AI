@@ -18,6 +18,11 @@ class KnowledgeGraph:
 
     @staticmethod
     def _singular(value):
+        irregular = {"men": "man", "women": "woman", "children": "child",
+                     "people": "person", "mice": "mouse", "teeth": "tooth",
+                     "feet": "foot", "geese": "goose", "indices": "index"}
+        if value in irregular:
+            return irregular[value]
         if value.endswith("ies") and len(value) > 4:
             return value[:-3] + "y"
         if value.endswith("s") and not value.endswith(("ss", "us", "is")):
