@@ -2,6 +2,7 @@
 import re
 from .intent import parse_intent, normalize
 from .memory import build_state, resolve_reference
+from .conversation_memory import ConversationMemory
 from .retrieval import LocalRetriever
 from .deliberation import Deliberator
 from .reasoning import calculate, derive_simple_facts
@@ -42,7 +43,8 @@ class CognitiveEngine:
     def _reply_single(self, message, history=None):
         frame = parse_intent(message, history)
         state = build_state(history)
-        learned = self._learned_meanings(history)
+        conversation_memory = ConversationMemory((history or []) + [{"role": "user", "text": message}])
+        learned = {fact["key"]: fact["value"] for fact in conversation_memory.export_facts()}
         if frame.kind == "definition":
             known = self._meaning_for(frame.target, learned)
             if known:
@@ -64,6 +66,20 @@ class CognitiveEngine:
             return {**base, "reply": "Hello. What are you working on or thinking about?"}
         if frame.kind == "gratitude":
             return {**base, "reply": "You're welcome. What would you like to work on next?"}
+        if frame.kind == "acknowledgement":
+            return {**base, "reply": "Got it. I'll keep that in mind as we continue."}
+        if frame.kind == "harm_risk":
+            return {**base, "reply": "I'm taking that seriously. I can't help find weapons or materials to hurt someone. If someone may be in immediate danger, move away from them and from anything that could be used as a weapon, and contact local emergency services or a trusted person who can intervene now. If you can, tell me whether anyone is in immediate danger right now."}
+        if frame.kind == "knowledge_check":
+            known = self._meaning_for(frame.target, learned)
+            if known:
+                return {**base, "reply": "Yes — " + known, "memory_used": True,
+                        "reasoning": {"method": "conversation_grounded_knowledge"}}
+            neural = self.neural.generate(message, history)
+            if neural["ok"]:
+                return {**base, "engine": neural["engine"], "reply": neural["reply"], "neural_generated": True}
+            return {**base, "reply": f"I can help with {frame.target}. Which part are you interested in — what it is, how it works, or what you can do with it?",
+                    "confidence": 0.58, "reasoning": {"method": "knowledge_question_recognition"}}
         if frame.kind == "topic":
             topic = frame.target
             known = self._meaning_for(topic, learned)
@@ -233,6 +249,13 @@ class CognitiveEngine:
 
         # Treat declarative input as information to inspect and retain, not as a
         # request to choose from a menu of canned operations.
+        current_fact = next((fact for fact in reversed(conversation_memory.export_facts())
+                             if fact.get("source") == message), None)
+        if current_fact:
+            return {**base, "reply": f"Got it — you're telling me that {current_fact['subject']} means {current_fact['value']}. I'll use that meaning in this conversation.",
+                    "asserted_fact": current_fact,
+                    "reasoning": {"method": "user_correction_attached_to_active_topic"}}
+
         relation = re.search(r"\b(.+?)\s+(?:means|refers to|describes|is called)\s+(.+)$", message, re.I)
         if relation:
             subject, meaning = relation.group(1).strip(), relation.group(2).strip().rstrip(".!?")
@@ -247,41 +270,8 @@ class CognitiveEngine:
 
     @staticmethod
     def _learned_meanings(history):
-        """Recover user-taught meanings from browser-persisted conversation turns."""
-        turns = [item.get("text", "") for item in history or []
-                 if isinstance(item, dict) and item.get("role") == "user"
-                 and isinstance(item.get("text"), str)]
-        meanings = {}
-        previous_topic = ""
-        for text in turns:
-            clean = text.strip()
-            match = re.search(r"\b([A-Za-z][A-Za-z0-9 +.-]{0,24})\s+(?:means|refers to)\s+(.+)$", clean, re.I)
-            if match and match.group(1).strip().lower() in {"it", "this", "that", "also it"} and previous_topic:
-                key = re.sub(r"\s+", "", previous_topic).lower()
-                meanings[key] = match.group(2).strip(" .!?")
-            elif match:
-                meanings[re.sub(r"\s+", "", match.group(1)).lower()] = match.group(2).strip(" .!?")
-            elif previous_topic and re.match(r"^(?:it is|it's|its)\s+", clean, re.I):
-                value = re.sub(r"^(?:it is|it's|its)\s+", "", clean, flags=re.I).strip(" .!?")
-                key = re.sub(r"\s+", "", previous_topic).lower()
-                if value:
-                    meanings[key] = value
-            elif re.search(r"\b(?:it|also it)\s+means\s+", clean, re.I) and previous_topic:
-                value = re.split(r"\bmeans\b", clean, maxsplit=1, flags=re.I)[-1].strip(" .!?")
-                key = re.sub(r"\s+", "", previous_topic).lower()
-                if value:
-                    meanings[key] = (meanings.get(key, "") + "; " + value).strip("; ")
-            else:
-                asked = re.search(r"\b(?:know|about|is|does|mean(?:ing)? of)\s+([A-Z][A-Z0-9-]{1,10})\b", clean)
-                if asked:
-                    previous_topic = asked.group(1)
-                else:
-                    single = re.search(r"\bwhat\s+is\s+([A-Za-z][A-Za-z0-9-]{1,20})\b", clean, re.I)
-                    if single:
-                        previous_topic = single.group(1)
-                    elif re.fullmatch(r"[A-Za-z][A-Za-z0-9+#.-]{1,20}", clean):
-                        previous_topic = clean
-        return meanings
+        memory = ConversationMemory(history)
+        return {fact["key"]: fact["value"] for fact in memory.export_facts()}
 
     @staticmethod
     def _meaning_for(term, meanings):
