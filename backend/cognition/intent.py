@@ -107,6 +107,11 @@ def parse_intent(message, history=None):
         if match:
             return IntentFrame("definition", text, target=_clean_target(match.group(1)), confidence=0.97, slots={})
 
+    # Yes/no relation questions must not be mistaken for imperative verbs.
+    if re.match(r"^(?:is|are|was|were)\\s+", low):
+        return IntentFrame("question", text, target=text, confidence=0.92,
+                           slots={"question_type": "relation_check"})
+
     # Extract a verb/object frame compositionally from the user's wording.
     # Verb status comes from the local lexical database, not a hand-written
     # list of supported topics or canned examples.
