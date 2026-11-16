@@ -117,7 +117,7 @@ _EXPLICIT_RE = re.compile(r"\b(search (?:the )?web|search online|look (?:it )?up
                           r"find online|browse the internet|check online|verify online)\b", re.I)
 _FACTUAL_RE = re.compile(r"^\s*(?:what|who|when|where|which|why|how)\b", re.I)
 _RESEARCH_RE = re.compile(r"^\s*(?:(?:can|could) you |please )?(?:explain|describe|compare|define|summari[sz]e|tell me about|give me an overview of)\b", re.I)
-_PERSONAL_RE = re.compile(r"^\\s*(?:who are you|what is your name|how are you|what can you do|what do you know about me|what do you remember about me)\\b", re.I)
+_PERSONAL_RE = re.compile(r"^\s*(?:who are you|what is your name|how are you|what can you do|what do you know about me|what do you remember about me)\b", re.I)
 _CODING_RE = re.compile(r"\b(api|sdk|package|library|framework|documentation|docs|"
                         r"error|exception|version|install|npm|pip|python|javascript|"
                         r"typescript|react|vercel|supabase|github|security advisory)\b", re.I)
