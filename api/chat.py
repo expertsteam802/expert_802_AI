@@ -190,7 +190,7 @@ class handler(BaseHTTPRequestHandler):
                             web_results = search_web(task[:300], 5)
                         except Exception:
                             logging.exception("Expert 802 coding web search failed")
-                if online_model_config()["configured"]:
+                if online_model_config()["configured"] and _rate_allowed("hosted_chat", self.client_address[0], limit=18, window=300):
                     try:
                         source_context = [
                             {"source": "Uploaded source file: " + str(item.get("path", "source")),
@@ -262,7 +262,7 @@ class handler(BaseHTTPRequestHandler):
                         logging.exception("Expert 802 web search failed")
             online_model_used = False
             online_model_error = False
-            if online_model_config()["configured"]:
+            if online_model_config()["configured"] and _rate_allowed("hosted_chat", self.client_address[0], limit=18, window=300):
                 try:
                     online_reply = generate_online_reply(
                         message[:4000], history[-200:], payload.get("mode", "general"),
@@ -275,6 +275,7 @@ class handler(BaseHTTPRequestHandler):
                     result = _ENGINE.reply(message[:4000], history[-200:])
                     online_model_error = True
             else:
+                online_model_error = bool(online_model_config()["configured"])
                 result = _ENGINE.reply(message[:4000], history[-200:])
             if not isinstance(result, dict):
                 result = {"reply": str(result)}
