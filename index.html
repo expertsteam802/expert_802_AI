@@ -598,7 +598,7 @@ button{cursor:pointer}
    if(filesToInspect.length||pastedFiles.length){
     const uploaded=await Promise.all(filesToInspect.map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
     const files=uploaded.concat(pastedFiles);
-    const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_analyze",task:message||"Inspect these source files and explain their structure, defects and risks.",files})});
+    const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_analyze",task:message||"Inspect these source files and explain their structure, defects and risks.",files,history:history.slice(-80),memory:learnedMemory,mode:$("expertMode").value})});
     data=await response.json();
     if(!response.ok)throw new Error(data.error||"The source inspection failed.");
     const a=data.analysis?.output||data.analysis||{}, summary=a.summary||{}, diagnostics=a.diagnostics||[];
@@ -702,7 +702,7 @@ button{cursor:pointer}
    const projectFiles=await Promise.all(files.map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
    const totalBytes=projectFiles.reduce((sum,file)=>sum+new TextEncoder().encode(file.content).length,0);
    if(totalBytes>1000000)throw new Error("The selected source snapshot exceeds 1 MB. Select fewer or smaller files.");
-   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_analyze",task:$("codeTask").value.trim()||"Review this project for correctness and maintainability.",files:projectFiles})});
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_analyze",task:$("codeTask").value.trim()||"Review this project for correctness and maintainability.",files:projectFiles,history:history.slice(-80),memory:learnedMemory,mode:"coding"})});
    const data=await response.json();if(!response.ok)throw new Error(data.error||"Project inspection failed.");
    const report=data.analysis,summary=report.summary;
    $("codeAnalysisResult").style.display="block";
