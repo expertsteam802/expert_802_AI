@@ -94,6 +94,19 @@ def parse_intent(message, history=None):
         expression = math_match.group(1).strip()
         if re.search(r"\d", expression) and re.search(r"[+\-*/%^]|\b(plus|minus|times|divided by|over|percent of|x)\b", expression):
             return IntentFrame("calculation", text, target=expression, confidence=0.95, slots={})
+    if re.search(r"\b(who are you|what are you|your name)\b", low):
+        return IntentFrame("identity", text, confidence=0.99, slots={})
+
+    patterns = [
+        r"^(?:what is|what's|define|meaning of|definition of)\s+(.+?)(?:\s+in full(?: words)?)?$",
+        r"^what does\s+(.+?)\s+mean$",
+        r"^what is the meaning of\s+(.+)$",
+    ]
+    for pattern in patterns:
+        match = re.match(pattern, low)
+        if match:
+            return IntentFrame("definition", text, target=_clean_target(match.group(1)), confidence=0.97, slots={})
+
     # Extract a verb/object frame compositionally from the user's wording.
     # Verb status comes from the local lexical database, not a hand-written
     # list of supported topics or canned examples.
@@ -140,19 +153,6 @@ def parse_intent(message, history=None):
         return IntentFrame("greeting", text, confidence=0.99, slots={})
     if re.fullmatch(r"(thanks|thank you|thx|many thanks)[!. ]*", low):
         return IntentFrame("gratitude", text, confidence=0.99, slots={})
-    if re.search(r"\b(who are you|what are you|your name)\b", low):
-        return IntentFrame("identity", text, confidence=0.99, slots={})
-
-    patterns = [
-        r"^(?:what is|what's|define|meaning of|definition of)\s+(.+?)(?:\s+in full(?: words)?)?$",
-        r"^what does\s+(.+?)\s+mean$",
-        r"^what is the meaning of\s+(.+)$",
-    ]
-    for pattern in patterns:
-        match = re.match(pattern, low)
-        if match:
-            return IntentFrame("definition", text, target=_clean_target(match.group(1)), confidence=0.97, slots={})
-
     if re.search(r"\b(what about it|what about that|and it|why is that|how about it|tell me more)\b", low):
         return IntentFrame("followup", text, confidence=0.82, slots={})
 
