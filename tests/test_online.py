@@ -45,6 +45,8 @@ class OnlineAssistantTests(unittest.TestCase):
 
     def test_search_uses_wikipedia_when_no_paid_provider_is_configured(self):
         with patch.dict(os.environ, {}, clear=True), patch.object(
+            online, "_duckduckgo_search", return_value=None
+        ), patch.object(
             online, "_wikipedia_search", return_value=[{
                 "title": "Example", "snippet": "Evidence", "url": "https://en.wikipedia.org/?curid=1",
                 "source": "Wikipedia",
