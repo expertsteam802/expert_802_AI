@@ -40,7 +40,10 @@ def normalize(text):
     # A one-word turn may be a topic, acronym, command, or name. Never
     # autocorrect it in isolation ("gta" must not become "eta").
     if re.fullmatch(r"[A-Za-z][A-Za-z0-9_+#.-]*", raw):
-        return raw
+        # Repair a few high-confidence, common technical typos without
+        # rewriting arbitrary names, identifiers, or acronyms.
+        return {"hitml": "html", "htlm": "html", "javascrpt": "javascript",
+                "javscript": "javascript", "pyhton": "python"}.get(raw.lower(), raw)
     # Expand explicit chat shorthand only in multi-word messages.
     raw = re.sub(r"\b([A-Za-z]+)\b", lambda m: ALIASES.get(m.group(1).lower(), m.group(1)), raw)
     fixed, _ = correct_spelling(raw)
@@ -74,7 +77,7 @@ def parse_intent(message, history=None):
 
     # Social turns must be classified before the generic topic fallback.
     # Otherwise "hi" is misrouted into local retrieval.
-    if re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening|howdy|bro+|bruh|yo)[!. ,]*", low):
+    if re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening|howdy|bro+|bruh|yo+)[!. ,\\\\]*", low):
         return IntentFrame("greeting", text, confidence=0.99, slots={})
     if re.fullmatch(r"(thanks|thank you|thx|many thanks)[!. ]*", low):
         return IntentFrame("gratitude", text, confidence=0.99, slots={})
