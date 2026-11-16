@@ -34,13 +34,16 @@ STOP = {
 }
 
 def normalize(text):
-    raw = (text or "").strip()
+    raw = re.sub(r"\s+", " ", (text or "").strip())
     if not raw:
         return ""
-    # Expand common chat shorthand before spelling recovery.
+    # A one-word turn may be a topic, acronym, command, or name. Never
+    # autocorrect it in isolation ("gta" must not become "eta").
+    if re.fullmatch(r"[A-Za-z][A-Za-z0-9_+#.-]*", raw):
+        return raw
+    # Expand explicit chat shorthand only in multi-word messages.
     raw = re.sub(r"\b([A-Za-z]+)\b", lambda m: ALIASES.get(m.group(1).lower(), m.group(1)), raw)
     fixed, _ = correct_spelling(raw)
-    # Preserve punctuation and sentence boundaries; collapse only accidental whitespace.
     return re.sub(r"\s+", " ", fixed).strip()
 
 def _clean_target(value):
@@ -49,12 +52,34 @@ def _clean_target(value):
     value = re.sub(r"^(?:a|an|the)\s+", "", value, flags=re.I)
     return value.strip(" '""“”")
 
-def parse_intent(message):
+def parse_intent(message, history=None):
     text = normalize(message)
     low = re.sub(r"[?!.]+$", "", text.lower().strip())
     words = tokens(low)
     if not low:
         return IntentFrame("empty", "", confidence=1.0, slots={})
+
+    last_assistant = ""
+    for item in history if isinstance(history, list) else []:
+        if isinstance(item, dict) and item.get("role") == "assistant":
+            candidate = item.get("text", item.get("content", ""))
+            if isinstance(candidate, str) and candidate.strip():
+                last_assistant = candidate.strip()
+    if low in {"yes", "yeah", "yep", "sure", "okay", "ok", "no", "nope", "nah"}:
+        pending = bool(last_assistant and ("?" in last_assistant or re.search(r"\b(shall|would you|do you|can you|should i)\b", last_assistant, re.I)))
+        kind = "confirmation" if low in {"yes", "yeah", "yep", "sure", "okay", "ok"} else "decline"
+        return IntentFrame(kind if pending else "acknowledgement", text, target=last_assistant if pending else "",
+                           confidence=0.94 if pending else 0.7, slots={"pending_question": pending})
+
+    topic_terms = {
+        "html", "css", "javascript", "typescript", "python", "java", "c",
+        "c++", "c#", "code", "coding", "programming", "gui", "ui", "api",
+        "sql", "database", "website", "web", "app", "android", "ios",
+        "gta", "fifa", "minecraft", "fbi", "ai", "machine learning"
+    }
+    if low in topic_terms:
+        return IntentFrame("topic", text, target=text, action="discuss",
+                           confidence=0.9, slots={"topic": text})
 
     if re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening|howdy)[!. ]*", low):
         return IntentFrame("greeting", text, confidence=0.99, slots={})
