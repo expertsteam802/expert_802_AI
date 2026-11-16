@@ -183,7 +183,9 @@ button{cursor:pointer}
  const $ = id => document.getElementById(id);
  const messages = $("messages"), input = $("messageInput"), send = $("sendButton");
  const HISTORY_KEY = "expert802.conversation.v2";
- const MEMORY_KEY = "expert802.learned-meanings.v1";\n let learnedMemory = [];\n try { const stored = JSON.parse(localStorage.getItem(MEMORY_KEY) || "[]"); if (Array.isArray(stored)) learnedMemory = stored.filter(x => typeof x === "string").slice(-80); } catch (_) { learnedMemory = []; }
+ const MEMORY_KEY = "expert802.learned-meanings.v1";
+ let learnedMemory = [];
+ try { const stored = JSON.parse(localStorage.getItem(MEMORY_KEY) || "[]"); if (Array.isArray(stored)) learnedMemory = stored.filter(x => typeof x === "string").slice(-80); } catch (_) { learnedMemory = []; }
  let history = [];
  try {
   const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
