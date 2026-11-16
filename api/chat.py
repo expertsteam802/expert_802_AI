@@ -199,7 +199,7 @@ class handler(BaseHTTPRequestHandler):
                 memory_turns = [{"role": "memory", "text": item[:500]} for item in browser_memory[-80:]
                                 if isinstance(item, str) and item.strip()]
                 history = memory_turns + history
-            return self._send(200, _ENGINE.reply(message[:4000], history[-100:]))
+            return self._send(200, _ENGINE.reply(message[:4000], history[-200:]))
         except Exception as error:
             logging.exception("Expert 802 cognitive core error (action=%s)", action if "action" in locals() else "unknown")
             return self._send(500, {"error": "The cognitive engine encountered an internal error."})
