@@ -150,115 +150,173 @@ def _wikipedia_search(query, limit):
     return _normalize_results(items, "Wikipedia", limit)
 
 
-def _current_us_president_search():
-    """Read the current officeholder from the official USAGov presidents page."""
-    url = "https://www.usa.gov/presidents"
-    request = urllib.request.Request(url, headers={
-        "User-Agent": "Mozilla/5.0 (compatible; Expert802AI/1.0)",
-        "Accept": "text/html",
+class _PageTextParser(HTMLParser):
+    """Extract readable page text while ignoring navigation, scripts and styling."""
+    BLOCKED = {"script", "style", "noscript", "svg", "nav", "footer", "header", "form"}
+    BLOCKS = {"article", "main", "section", "p", "div", "li", "h1", "h2", "h3", "h4", "br"}
+
+    def __init__(self):
+        super().__init__()
+        self.parts = []
+        self.blocked_depth = 0
+        self.title_parts = []
+        self.in_title = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag in self.BLOCKED:
+            self.blocked_depth += 1
+        if tag == "title":
+            self.in_title = True
+        if not self.blocked_depth and tag in self.BLOCKS:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag):
+        if tag in self.BLOCKED and self.blocked_depth:
+            self.blocked_depth -= 1
+        if tag == "title":
+            self.in_title = False
+        if not self.blocked_depth and tag in self.BLOCKS:
+            self.parts.append("\n")
+
+    def handle_data(self, data):
+        if self.in_title:
+            self.title_parts.append(data)
+        if not self.blocked_depth:
+            cleaned = re.sub(r"\s+", " ", data).strip()
+            if cleaned:
+                self.parts.append(cleaned + " ")
+
+
+def _public_http_url(value):
+    """Reject non-web schemes and obvious local/private destinations before fetching."""
+    from ipaddress import ip_address
+    parsed = urllib.parse.urlsplit(str(value or "").strip())
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return False
+    host = parsed.hostname.lower().rstrip(".")
+    if host in {"localhost", "localhost.localdomain"} or host.endswith((".localhost", ".local", ".internal")):
+        return False
+    try:
+        address = ip_address(host)
+        if not address.is_global:
+            return False
+    except ValueError:
+        if not re.fullmatch(r"[a-z0-9.-]+", host) or "." not in host:
+            return False
+    return True
+
+
+def _read_webpage(url, timeout=10, max_bytes=900000):
+    """Fetch and extract a bounded public HTML/text page; page content is untrusted data."""
+    if not _public_http_url(url):
+        return None
+    request = urllib.request.Request(str(url), headers={
+        "User-Agent": "Mozilla/5.0 (compatible; Expert802AI/1.0; +https://example.org/bot)",
+        "Accept": "text/html,text/plain;q=0.9,application/xhtml+xml;q=0.8",
     })
-    with urllib.request.urlopen(request, timeout=12) as response:
-        page = response.read(2_000_000).decode("utf-8", "replace")
-    plain = _clean(page, 200000)
-    match = re.search(
-        r"Current president\s+(?:The\s+)?(?:\d+(?:st|nd|rd|th)\s+and\s+)?"
-        r"current president of the United States is\s+([A-Z][A-Za-z .'-]+?)\.",
-        plain,
-        re.I,
-    )
-    if not match:
-        return []
-    name = match.group(1).strip()
-    return [{
-        "title": "USAGov: Current president of the United States",
-        "snippet": "The current president of the United States is " + name +
-                   ". USAGov identifies the officeholder on its official presidents page.",
-        "url": url,
-        "source": "USAGov (official U.S. government)",
-    }]
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        final_url = response.geturl()
+        if not _public_http_url(final_url):
+            return None
+        content_type = response.headers.get("Content-Type", "").lower()
+        if content_type and not any(kind in content_type for kind in ("text/html", "text/plain", "application/xhtml+xml")):
+            return None
+        raw = response.read(max_bytes + 1)
+    if len(raw) > max_bytes:
+        raw = raw[:max_bytes]
+    page = raw.decode("utf-8", "replace")
+    parser = _PageTextParser()
+    parser.feed(page)
+    title = _clean(" ".join(parser.title_parts), 220)
+    text = _clean(" ".join(parser.parts), 9000)
+    if len(text) < 120:
+        return None
+    return {"title": title, "text": text, "url": final_url}
+
+
+def _expand_search_results(results, max_pages=3):
+    """Read top search-result pages and attach bounded page text to their search metadata."""
+    expanded = []
+    for item in (results or [])[:max_pages]:
+        record = dict(item)
+        try:
+            page = _read_webpage(record.get("url", ""))
+        except (OSError, ValueError, RuntimeError, urllib.error.URLError):
+            page = None
+        if page:
+            record["page_title"] = page["title"] or record.get("title", "")
+            record["page_text"] = page["text"]
+            record["url"] = page["url"]
+            record["content_type"] = "fetched_page"
+        else:
+            record["content_type"] = "search_excerpt"
+        expanded.append(record)
+    return expanded
 
 
 def normalize_search_query(message):
-    """Turn common conversational phrasing into a focused search query."""
-    text = _clean(message, 300)
-    lowered = text.lower()
-    if (re.search(r"\b(president|head of state)\b", lowered)
-            and any(term in lowered for term in ("usa", "u.s.", "united states", "america"))
-            and re.search(r"\b(who|current|currently|today|now)\b", lowered)):
-        return "current president of the United States"
-    return text
+    """Prepare user language for retrieval without mapping questions to canned queries."""
+    return _clean(message, 300)
 
 
 def answer_from_web_results(message, results):
-    """Return a concise, source-grounded excerpt only when a result is clearly relevant."""
+    """Select relevant source passages; generation/reasoning belongs to the private model."""
     query = normalize_search_query(message)
-    if query == "current president of the United States":
-        for item in results or []:
-            if "usa.gov/presidents" in str(item.get("url", "")):
-                match = re.search(
-                    r"current president of the United States is\s+([A-Z][A-Za-z .'-]+?)\.",
-                    _clean(item.get("snippet"), 1200),
-                    re.I,
-                )
-                if match:
-                    return ("The current president of the United States is **" +
-                            match.group(1).strip() +
-                            "**. USAGov identifies this person as the current officeholder.")
-    stop_words = {"who", "what", "when", "where", "which", "why", "how", "is", "are",
-                  "the", "a", "an", "of", "in", "on", "for", "to", "and", "or",
-                  "currently", "today", "now", "please", "tell", "me",
-                  "about", "usa", "u.s", "united", "states"}
+    stop_words = {
+        "who", "what", "when", "where", "which", "why", "how", "is", "are", "was", "were",
+        "the", "a", "an", "of", "in", "on", "for", "to", "and", "or", "please", "tell",
+        "me", "about", "can", "could", "would", "should", "do", "does", "did", "with",
+        "from", "that", "this", "it", "they", "them", "current", "currently", "today", "now",
+    }
     terms = {word for word in re.findall(r"[a-z0-9]+", query.lower())
              if len(word) > 2 and word not in stop_words}
     if not terms:
         return None
     ranked = []
     for item in results or []:
-        title = _clean(item.get("title"), 220)
-        snippet = _clean(item.get("snippet"), 1200)
+        title = _clean(item.get("page_title") or item.get("title"), 220)
+        body = _clean(item.get("page_text") or item.get("snippet"), 9000)
+        if not body:
+            continue
         title_words = set(re.findall(r"[a-z0-9]+", title.lower()))
-        body_words = set(re.findall(r"[a-z0-9]+", snippet.lower()))
+        body_words = set(re.findall(r"[a-z0-9]+", body.lower()))
+        matched = terms & (title_words | body_words)
+        if not matched:
+            continue
         title_hits = len(terms & title_words)
         body_hits = len(terms & body_words)
-        matched_terms = terms & (title_words | body_words)
-        if "current" in terms and "current" not in (title_words | body_words):
-            continue
-        if len(matched_terms) < min(2, len(terms)):
-            continue
+        coverage = len(matched) / max(1, len(terms))
         score = (title_hits * 2 + body_hits) / max(1, len(terms) * 3)
-        if snippet and score >= 0.22:
-            ranked.append((score, item, snippet))
+        if coverage >= 0.35 and score >= 0.12:
+            ranked.append((score, item, body))
     if not ranked:
         return None
     ranked.sort(key=lambda row: row[0], reverse=True)
-    _, item, snippet = ranked[0]
-    source = _clean(item.get("title"), 180)
-    if not snippet:
-        return None
-    return snippet + ((" (Source: " + source + ")") if source else "")
+    passages = []
+    for score, item, body in ranked[:3]:
+        passages.append({
+            "source": item.get("source", "web"),
+            "title": item.get("page_title") or item.get("title", ""),
+            "url": item.get("url", ""),
+            "score": round(score, 3),
+            "text": body[:5000],
+        })
+    return passages
 
 
 def search_web(query, limit=5):
-    """Use key-free public search first, then configured providers and Wikipedia fallback."""
+    """Search broadly, then read result pages; no question-specific routes or answer templates."""
     query = normalize_search_query(query)
     if len(query) < 2:
         return []
     limit = max(1, min(int(limit), 6))
-    if query == "current president of the United States":
-        try:
-            official = _current_us_president_search()
-            if official:
-                return official[:limit]
-        except (OSError, ValueError, RuntimeError, urllib.error.URLError):
-            pass
-    errors = []
     for provider in (_duckduckgo_search, _wikipedia_search, _brave_search, _tavily_search, _bing_search):
         try:
             results = provider(query, limit)
             if results:
-                return results
-        except (OSError, ValueError, RuntimeError, urllib.error.URLError) as error:
-            errors.append(str(error)[:180])
+                return _expand_search_results(results, max_pages=min(3, limit))
+        except (OSError, ValueError, RuntimeError, urllib.error.URLError):
+            continue
     return []
 
 
