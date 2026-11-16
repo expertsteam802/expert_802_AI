@@ -55,6 +55,8 @@ jobs:
           BASE_CHECKPOINT: ${{ inputs.base_checkpoint_path }}
           TARGET_STEPS: ${{ inputs.steps }}
         run: python training/train.py --data training/sft_data --output training/sft-checkpoints --resume "$BASE_CHECKPOINT" --steps "$TARGET_STEPS"
+      - name: Evaluate fine-tuned conversation and coding model
+        run: python training/evaluate.py --checkpoint training/sft-checkpoints/best.pt --data training/sft_data --tokenizer training/sft-checkpoints/tokenizer.json --output training/sft-checkpoints/evaluation.json
       - name: Upload fine-tuned checkpoint artifact
         uses: actions/upload-artifact@v4
         with:
