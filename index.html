@@ -445,7 +445,7 @@ button{cursor:pointer}
     const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_analyze",task:message||"Inspect these source files and explain their structure, defects and risks.",files})});
     data=await response.json();
     if(!response.ok)throw new Error(data.error||"The source inspection failed.");
-    const a=data.analysis||{}, summary=a.summary||{}, diagnostics=a.diagnostics||[];
+    const a=data.analysis?.output||data.analysis||{}, summary=a.summary||{}, diagnostics=a.diagnostics||[];
     const lines=[
      "I inspected "+(a.file_count||files.length)+" source file(s) directly in this conversation.",
      "Languages: "+Object.entries(a.languages||{}).map(([name,count])=>name+" ("+count+")").join(", "),
