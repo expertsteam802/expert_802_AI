@@ -82,5 +82,5 @@ def build_state(history):
 def resolve_reference(text, state):
     low = (text or "").lower()
     if re.search(r"\b(it|that|this|they|them|those|he|she)\b", low) and state and state.topic:
-        return state.topic
+        return state.topic.lower()
     return ""
