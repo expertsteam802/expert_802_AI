@@ -43,6 +43,14 @@ class CognitiveEngine:
     def _reply_single(self, message, history=None):
         frame = parse_intent(message, history)
         state = build_state(history)
+        recent_user_messages = [item.get("text", "") for item in (history or [])[-16:]
+                                if isinstance(item, dict) and item.get("role") == "user"
+                                and isinstance(item.get("text"), str)]
+        prior_harm_context = any(re.search(
+            r"\\b(?:want to kill|kill someone|kill some one|hurt someone|murder someone|materials used to kill)\\b",
+            item.lower()) for item in recent_user_messages)
+        contextual_weapon_request = prior_harm_context and bool(re.search(
+            r"\\b(gun|firearm|knife|poison|explosive|bomb|weapon|ammunition)\\b", message, re.I))
         conversation_memory = ConversationMemory((history or []) + [{"role": "user", "text": message}])
         learned = {fact["key"]: fact["value"] for fact in conversation_memory.export_facts()}
         if frame.kind == "definition":
@@ -68,7 +76,7 @@ class CognitiveEngine:
             return {**base, "reply": "You're welcome. What would you like to work on next?"}
         if frame.kind == "acknowledgement":
             return {**base, "reply": "Got it. I'll keep that in mind as we continue."}
-        if frame.kind == "harm_risk":
+        if frame.kind == "harm_risk" or contextual_weapon_request:
             return {**base, "reply": "I'm taking that seriously. I can't help find weapons or materials to hurt someone. If someone may be in immediate danger, move away from them and from anything that could be used as a weapon, and contact local emergency services or a trusted person who can intervene now. If you can, tell me whether anyone is in immediate danger right now."}
         if frame.kind == "knowledge_check":
             known = self._meaning_for(frame.target, learned)
