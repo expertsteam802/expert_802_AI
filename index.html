@@ -56,7 +56,9 @@ button{cursor:pointer}
 .message.user .avatar{background:#356fe5;color:white}
 .bubble{max-width:min(780px,calc(100% - 45px));background:#fff;border:1px solid var(--line);border-radius:4px 15px 15px 15px;padding:12px 15px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 3px 12px rgba(29,48,84,.025);color:#273249}
 .message.user .bubble{background:#edf3ff;border-color:#dce7ff;border-radius:15px 4px 15px 15px}
- .message.assistant .bubble{animation:answerFade .32s ease both}\n @keyframes answerFade{from{opacity:.25;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}\n.message.error .bubble{background:#fff8f4;border-color:#f3dfd2;color:#9a4e28}
+ .message.assistant .bubble{animation:answerFade .32s ease both}
+ @keyframes answerFade{from{opacity:.25;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.message.error .bubble{background:#fff8f4;border-color:#f3dfd2;color:#9a4e28}
 .composer-wrap{flex:0 0 auto;padding:13px clamp(16px,4vw,56px) max(16px,env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(245,247,251,0),#f5f7fb 18%)}
 .composer{width:min(920px,100%);margin:auto;background:#fff;border:1px solid #dfe5ef;border-radius:17px;padding:8px;display:flex;align-items:flex-end;gap:9px;box-shadow:0 7px 24px rgba(30,51,90,.06)}
 .composer:focus-within{border-color:#9bb9f6;box-shadow:0 0 0 3px #356fe51a,0 7px 24px rgba(30,51,90,.06)}
@@ -119,6 +121,17 @@ button{cursor:pointer}
  .page-scroll{padding:18px 13px}
  .lookup-form{flex-direction:column}.primary-btn{width:100%}
 }
+
+.bubble p{margin:0 0 10px;white-space:pre-wrap}
+.bubble p:last-child{margin-bottom:0}
+.bubble h1,.bubble h2,.bubble h3{font-size:1.05em;line-height:1.35;margin:12px 0 7px}
+.bubble ul,.bubble ol{margin:7px 0 10px;padding-left:23px}
+.bubble li{margin:3px 0}
+.bubble code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9em}
+.bubble code.inline-code{background:#eef2f8;border:1px solid #e2e8f0;border-radius:5px;padding:1px 5px}
+.bubble pre{margin:9px 0;padding:13px;background:#111827;color:#e5e7eb;border-radius:10px;overflow:auto;max-width:100%;white-space:pre}
+.bubble pre code{font-size:12px;line-height:1.55;white-space:pre}
+.bubble blockquote{margin:8px 0;padding:7px 12px;border-left:3px solid #9bb9f6;background:#f6f8fc;color:#526078}
 </style>
 </head>
 <body>
@@ -239,10 +252,58 @@ button{cursor:pointer}
   }
   return files;
  }
+ function appendInline(parent,text){
+  const pattern=/(\\x60[^\\x60]+\\x60|\\*\\*[^*]+\\*\\*|\\*[^*]+\\*)/g;
+  let last=0,match;
+  while((match=pattern.exec(text))!==null){
+   parent.appendChild(document.createTextNode(text.slice(last,match.index)));
+   const token=match[0],node=token.startsWith("\\x60")?document.createElement("code"):
+    token.startsWith("**")?document.createElement("strong"):document.createElement("em");
+   node.textContent=token.startsWith("\\x60")?token.slice(1,-1):token.startsWith("**")?token.slice(2,-2):token.slice(1,-1);
+   if(node.tagName==="CODE")node.className="inline-code";
+   parent.appendChild(node);last=pattern.lastIndex;
+  }
+  parent.appendChild(document.createTextNode(text.slice(last)));
+ }
+ function renderMarkdown(node,source){
+  node.replaceChildren();
+  const codePattern=/\\x60\\x60\\x60([a-zA-Z0-9_+#.-]*)[ \\t]*\\n([\\s\\S]*?)\\x60\\x60\\x60/g;
+  let last=0,match;
+  const renderText=(chunk)=>{
+   const blocks=chunk.split(/\\n{2,}/).map(value=>value.trim()).filter(Boolean);
+   for(const block of blocks){
+    const lines=block.split("\\n");
+    if(lines.every(line=>/^\\s*[-*]\\s+/.test(line))){
+     const list=document.createElement("ul");
+     lines.forEach(line=>{const li=document.createElement("li");appendInline(li,line.replace(/^\\s*[-*]\\s+/,""));list.appendChild(li);});
+     node.appendChild(list);continue;
+    }
+    if(lines.every(line=>/^\\s*\\d+[.)]\\s+/.test(line))){
+     const list=document.createElement("ol");
+     lines.forEach(line=>{const li=document.createElement("li");appendInline(li,line.replace(/^\\s*\\d+[.)]\\s+/,""));list.appendChild(li);});
+     node.appendChild(list);continue;
+    }
+    const heading=block.match(/^(#{1,3})\\s+(.+)$/);
+    if(heading){const h=document.createElement("h"+heading[1].length);appendInline(h,heading[2]);node.appendChild(h);continue;}
+    if(lines.every(line=>/^\\s*>\\s?/.test(line))){
+     const quote=document.createElement("blockquote");appendInline(quote,lines.map(line=>line.replace(/^\\s*>\\s?/,"")).join("\\n"));node.appendChild(quote);continue;
+    }
+    const p=document.createElement("p");appendInline(p,block);node.appendChild(p);
+   }
+  };
+  while((match=codePattern.exec(source))!==null){
+   renderText(source.slice(last,match.index));
+   const pre=document.createElement("pre"),code=document.createElement("code");
+   if(match[1])code.dataset.language=match[1].toLowerCase();
+   code.textContent=match[2].replace(/\\n$/,"");
+   pre.appendChild(code);node.appendChild(pre);last=codePattern.lastIndex;
+  }
+  renderText(source.slice(last));
+ }
  function appendMessage(role,text,isError=false){
   const row=document.createElement("div"); row.className="message "+role+(isError?" error":"");
   const avatar=document.createElement("div"); avatar.className="avatar"; avatar.textContent=role==="user"?"YOU":"E";
-  const bubble=document.createElement("div"); bubble.className="bubble"; bubble.textContent=text;
+  const bubble=document.createElement("div"); bubble.className="bubble"; renderMarkdown(bubble,text);
   row.append(avatar,bubble); messages.appendChild(row); messages.scrollTop=messages.scrollHeight; return row;
  }
  function persistHistory(){
@@ -265,7 +326,7 @@ button{cursor:pointer}
   }
  }
  function typeReply(node,text){
-  return new Promise(resolve=>{let index=0;const step=()=>{const remaining=text.length-index;const chunk=Math.max(1,Math.ceil(remaining/Math.max(1,Math.min(90,text.length/24))));index=Math.min(text.length,index+chunk);node.textContent=text.slice(0,index);messages.scrollTop=messages.scrollHeight;if(index<text.length)window.setTimeout(step,18);else resolve();};step();});
+  return new Promise(resolve=>{let index=0;const step=()=>{const remaining=text.length-index;const chunk=Math.max(1,Math.ceil(remaining/Math.max(1,Math.min(90,text.length/24))));index=Math.min(text.length,index+chunk);node.textContent=text.slice(0,index);messages.scrollTop=messages.scrollHeight;if(index<text.length)window.setTimeout(step,18);else{renderMarkdown(node,text);resolve();}};step();});
  }
  function restoreHistory(){
   if(!history.length)return;
