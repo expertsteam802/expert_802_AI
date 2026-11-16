@@ -66,6 +66,14 @@ class CognitiveEngine:
         if frame.kind == "action_request":
             action, target = frame.action, frame.target
             evidence = self._retrieve_topic_evidence(target) if target else []
+            if action.lower() in {"explain", "describe", "teach", "define"}:
+                if evidence:
+                    return {**base, "reply": "\n".join(item["text"] for item in evidence[:3]),
+                            "evidence": evidence, "reasoning": {"method": "reference_based_explanation"}}
+                neural = self.neural.generate(message, history)
+                if neural["ok"]:
+                    return {**base, "engine": neural["engine"], "reply": neural["reply"], "neural_generated": True}
+                return {**base, "reply": f"I understood the request to {action} {target}, but I couldn't find supporting material in the local references. I won't invent an explanation.", "action_frame": {"verb": action, "object": target}, "confidence": 0.25}
             if evidence:
                 evidence_text = "\n".join(item["text"] for item in evidence[:2])
             else:
@@ -83,7 +91,20 @@ class CognitiveEngine:
         if frame.kind in {"confirmation", "decline"}:
             if frame.kind == "decline":
                 return {**base, "reply": "No problem. What would you prefer to do instead?", "pending_question": frame.target}
-            return {**base, "reply": "Got it. What would you like me to do next?", "pending_question": frame.target}
+            pending = frame.target
+            # A confirmation only authorizes an action when the preceding
+            # assistant turn offered one clear action. If it offered a menu,
+            # preserve the ambiguity and ask which option was intended.
+            if re.search(r"\bor\b", pending, re.I):
+                return {**base, "reply": "I see that the previous message offered more than one option. Which option are you saying yes to?", "pending_question": pending}
+            offer = re.search(r"\b(?:me to|you to)\s+(.+?)(?:[?.!]|$)", pending, re.I)
+            if not offer:
+                offer = re.search(r"\b(?:shall i|should i|can i)\s+(.+?)(?:[?.!]|$)", pending, re.I)
+            if offer:
+                proposed_action = offer.group(1).strip()
+                if len(tokens(proposed_action)) >= 2:
+                    return self._reply_single(proposed_action, history)
+            return {**base, "reply": "I understand that as agreement, but the previous message did not specify one clear action. What should I proceed with?", "pending_question": pending}
         if frame.kind == "acknowledgement":
             return {**base, "reply": "I heard your acknowledgement, but I don't have a specific pending question to attach it to. What should I apply it to?", "confidence": frame.confidence}
         if frame.kind == "identity":
