@@ -4,6 +4,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+
 @dataclass
 class ModelConfig:
     vocab_size: int = 16000
@@ -12,6 +13,7 @@ class ModelConfig:
     n_head: int = 8
     n_embd: int = 256
     dropout: float = 0.1
+
 
 class CausalSelfAttention(nn.Module):
     def __init__(self, config):
@@ -30,9 +32,12 @@ class CausalSelfAttention(nn.Module):
         q = q.view(batch, length, self.n_head, self.head_dim).transpose(1, 2)
         k = k.view(batch, length, self.n_head, self.head_dim).transpose(1, 2)
         v = v.view(batch, length, self.n_head, self.head_dim).transpose(1, 2)
-        value = F.scaled_dot_product_attention(q, k, v, dropout_p=self.dropout if self.training else 0.0, is_causal=True)
+        value = F.scaled_dot_product_attention(
+            q, k, v, dropout_p=self.dropout if self.training else 0.0, is_causal=True
+        )
         value = value.transpose(1, 2).contiguous().view(batch, length, channels)
         return self.proj(value)
+
 
 class TransformerBlock(nn.Module):
     def __init__(self, config):
@@ -49,8 +54,8 @@ class TransformerBlock(nn.Module):
 
     def forward(self, x):
         x = x + self.attention(self.norm1(x))
-        x = x + self.feed_forward(self.norm2(x))
-        return x
+        return x + self.feed_forward(self.norm2(x))
+
 
 class Expert802GPT(nn.Module):
     def __init__(self, config=None):
@@ -74,7 +79,7 @@ class Expert802GPT(nn.Module):
         elif isinstance(module, nn.Embedding):
             nn.init.normal_(module.weight, mean=0.0, std=0.02)
 
-    def forward(self, tokens, targets=None):
+    def forward(self, tokens, targets=None, loss_mask=None):
         batch, length = tokens.shape
         if length > self.config.block_size:
             raise ValueError("Input exceeds configured context length.")
@@ -82,7 +87,19 @@ class Expert802GPT(nn.Module):
         hidden = self.dropout(self.token_embedding(tokens) + self.position_embedding(positions))
         hidden = self.final_norm(self.blocks(hidden))
         logits = self.language_head(hidden)
-        loss = F.cross_entropy(logits.reshape(-1, logits.size(-1)), targets.reshape(-1)) if targets is not None else None
+        loss = None
+        if targets is not None:
+            token_losses = F.cross_entropy(
+                logits.reshape(-1, logits.size(-1)), targets.reshape(-1), reduction="none"
+            ).view(batch, length)
+            if loss_mask is not None:
+                weights = loss_mask.to(dtype=token_losses.dtype)
+                denominator = weights.sum()
+                if denominator.item() <= 0:
+                    raise ValueError("A supervised batch must contain at least one assistant target token.")
+                loss = (token_losses * weights).sum() / denominator
+            else:
+                loss = token_losses.mean()
         return logits, loss
 
     @torch.no_grad()
