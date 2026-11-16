@@ -28,8 +28,20 @@ def _history_pairs(history):
     return pairs[-30:]
 
 def _topic_from(text):
-    candidates = [w for w in tokens(text) if w not in STOP and len(w) > 2]
-    # Prefer the final concrete content word, which commonly becomes the topic.
+    clean = (text or "").strip().rstrip("?.!")
+    patterns = [
+        r"^(?:what\s+is|what's|define|meaning\s+of|definition\s+of)\s+(.+?)(?:\s+in\s+full(?:\s+words)?)?$",
+        r"^(?:do\s+you\s+know|have\s+you\s+heard\s+of|are\s+you\s+familiar\s+with)\s+(.+)$",
+        r"^(?:tell\s+me\s+about|explain|describe)\s+(.+)$",
+        r"^(?:i\s+need\s+help\s+with|help\s+me\s+with|i\s+want\s+to\s+know\s+about)\s+(.+)$",
+    ]
+    for pattern in patterns:
+        match = re.match(pattern, clean, re.I)
+        if match:
+            return re.sub(r"^(?:a|an|the)\s+", "", match.group(1).strip(), flags=re.I)
+    # Preserve meaningful multiword names and abbreviations rather than
+    # selecting the final grammatical token (e.g. "in full" -> "full").
+    candidates = [w for w in tokens(clean) if w not in STOP and len(w) > 1]
     return candidates[-1] if candidates else ""
 
 def build_state(history):
