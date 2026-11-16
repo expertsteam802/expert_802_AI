@@ -397,14 +397,19 @@ button{cursor:pointer}
  function plainTextUrl(book){
   const formats=book.formats||{};
   const key=Object.keys(formats).find(k=>k.toLowerCase().startsWith("text/plain")&&!k.toLowerCase().includes("zip"));
-  return key?formats[key]:null;
+  if(!key)return null;
+  try{
+   const url=new URL(formats[key]);
+   return url.protocol==="https:"&&(url.hostname==="gutenberg.org"||url.hostname.endsWith(".gutenberg.org"))?url.href:null;
+  }catch(_){return null;}
  }
  async function importOpenBooks(){
   if(!catalogLoaded||!openBooks.length)return;
   $("importBooksButton").disabled=true;$("loadBooksButton").disabled=true;
-  const db=await openKnowledgeDb();let imported=0,skipped=0,failed=0,totalBytes=0;
-  const existing=new Set(knowledgeChunks.map(item=>item.source));
+  let imported=0,skipped=0,failed=0,totalBytes=0;
   try{
+   const db=await openKnowledgeDb();
+   const existing=new Set(knowledgeChunks.map(item=>item.source));
    for(let i=0;i<openBooks.length;i++){
     const book=openBooks[i],source="Project Gutenberg: "+book.title+" (#"+book.id+")";
     if(existing.has(source)){skipped++;continue;}
