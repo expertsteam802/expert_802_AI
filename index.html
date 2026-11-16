@@ -356,7 +356,7 @@ button{cursor:pointer}
    ...history.slice(-14).map(item=>({role:item.role,content:String(item.text||"").slice(-3500)}))];
   if(!chat.length||chat[chat.length-1].role!=="user")chat.push({role:"user",content:message});
   const output=await localGenerator(chat,{
-   max_new_tokens:512,temperature:0.68,top_p:0.9,repetition_penalty:1.08,do_sample:true
+   max_new_tokens:384,temperature:0.68,top_p:0.9,repetition_penalty:1.08,do_sample:true
   });
   const generated=output?.[0]?.generated_text;
   let answer=Array.isArray(generated)?generated.filter(item=>item?.role==="assistant").slice(-1)[0]?.content:
