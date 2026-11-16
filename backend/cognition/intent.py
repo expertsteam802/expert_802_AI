@@ -71,6 +71,9 @@ def parse_intent(message, history=None):
         return IntentFrame(kind if pending else "acknowledgement", text, target=last_assistant if pending else "",
                            confidence=0.94 if pending else 0.7, slots={"pending_question": pending})
 
+    # Social turns must be classified before the generic topic fallback.
+    # Otherwise "hi" is misrouted into local retrieval.
+
     # Extract a verb/object frame compositionally from the user's wording.
     # Verb status comes from the local lexical database, not a hand-written
     # list of supported topics or canned examples.
@@ -115,7 +118,7 @@ def parse_intent(message, history=None):
 
     # A single word or noun phrase is a topic candidate regardless of whether
     # it appears in a preselected list. Its meaning is resolved by retrieval.
-    if (len(words_only) <= 3 and not re.search(r"[?]", text)
+    if (words_only and len(words_only) <= 3 and not re.search(r"[?]", text)
             and words_only[0] not in {"what", "who", "where", "when", "why", "how", "is", "are", "do", "does", "did", "can", "could", "would", "will", "should", "i", "you", "he", "she", "it", "we", "they"}):
         return IntentFrame("topic", text, target=text, action="explore",
                            confidence=0.55, slots={"topic_candidate": text})
