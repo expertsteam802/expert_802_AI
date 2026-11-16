@@ -73,6 +73,11 @@ def parse_intent(message, history=None):
 
     # Social turns must be classified before the generic topic fallback.
     # Otherwise "hi" is misrouted into local retrieval.
+    if re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening|howdy)[!. ]*", low):
+        return IntentFrame("greeting", text, confidence=0.99, slots={})
+    if re.fullmatch(r"(thanks|thank you|thx|many thanks)[!. ]*", low):
+        return IntentFrame("gratitude", text, confidence=0.99, slots={})
+
 
     # Extract a verb/object frame compositionally from the user's wording.
     # Verb status comes from the local lexical database, not a hand-written
