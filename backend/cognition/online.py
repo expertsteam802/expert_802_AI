@@ -131,7 +131,7 @@ def should_search_web(message):
         return False
     if _EXPLICIT_RE.search(text) or _FRESH_RE.search(text):
         return True
-    if (_FACTUAL_RE.search(text) or _RESEARCH_RE.search(text)) and not re.search(r"\b(you|yourself|my previous|in this chat)\b", text, re.I):
+    if (_FACTUAL_RE.search(text) or _RESEARCH_RE.search(text)) and not _PERSONAL_RE.search(text):
         return True
     if _CODING_RE.search(text) and re.search(r"\b(why|how|fix|error|issue|install|configure|latest|version|docs?)\b", text, re.I):
         return True
