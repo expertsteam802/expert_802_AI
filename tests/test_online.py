@@ -18,6 +18,25 @@ class OnlineAssistantTests(unittest.TestCase):
     def test_freshness_questions_trigger_web_search(self):
         self.assertTrue(online.should_search_web("What is the latest Python version today?"))
 
+    def test_informal_current_us_president_question_is_normalized(self):
+        self.assertEqual(
+            online.normalize_search_query("whos is the USA current President"),
+            "current president of the United States",
+        )
+        self.assertTrue(online.should_search_web("whos is the USA current President"))
+
+    def test_grounded_answer_selects_relevant_web_evidence(self):
+        results = [
+            {"title": "List of presidents of the United States",
+             "snippet": "Donald Trump is the 47th president of the United States.",
+             "url": "https://example.org/presidents", "source": "test"},
+            {"title": "Thomas Jefferson",
+             "snippet": "Thomas Jefferson was the third president.",
+             "url": "https://example.org/jefferson", "source": "test"},
+        ]
+        answer = online.answer_from_web_results("whos is the USA current President", results)
+        self.assertIn("Donald Trump", answer)
+
     def test_explicit_search_requests_trigger_web_search(self):
         self.assertTrue(online.should_search_web("Please search the web for current Vercel limits."))
         self.assertTrue(online.should_search_web("Search the internet for the official API docs."))
