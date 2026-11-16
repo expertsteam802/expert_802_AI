@@ -8,6 +8,7 @@ from html.parser import HTMLParser
 import json
 import os
 import re
+import socket
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -206,15 +207,48 @@ def _public_http_url(value):
     return True
 
 
+def _resolved_public_url(value):
+    """Resolve a destination and reject private, loopback, link-local and reserved IPs."""
+    from ipaddress import ip_address
+    parsed = urllib.parse.urlsplit(str(value or "").strip())
+    if not _public_http_url(value):
+        return False
+    try:
+        addresses = socket.getaddrinfo(
+            parsed.hostname, parsed.port or (443 if parsed.scheme == "https" else 80),
+            type=socket.SOCK_STREAM,
+        )
+    except (OSError, ValueError):
+        return False
+    if not addresses:
+        return False
+    for address in addresses:
+        try:
+            if not ip_address(address[4][0]).is_global:
+                return False
+        except ValueError:
+            return False
+    return True
+
+
+class _SafeRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Validate every redirect destination, not just the original search URL."""
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        if not _resolved_public_url(newurl):
+            raise urllib.error.URLError("Blocked redirect to a non-public destination")
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
 def _read_webpage(url, timeout=10, max_bytes=900000):
     """Fetch and extract a bounded public HTML/text page; page content is untrusted data."""
-    if not _public_http_url(url):
+    if not _resolved_public_url(url):
         return None
     request = urllib.request.Request(str(url), headers={
         "User-Agent": "Mozilla/5.0 (compatible; Expert802AI/1.0; +https://example.org/bot)",
         "Accept": "text/html,text/plain;q=0.9,application/xhtml+xml;q=0.8",
     })
-    with urllib.request.urlopen(request, timeout=timeout) as response:
+    opener = urllib.request.build_opener(_SafeRedirectHandler())
+    with opener.open(request, timeout=timeout) as response:
         final_url = response.geturl()
         if not _public_http_url(final_url):
             return None
