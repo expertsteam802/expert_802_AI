@@ -140,6 +140,19 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertEqual(frame.kind, "knowledge_check")
         self.assertEqual(frame.target.lower(), "ps5")
 
+    def test_persistent_browser_facts_do_not_replace_active_dialogue_topic(self):
+        from backend.cognition.conversation_memory import ConversationMemory
+        history = [
+            {"role": "memory", "text": "PS5 means PlayStation 5, a gaming device"},
+            {"role": "user", "text": "food"},
+            {"role": "assistant", "text": "What about food?"},
+            {"role": "user", "text": "also it means what we eat to thrive"},
+        ]
+        memory = ConversationMemory(history)
+        self.assertIn("playstation 5", memory.meaning_for("PS5")["value"].lower())
+        self.assertIn("what we eat to thrive", memory.meaning_for("food")["value"].lower())
+        self.assertEqual(memory.topic.lower(), "food")
+
     def test_user_correction_is_attached_to_previous_topic(self):
         from backend.cognition.conversation_memory import ConversationMemory
         history = [
