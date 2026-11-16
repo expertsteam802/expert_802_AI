@@ -344,7 +344,8 @@ button{cursor:pointer}
    env.allowRemoteModels=true;
    const strongDevice=!!navigator.gpu && (navigator.deviceMemory||4)>=8;
    const candidates=strongDevice
-    ? [{id:"HuggingFaceTB/SmolLM2-1.7B-Instruct",dtype:"q4f16",device:"webgpu"},
+    ? [{id:"onnx-community/Llama-3.2-3B-Instruct-ONNX",dtype:"q4f16",device:"webgpu"},
+       {id:"HuggingFaceTB/SmolLM2-1.7B-Instruct",dtype:"q4f16",device:"webgpu"},
        {id:"onnx-community/SmolLM2-360M-Instruct-ONNX",dtype:"q4f16",device:"webgpu"},
        {id:"onnx-community/SmolLM2-360M-Instruct-ONNX",dtype:"q4",device:"wasm"}]
     : [{id:"onnx-community/SmolLM2-360M-Instruct-ONNX",dtype:navigator.gpu?"q4f16":"q4",device:navigator.gpu?"webgpu":"wasm"},
@@ -352,7 +353,7 @@ button{cursor:pointer}
    let lastError=null;
    for(const candidate of candidates){
     try{
-     $("modelPill").textContent="Loading local AI · "+(candidate.id.includes("1.7B")?"1.7B":"360M");
+     $("modelPill").textContent="Loading local AI · "+(candidate.id.includes("3B")?"3B":candidate.id.includes("1.7B")?"1.7B":"360M");
      localGenerator=await pipeline("text-generation",candidate.id,{
       dtype:candidate.dtype,device:candidate.device,
       progress_callback:report=>{
