@@ -308,6 +308,23 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertEqual(result["resolved_topic"], "minecraft")
         self.assertIn("minecraft", result["reply"].lower())
 
+    def test_symbolic_reasoner_uses_universal_rules_transitively(self):
+        history = [
+            {"role": "user", "text": "Fido is a dog."},
+            {"role": "user", "text": "All dogs are mammals."},
+            {"role": "user", "text": "All mammals are animals."},
+        ]
+        result = self.engine.reply("Is Fido an animal?", history)
+        self.assertTrue(result.get("memory_used"))
+        self.assertIn("yes", result["reply"].lower())
+        self.assertEqual(result["reasoning"]["method"], "type_inheritance")
+        self.assertEqual(len(result["reasoning"]["inference_chain"]), 2)
+
+    def test_symbolic_reasoner_does_not_assume_unknown_relations(self):
+        result = self.engine.reply("Is a dragon an animal?")
+        self.assertFalse(result.get("memory_used"))
+        self.assertNotIn("Yes.", result["reply"])
+
     def test_knowledge_graph_performs_transitive_location_reasoning(self):
         history = [
             {"role": "user", "text": "Paris is in France."},
