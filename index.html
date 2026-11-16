@@ -484,12 +484,12 @@ button{cursor:pointer}
  $("bookSearch").addEventListener("input",renderBookCatalog);
 
  loadOpenBooks();
- let localGenerator=null, localModelName="", localDevice="";
+ let localGenerator=null, localModelName="", localDevice="", TextStreamerClass=null;
  async function initializeLocalAI(){
   try{
    if(navigator.storage?.persist) await navigator.storage.persist().catch(()=>false);
    $("modelPill").textContent="Preparing local AI…";
-   const {pipeline,env,TextStreamer}=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1");
+   const {pipeline,env,TextStreamer}=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1"); TextStreamerClass=TextStreamer;
    env.useBrowserCache=true;
    env.allowRemoteModels=true;
    const strongDevice=!!navigator.gpu && (navigator.deviceMemory||4)>=8;
@@ -568,7 +568,7 @@ button{cursor:pointer}
    ...history.slice(-9).map((item,index,items)=>({role:item.role,content:String(item.text||"").slice(index===items.length-1?-3500:-650)}))];
   if(!chat.length||chat[chat.length-1].role!=="user")chat.push({role:"user",content:message});
   let streamed="";
-  const streamer=TextStreamer?new TextStreamer(localGenerator.tokenizer,{
+  const streamer=TextStreamerClass?new TextStreamerClass(localGenerator.tokenizer,{
    skip_prompt:true,
    callback_function:chunk=>{streamed+=chunk;if(typeof onToken==="function")onToken(streamed);}
   }):null;
