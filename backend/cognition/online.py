@@ -141,8 +141,10 @@ def online_model_config():
     provider = os.environ.get("EXPERT802_LLM_PROVIDER", "").strip().lower()
     if not provider:
         provider = "gemini" if os.environ.get("GEMINI_API_KEY") else "openai" if os.environ.get("OPENAI_API_KEY") else "groq" if os.environ.get("GROQ_API_KEY") else ""
-    key = (os.environ.get("EXPERT802_LLM_API_KEY") or os.environ.get("GEMINI_API_KEY") or
-           os.environ.get("OPENAI_API_KEY") or os.environ.get("GROQ_API_KEY") or "").strip()
+    provider_key = {"gemini": "GEMINI_API_KEY", "openai": "OPENAI_API_KEY",
+                    "groq": "GROQ_API_KEY"}.get(provider, "")
+    key = (os.environ.get("EXPERT802_LLM_API_KEY") or
+           (os.environ.get(provider_key, "") if provider_key else "")).strip()
     base = os.environ.get("EXPERT802_LLM_BASE_URL", "").strip()
     model = os.environ.get("EXPERT802_LLM_MODEL", "").strip()
     if not provider or not key:
