@@ -244,7 +244,7 @@ button{cursor:pointer}
    if(match[2].trim())files.push({path:"pasted_snippet_"+(++index)+"."+(ext||"txt"),content:match[2].trim()});
   }
   if(files.length)return files;
-  const firstCode=message.search(/^\s*(?:def\s+\w+|class\s+\w+|import\s+\w+|from\s+\w+\s+import|function\s+\w+|(?:const|let|var)\s+\w+\s*=|<!doctype\s+html|<html\b|SELECT\s+.+\s+FROM)\b/im);
+  const firstCode=message.search(/^\s*(?:def\s+\w+|class\s+\w+|import\s+\w+|from\s+\w+\s+import|function\s+\w+|(?:const|let|var)\s+\w+\s*=|<!doctype\s+html|<html\b|SELECT\s+.+\s+FROM)/im);
   if(firstCode>=0){
    const code=message.slice(firstCode).trim();
    const ext=/^\s*(?:def\s+|class\s+|import\s+|from\s+.+import)/m.test(code)?"py":/^\s*(?:<!doctype|<html)/i.test(code)?"html":/^\s*SELECT/i.test(code)?"sql":"js";
