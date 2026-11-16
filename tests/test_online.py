@@ -20,6 +20,7 @@ class OnlineAssistantTests(unittest.TestCase):
 
     def test_explicit_search_requests_trigger_web_search(self):
         self.assertTrue(online.should_search_web("Please search the web for current Vercel limits."))
+        self.assertTrue(online.should_search_web("Search the internet for the official API docs."))
 
     def test_result_normalization_rejects_unsafe_urls_and_cleans_html(self):
         results = online._normalize_results([
