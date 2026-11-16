@@ -108,7 +108,7 @@ def search_web(query, limit=5):
     for provider in (_google_search, _brave_search, _tavily_search, _bing_search):
         try:
             results = provider(query, limit)
-            if results is not None:
+            if results:
                 return results
         except (OSError, ValueError, RuntimeError, urllib.error.URLError) as error:
             errors.append(str(error)[:180])
