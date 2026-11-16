@@ -284,8 +284,10 @@ button{cursor:pointer}
    const strongDevice=!!navigator.gpu && (navigator.deviceMemory||4)>=8;
    const candidates=strongDevice
     ? [{id:"HuggingFaceTB/SmolLM2-1.7B-Instruct",dtype:"q4f16",device:"webgpu"},
-       {id:"onnx-community/SmolLM2-360M-Instruct-ONNX",dtype:"q4f16",device:"webgpu"}]
-    : [{id:"onnx-community/SmolLM2-360M-Instruct-ONNX",dtype:navigator.gpu?"q4f16":"q4",device:navigator.gpu?"webgpu":"wasm"}];
+       {id:"onnx-community/SmolLM2-360M-Instruct-ONNX",dtype:"q4f16",device:"webgpu"},
+       {id:"onnx-community/SmolLM2-360M-Instruct-ONNX",dtype:"q4",device:"wasm"}]
+    : [{id:"onnx-community/SmolLM2-360M-Instruct-ONNX",dtype:navigator.gpu?"q4f16":"q4",device:navigator.gpu?"webgpu":"wasm"},
+       {id:"onnx-community/SmolLM2-360M-Instruct-ONNX",dtype:"q4",device:"wasm"}];
    let lastError=null;
    for(const candidate of candidates){
     try{
@@ -317,7 +319,7 @@ button{cursor:pointer}
  function shouldKeepDeterministic(data){
   if(!data)return false;
   if(data.memory_used||data.asserted_fact)return true;
-  if(["calculation","harm_risk","identity"].includes(data.intent?.kind))return true;
+  if(["calculation","harm_risk","identity","criticism","positive_feedback","laughter"].includes(data.intent?.kind))return true;
   return ["explicit_fact_graph","transitive_location_inference","type_inheritance",
           "browser_conversation_fact_recall","conversation_meaning_recall"].includes(data.reasoning?.method);
  }
