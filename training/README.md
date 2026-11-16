@@ -75,6 +75,16 @@ python training/serve.py --checkpoint training/sft-checkpoints/best.pt --tokeniz
 
 The inference service exposes `GET /health` and `POST /generate`. It binds to localhost by default. Generation length is controlled by `EXPERT802_MAX_NEW_TOKENS` (default 2,048, hard ceiling 8,192). There is no hosted-provider token quota, but context size, GPU memory, runtime and hardware capacity remain finite. Remote binding requires a 32-character `EXPERT802_INFERENCE_TOKEN` and a TLS reverse proxy. Do not expose the process directly to the public internet.
 
+## Evaluate before serving
+
+After training, run the held-out evaluation and sample prompts:
+
+```bash
+python training/evaluate.py --checkpoint training/checkpoints/best.pt --data training/data --tokenizer training/checkpoints/tokenizer.json --output training/checkpoints/evaluation.json
+```
+
+The report includes held-out next-token loss/perplexity and fixed conversation/programming completions. Perplexity is only a language-model metric; it does not prove that answers are useful, factual or that generated code works. Review the samples, build a task-specific test set, and run code through the isolated test runner before connecting a checkpoint to production.
+
 ## What this does and does not mean
 
 This is a real trainable Transformer architecture, not a dictionary lookup or bigram trick. But the starter model is small and begins with random weights. It will initially produce poor language. It needs a large, high-quality, legally usable corpus, substantial GPU training, reviewed coding examples, held-out evaluation and repeated improvements. It is **not GPT-equivalent** simply because it uses attention or because its checkpoint becomes large.
