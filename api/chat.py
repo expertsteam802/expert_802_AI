@@ -81,7 +81,7 @@ class handler(BaseHTTPRequestHandler):
         neural_health = _ENGINE.neural.health()
         sandbox_health = _SANDBOX.health()
         csrf_token = _make_csrf_token()
-        search_provider = ("Brave Search" if os.environ.get("BRAVE_SEARCH_API_KEY") else "Tavily" if os.environ.get("TAVILY_API_KEY") else "Bing" if os.environ.get("BING_SEARCH_V7_SUBSCRIPTION_KEY") else "Wikipedia fallback")
+        search_provider = ("Google Search" if os.environ.get("GOOGLE_CSE_API_KEY") and os.environ.get("GOOGLE_CSE_ID") else "Brave Search" if os.environ.get("BRAVE_SEARCH_API_KEY") else "Tavily" if os.environ.get("TAVILY_API_KEY") else "Bing" if os.environ.get("BING_SEARCH_V7_SUBSCRIPTION_KEY") else "Wikipedia fallback")
         sandbox_health["ready"] = bool(sandbox_health["ready"] and _CODE_RUN_ENABLED and csrf_token)
         self._send(200, {
             "engine": "expert802-cognitive-core",
