@@ -18,56 +18,45 @@ class OnlineAssistantTests(unittest.TestCase):
     def test_freshness_questions_trigger_web_search(self):
         self.assertTrue(online.should_search_web("What is the latest Python version today?"))
 
-    def test_informal_current_us_president_question_is_normalized(self):
-        self.assertEqual(
-            online.normalize_search_query("whos is the USA current President"),
-            "current president of the United States",
-        )
-        self.assertTrue(online.should_search_web("whos is the USA current President"))
+    def test_query_normalization_does_not_hardcode_a_question(self):
+        question = "whos is the USA current President"
+        self.assertEqual(online.normalize_search_query(question), question)
+        self.assertTrue(online.should_search_web(question))
 
-    def test_grounded_answer_selects_relevant_web_evidence(self):
+    def test_page_parser_extracts_readable_content_and_ignores_scripts(self):
+        parser = online._PageTextParser()
+        parser.feed(
+            "<html><title>Example source</title><nav>Menu</nav>"
+            "<main><h1>Current information</h1><p>The answer is in this article.</p>"
+            "<script>ignore this injected text</script></main></html>"
+        )
+        text = " ".join(parser.parts)
+        self.assertIn("The answer is in this article", text)
+        self.assertNotIn("ignore this injected text", text)
+        self.assertEqual(" ".join(parser.title_parts), "Example source")
+
+    def test_private_and_non_http_urls_are_rejected(self):
+        for url in (
+            "http://127.0.0.1/admin", "http://localhost/", "http://192.168.1.1/",
+            "file:///etc/passwd", "javascript:alert(1)", "http://service.internal/",
+        ):
+            self.assertFalse(online._public_http_url(url))
+        self.assertTrue(online._public_http_url("https://example.com/article"))
+
+    def test_relevant_evidence_returns_page_passages_not_hardcoded_answers(self):
         results = [
-            {"title": "List of presidents of the United States",
-             "snippet": "Donald Trump is the 47th and current president of the United States.",
-             "url": "https://example.org/presidents", "source": "test"},
-            {"title": "Thomas Jefferson",
-             "snippet": "Thomas Jefferson was the third president.",
-             "url": "https://example.org/jefferson", "source": "test"},
+            {"title": "Telephone history", "page_title": "Who invented the telephone?",
+             "page_text": "Alexander Graham Bell is widely credited with inventing the telephone. "
+                          "Other inventors also contributed to early telephone technology.",
+             "url": "https://example.org/history", "source": "test"},
+            {"title": "Unrelated", "page_title": "Gardening",
+             "page_text": "Tomatoes grow well in warm soil and need regular watering.",
+             "url": "https://example.org/garden", "source": "test"},
         ]
-        answer = online.answer_from_web_results("whos is the USA current President", results)
-        self.assertIn("Donald Trump", answer)
-
-    def test_current_us_president_uses_official_usagov_source(self):
-        from io import BytesIO
-
-        page = (
-            "<h2>Current president</h2>"
-            "<p>The 47th and current president of the United States is "
-            "Donald John Trump.</p>"
-        ).encode("utf-8")
-        with patch.object(online.urllib.request, "urlopen", return_value=BytesIO(page)):
-            results = online._current_us_president_search()
-        self.assertEqual(len(results), 1)
-        self.assertIn("Donald John Trump", results[0]["snippet"])
-        self.assertEqual(results[0]["url"], "https://www.usa.gov/presidents")
-        answer = online.answer_from_web_results(
-            "whos is the USA current President", results
-        )
-        self.assertIn("Donald John Trump", answer)
-
-    def test_current_president_query_prefers_official_source(self):
-        official = [{
-            "title": "USAGov: Current president of the United States",
-            "snippet": "The current president of the United States is Donald John Trump.",
-            "url": "https://www.usa.gov/presidents",
-            "source": "USAGov (official U.S. government)",
-        }]
-        with patch.object(online, "_current_us_president_search", return_value=official), patch.object(
-            online, "_duckduckgo_search"
-        ) as search:
-            results = online.search_web("whos is the USA current President", 5)
-        search.assert_not_called()
-        self.assertEqual(results, official)
+        evidence = online.answer_from_web_results("Who invented the telephone?", results)
+        self.assertTrue(evidence)
+        self.assertIn("Alexander Graham Bell", evidence[0]["text"])
+        self.assertEqual(evidence[0]["url"], "https://example.org/history")
 
     def test_explicit_search_requests_trigger_web_search(self):
         self.assertTrue(online.should_search_web("Please search the web for current Vercel limits."))
@@ -95,14 +84,17 @@ class OnlineAssistantTests(unittest.TestCase):
         self.assertEqual(parser.items[0]["url"], "https://example.org")
 
     def test_search_uses_wikipedia_when_no_paid_provider_is_configured(self):
+        search_results = [{
+            "title": "Example", "snippet": "Evidence", "url": "https://en.wikipedia.org/?curid=1",
+            "source": "Wikipedia",
+        }]
         with patch.dict(os.environ, {}, clear=True), patch.object(
             online, "_duckduckgo_search", return_value=None
         ), patch.object(
-            online, "_wikipedia_search", return_value=[{
-                "title": "Example", "snippet": "Evidence", "url": "https://en.wikipedia.org/?curid=1",
-                "source": "Wikipedia",
-            }]
-        ) as fallback:
+            online, "_wikipedia_search", return_value=search_results
+        ) as fallback, patch.object(
+            online, "_expand_search_results", side_effect=lambda items, max_pages: items
+        ):
             results = online.search_web("example", 3)
         fallback.assert_called_once_with("example", 3)
         self.assertEqual(results[0]["source"], "Wikipedia")
