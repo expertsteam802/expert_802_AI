@@ -58,6 +58,19 @@ class OnlineAssistantTests(unittest.TestCase):
         self.assertIn("Alexander Graham Bell", evidence[0]["text"])
         self.assertEqual(evidence[0]["url"], "https://example.org/history")
 
+    def test_informal_fact_question_uses_the_same_general_evidence_ranker(self):
+        results = [{
+            "title": "List of presidents of the United States",
+            "page_title": "Presidents of the United States",
+            "page_text": "Donald John Trump is the 47th and current president of the United States.",
+            "url": "https://example.org/presidents", "source": "test",
+        }]
+        evidence = online.answer_from_web_results(
+            "whos is the USA current President", results
+        )
+        self.assertTrue(evidence)
+        self.assertIn("Donald John Trump", evidence[0]["text"])
+
     def test_explicit_search_requests_trigger_web_search(self):
         self.assertTrue(online.should_search_web("Please search the web for current Vercel limits."))
         self.assertTrue(online.should_search_web("Search the internet for the official API docs."))
