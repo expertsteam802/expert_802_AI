@@ -15,7 +15,7 @@ from backend.language import dictionary_lookup, load_dictionary, load_wordnet
 from backend.cognition.agent import AgentPlanner, InspectionError
 from backend.cognition.programming import build_work_plan
 from backend.cognition.sandbox_runtime import SandboxRuntime
-from backend.cognition.online import search_web, should_search_web
+from backend.cognition.online import search_web, should_search_web, answer_from_web_results
 
 _ENGINE = ExpertLanguageEngine()
 _AGENT = AgentPlanner()
@@ -266,14 +266,20 @@ class handler(BaseHTTPRequestHandler):
                     result["neural_generated"] = True
                     result["answer_basis"] = "self-hosted Expert 802 model with live web evidence"
                 else:
-                    excerpts = []
-                    for item in web_results[:3]:
-                        excerpt = item["snippet"].strip()
-                        if excerpt and excerpt not in excerpts:
-                            excerpts.append(excerpt)
-                    if excerpts:
-                        result["reply"] = "Here is the information I found:\\n\\n" + "\\n\\n".join(excerpts)
-                        result["answer_basis"] = "live web evidence (extractive fallback; private model unavailable)"
+                    grounded_answer = answer_from_web_results(message, web_results)
+                    if grounded_answer:
+                        result["reply"] = grounded_answer
+                        result["web_answer_ready"] = True
+                        result["answer_basis"] = "relevant live web evidence (grounded extractive answer)"
+                    else:
+                        excerpts = []
+                        for item in web_results[:3]:
+                            excerpt = item["snippet"].strip()
+                            if excerpt and excerpt not in excerpts:
+                                excerpts.append(excerpt)
+                        if excerpts:
+                            result["reply"] = "Here is the information I found:\n\n" + "\n\n".join(excerpts)
+                            result["answer_basis"] = "live web evidence (extractive fallback; private model unavailable)"
             result["web_results"] = web_results
             result["web_search_performed"] = web_search_performed
             result["online_model_used"] = False
