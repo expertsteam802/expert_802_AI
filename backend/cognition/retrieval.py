@@ -34,7 +34,7 @@ class LocalRetriever:
                 text = source.read_text(encoding="utf-8", errors="ignore")
             except OSError:
                 continue
-            chunks = [part.strip() for part in re.split(r"(?<=[.!?])\\s+|\\n+", text)
+            chunks = [part.strip() for part in re.split(r"(?<=[.!?])\s+|\n+", text)
                       if 35 < len(part.strip()) <= 1800]
             label = str(source.relative_to(ROOT))
             records.extend({"text": chunk, "source": label} for chunk in chunks)
