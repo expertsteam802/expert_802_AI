@@ -258,6 +258,11 @@ class CognitiveEngine:
             match = re.search(r"\b([A-Za-z][A-Za-z0-9 +.-]{0,24})\s+(?:means|refers to)\s+(.+)$", clean, re.I)
             if match:
                 meanings[re.sub(r"\s+", "", match.group(1)).lower()] = match.group(2).strip(" .!?")
+            elif previous_topic and re.match(r"^(?:it is|it's|its)\s+", clean, re.I):
+                value = re.sub(r"^(?:it is|it's|its)\s+", "", clean, flags=re.I).strip(" .!?")
+                key = re.sub(r"\s+", "", previous_topic).lower()
+                if value:
+                    meanings[key] = value
             elif re.search(r"\b(?:it|also it)\s+means\s+", clean, re.I) and previous_topic:
                 value = re.split(r"\bmeans\b", clean, maxsplit=1, flags=re.I)[-1].strip(" .!?")
                 key = re.sub(r"\s+", "", previous_topic).lower()
