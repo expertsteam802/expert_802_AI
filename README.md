@@ -17,33 +17,31 @@ The Vercel chat endpoint runs a project-owned Python pipeline:
 7. **Code intelligence** — statically inspects Python ASTs, JavaScript/TypeScript delimiters and declarations, JSON validity, HTML duplicate IDs and selected security risks. It never executes uploaded source.
 8. **Tool registry** — exposes explicitly registered capabilities with bounded input validation.
 9. **Isolated test runner** — optionally sends explicit Python unit-test or JavaScript syntax-check requests to a private Docker service with network disabled and strict resource limits.
-10. **Neural runtime adapter** — optionally calls a private Expert 802 inference process when a trained checkpoint is actually available. No hosted model provider is used.
+10. **Browser-local language model** — loads an open instruct model with Transformers.js and runs generation on the visitor's own WebGPU device, with a WASM/CPU fallback. Model weights are downloaded once and cached in browser storage; no remote inference API or cloud GPU is used for text generation. The backend remains a lightweight CPU service for explicit logic, retrieval and static inspection.
 
-## Code Lab
+## Programming in chat
 
-The Code Lab UI lets a user select a project folder or source files and submit a bounded project snapshot to the backend. It returns a file map, language counts, discovered symbols/imports, selected diagnostics and an engineering plan. It accepts at most 40 files and 1 MB per inspection request.
+The primary interface is one conversation. Users can paste fenced code or attach source files from the chat composer. The backend statically inspects supplied files (maximum 40 files and 1 MB per request), returns diagnostics and a task plan, and the browser-local language model explains the findings or drafts code in the same conversation. Static inspection never executes uploaded source. An optional isolated Docker runner remains a separately configured capability.
 
-A trained private model can optionally produce an unapplied patch draft through the self-hosted inference adapter. When configured, Code Lab can also send an explicit test request to a separate Docker runner; it never executes code inside Vercel. The app does not claim that a draft has been applied, tested or deployed. Arbitrary uploaded code is not executed.
+## Browser-local language model
 
-## Native neural model
+The browser loads `HuggingFaceTB/SmolLM2-1.7B-Instruct` on devices with WebGPU and sufficient reported memory. Other devices use `onnx-community/SmolLM2-360M-Instruct-ONNX`, with WebGPU when available and WASM/CPU as a fallback. Transformers.js caches the model files in browser Cache Storage after the first download. User chat generation then runs on the user's device; no hosted LLM endpoint or online GPU is involved. The first model download is large (roughly 1.2 GB for the 1.7B option or a few hundred MB for the 360M option).
 
-The `training/` directory now contains a project-owned decoder-only Transformer, corpus-trained byte-level BPE tokenizer, pretraining pipeline, conversation-level fine-tuning data preparation, checkpointed training loop, local generation and a private inference server.
+The downloaded SmolLM2 model is a pretrained general-purpose foundation, not a custom Expert 802 checkpoint. The `training/` directory separately contains Expert 802's own decoder-only Transformer, BPE tokenizer, pretraining and fine-tuning pipelines. **No custom Expert 802 neural checkpoint has been trained or connected.** The browser model is compact and cannot be represented as GPT-equivalent or human-level intelligence.
 
-It starts from random weights. **No trained neural checkpoint is currently included in the repository or connected to production.** The initial model configuration is a small research baseline, not GPT-level intelligence. It needs substantial licensed language and code data, GPU compute, careful evaluation and iterative training.
-
-No Qwen model, Qwen endpoint or third-party model API is part of the architecture.
+No Qwen API, hosted model API or cloud inference GPU is used.
 
 ## Important capability boundary
 
-The current production chat path is the symbolic cognition system plus optional private neural inference if configured. Without trained weights, open-ended language generation and autonomous code generation are not available. Code Lab can statically inspect source and build work plans, but it does not yet apply changes to arbitrary uploaded projects or execute them.
+Open-ended generation is provided by the compact browser-local SmolLM2 model when it has loaded. Symbolic memory, arithmetic, explicit-fact inference, retrieval and safety routing run in the backend. The compact model can make mistakes and is substantially less capable than ChatGPT. It can draft code in chat, but does not silently apply code to a repository or claim to have executed it. The optional private Expert 802 inference adapter remains separate from this browser model.
 
 The old word-bigram artifact in `backend/language_model.json` is only a statistical next-word baseline. It is not the assistant's intelligence.
 
 ## Repository layout
 
-- `index.html` — chat, dictionary, Code Lab and architecture-status views.
+- `index.html` — chat-first interface, browser-local model loading, browser conversation memory and in-chat source inspection.
 - `api/chat.py` — Vercel HTTP API for chat, lookup, task planning, code inspection and optional patch generation.
-- `backend/cognition/` — language processing, dialogue state, knowledge graph, retrieval, reasoning, programming planner, code analysis, tool registry and private neural connector.
+- `backend/cognition/` — language processing, semantic conversation memory, dialogue state, knowledge graph, retrieval, reasoning, programming planner, code analysis, tool registry and optional private neural connector.
 - `backend/language.py` — lexical data loading, spelling, tokenization and grammar helpers.
 - `knowledge/` — local English dictionary, WordNet and starter corpus.
 - `learning/` — lexical corpus and WordNet workflows.
@@ -64,7 +62,7 @@ Training has separate dependencies in `training/requirements.txt`; see [training
 
 ## Deployment
 
-Vercel hosts the lightweight web/API layer. A trained neural model must run separately on a private machine or GPU service. The optional Docker test runner also runs separately on a private host. Configure `EXPERT802_NEURAL_URL` to its HTTPS `/generate` endpoint and `EXPERT802_INFERENCE_TOKEN` with a strong shared secret. The private inference process requires a TLS reverse proxy for remote binding. See [sandbox/README.md](sandbox/README.md) for the isolated test runner. Test execution is disabled by default; do not enable it on a public app until authenticated user access and edge-level rate limiting are in place.
+Vercel hosts the lightweight CPU web/API layer. The default language model runs in the visitor's browser; its weights are downloaded from the public model repository and cached locally. The optional separately hosted Expert 802 neural service is not required for browser chat. The optional Docker test runner also runs separately on a private host. Configure `EXPERT802_NEURAL_URL` to its HTTPS `/generate` endpoint and `EXPERT802_INFERENCE_TOKEN` with a strong shared secret. The private inference process requires a TLS reverse proxy for remote binding. See [sandbox/README.md](sandbox/README.md) for the isolated test runner. Test execution is disabled by default; do not enable it on a public app until authenticated user access and edge-level rate limiting are in place.
 
 GitHub Actions validates code on pushes to `main`. It does not train a capable conversational model.
 
