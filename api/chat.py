@@ -282,22 +282,18 @@ class handler(BaseHTTPRequestHandler):
                         result["neural_generated"] = True
                         result["answer_basis"] = "self-hosted Expert 802 reasoning over retrieved website content"
                     else:
-                        result["reply"] = (
-                            "I found relevant web sources, but no language generator is currently "
-                            "available to synthesize them. The source links are shown below."
-                        )
-                        result["answer_basis"] = "retrieved website evidence; generation unavailable"
+                        result["reply"] = ""
+                        result["generation_ready"] = False
+                        result["generation_error"] = neural.get("error", "Language generation unavailable.")
+                        result["answer_basis"] = "retrieved website evidence; awaiting a language generator"
                 else:
-                    result["reply"] = (
-                        "I searched and read the available pages, but couldn't identify evidence "
-                        "relevant enough to answer confidently. I won't guess."
-                    )
+                    result["reply"] = ""
+                    result["generation_ready"] = False
+                    result["generation_error"] = "No sufficiently relevant evidence was retrieved."
                     result["answer_basis"] = "insufficient relevant website evidence"
             if web_search_attempted and not web_results and not result.get("memory_used"):
-                result["reply"] = (
-                    "I tried to check live sources, but the search providers returned no results. "
-                    "I can't verify this answer right now, so I won't invent one."
-                )
+                result["reply"] = ""
+                result["generation_error"] = "Live search providers returned no results."
                 result["answer_basis"] = "live search unavailable"
             result["web_results"] = web_results
             result["web_search_performed"] = web_search_performed
