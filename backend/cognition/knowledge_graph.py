@@ -132,6 +132,10 @@ class KnowledgeGraph:
     def _type_answer(self, subject, target):
         subject, target = self.canonical(subject), self.canonical(target)
         positive = self._inferred_types(subject)
+        if not positive:
+            class_subject = self._singular(subject)
+            if class_subject != subject:
+                positive = self._inferred_types(class_subject)
         negative = self.negative_types.get(subject, [])
         yes = [(kind, sources) for kind, sources in positive if kind == self._singular(target)]
         no = [edge for edge in negative if edge["type"] == self._singular(target)]
