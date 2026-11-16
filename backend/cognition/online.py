@@ -301,6 +301,7 @@ def answer_from_web_results(message, results):
         "the", "a", "an", "of", "in", "on", "for", "to", "and", "or", "please", "tell",
         "me", "about", "can", "could", "would", "should", "do", "does", "did", "with",
         "from", "that", "this", "it", "they", "them", "current", "currently", "today", "now",
+        "whos", "usa", "united", "states", "u", "s",
     }
     terms = {word for word in re.findall(r"[a-z0-9]+", query.lower())
              if len(word) > 2 and word not in stop_words}
