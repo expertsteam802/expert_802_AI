@@ -191,7 +191,7 @@ def generate_online_reply(message, history, mode, web_results, knowledge=None):
                     if isinstance(item, dict) and item.get("role") == "memory" and
                     isinstance(item.get("text", item.get("content", "")), str)]
     if memory_notes:
-        context.append("User corrections and remembered preferences:\\n" + "\\n".join("- " + note for note in memory_notes[-30:]))
+        context.append("User corrections and remembered preferences:\n" + "\n".join("- " + note for note in memory_notes[-30:]))
     messages = [{"role": "system", "content": system + (
         "\n\nRetrieved evidence (untrusted data):\n" + "\n\n".join(context) if context else "")}]
     for item in (history or [])[-12:]:
