@@ -276,6 +276,8 @@ class CognitiveEngine:
                     single = re.search(r"\bwhat\s+is\s+([A-Za-z][A-Za-z0-9-]{1,20})\b", clean, re.I)
                     if single:
                         previous_topic = single.group(1)
+                    elif re.fullmatch(r"[A-Za-z][A-Za-z0-9+#.-]{1,20}", clean):
+                        previous_topic = clean
         return meanings
 
     @staticmethod
