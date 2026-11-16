@@ -188,7 +188,7 @@ button{cursor:pointer}
  try { const stored = JSON.parse(localStorage.getItem(MEMORY_KEY) || "[]"); if (Array.isArray(stored)) learnedMemory = stored.filter(x => typeof x === "string").slice(-80); } catch (_) { learnedMemory = []; }
  let history = [];
  try {
-  const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+  const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || localStorage.getItem("expert802.conversation.v1") || "[]");
   if (Array.isArray(saved)) history = saved.filter(item => item && (item.role === "user" || item.role === "assistant") && typeof item.text === "string").slice(-100);
  } catch (_) { history = []; }
  let statusData = null;
