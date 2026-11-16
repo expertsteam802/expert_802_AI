@@ -170,6 +170,14 @@ class CognitiveEngine:
             return {**base, "reply": "I can analyze the question, but my current local knowledge does not contain enough evidence for a dependable explanation. Give me the specific term, system, or example you want examined.", "confidence": 0.25}
 
         if frame.kind == "question":
+            graph_answer = knowledge_graph.answer(frame.normalized)
+            if graph_answer:
+                return {**base, **graph_answer, "memory_used": True,
+                        "reasoning": {"method": "explicit_fact_graph"}}
+            remembered = self._match_fact(frame.normalized, state.facts)
+            if remembered:
+                return {**base, "reply": "From your earlier message: " + remembered["text"],
+                        "evidence": [remembered], "confidence": 0.99, "memory_used": True}
             topic = resolve_reference(frame.normalized, state)
             query = (topic + " " + frame.normalized).strip() if topic and re.search(r"\b(it|that|this|they|them)\b", frame.normalized.lower()) else frame.normalized
             deliberation = self.deliberator.analyze(query, history)
