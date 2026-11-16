@@ -56,7 +56,7 @@ button{cursor:pointer}
 .message.user .avatar{background:#356fe5;color:white}
 .bubble{max-width:min(780px,calc(100% - 45px));background:#fff;border:1px solid var(--line);border-radius:4px 15px 15px 15px;padding:12px 15px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 3px 12px rgba(29,48,84,.025);color:#273249}
 .message.user .bubble{background:#edf3ff;border-color:#dce7ff;border-radius:15px 4px 15px 15px}
-.message.error .bubble{background:#fff8f4;border-color:#f3dfd2;color:#9a4e28}
+ .message.assistant .bubble{animation:answerFade .32s ease both}\n @keyframes answerFade{from{opacity:.25;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}\n.message.error .bubble{background:#fff8f4;border-color:#f3dfd2;color:#9a4e28}
 .composer-wrap{flex:0 0 auto;padding:13px clamp(16px,4vw,56px) max(16px,env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(245,247,251,0),#f5f7fb 18%)}
 .composer{width:min(920px,100%);margin:auto;background:#fff;border:1px solid #dfe5ef;border-radius:17px;padding:8px;display:flex;align-items:flex-end;gap:9px;box-shadow:0 7px 24px rgba(30,51,90,.06)}
 .composer:focus-within{border-color:#9bb9f6;box-shadow:0 0 0 3px #356fe51a,0 7px 24px rgba(30,51,90,.06)}
@@ -119,13 +119,13 @@ button{cursor:pointer}
 <body>
 <div class="app">
  <aside class="sidebar">
-  <div class="brand"><div class="brand-mark">E</div><div><div class="brand-name">Expert 802 AI</div><div class="brand-sub">Conversation + coding assistant</div></div></div>
+  <div class="brand"><div class="brand-mark">E</div><div><div class="brand-name">Expert 802 AI</div><div class="brand-sub">One conversation for thinking, learning and building</div></div></div>
   <button class="new-chat" id="newChat"><span>＋</span> New conversation</button>
   <div><div class="nav-label">Workspace</div><nav class="nav" aria-label="Main navigation">
    <button class="nav-btn active" data-view="chat"><span class="nav-icon">◉</span><span>Chat</span></button>
-   <button class="nav-btn" data-view="codelab"><span class="nav-icon">⌘</span><span>Code Lab</span></button>
+   
    <button class="nav-btn" data-view="training"><span class="nav-icon">⌁</span><span>Architecture</span></button>
-   <button class="nav-btn" data-view="dictionary"><span class="nav-icon">▤</span><span>Dictionary</span></button>
+   
   </nav></div>
   <div class="sidebar-spacer"></div>
   <div class="engine-card"><div class="engine-line"><span class="status-dot" id="statusDot"></span><span id="statusLabel">Checking engine…</span></div><div class="engine-caption" id="statusCaption">Reading live backend status.</div></div>
@@ -134,8 +134,8 @@ button{cursor:pointer}
  <main class="workspace">
   <header class="topbar"><div><div class="top-title" id="pageTitle">Conversation</div><div class="top-subtitle" id="pageSubtitle">A conversational and programming assistant built around reasoning, tools and its own trainable model.</div></div><div class="top-right"><span class="pill" id="modelPill">Checking model</span></div></header>
   <section class="view chat-view active" id="chatView">
-   <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, discuss ideas, plan software, debug projects and continue multi-turn conversations. Use Code Lab to inspect real source files and map engineering work.</p><div class="welcome-note">No hosted AI provider is required. A private neural model can be connected after its own training.</div></div></div>
-   <div class="composer-wrap"><div class="composer"><textarea id="messageInput" rows="1" aria-label="Message Expert 802 AI" placeholder="Message Expert 802 AI…"></textarea><button class="send" id="sendButton" aria-label="Send message">↑</button></div><div class="composer-meta"><span>Enter to send · Shift + Enter for a new line</span><span>Only the conversation panel scrolls</span></div></div>
+   <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, explore ideas, build software, debug problems and continue naturally. Programming belongs here in the conversation too.</p><div class="welcome-note">Your conversation history and learned meanings stay in this browser. No online GPU is needed for local conversation memory.</div></div></div>
+   <div class="composer-wrap"><div class="composer"><textarea id="messageInput" rows="1" aria-label="Message Expert 802 AI" placeholder="Message Expert 802 AI…"></textarea><button class="send" id="sendButton" aria-label="Send message">↑</button></div><div class="composer-meta"><span>Enter to send · Shift + Enter for a new line</span><span>Your chat history is saved in this browser</span></div></div>
   </section>
   <section class="view content-view" id="dictionaryView"><div class="page-scroll"><div class="page-inner">
    <div class="page-heading"><h1>English dictionary</h1><p>Search the actual local dictionary and WordNet knowledge imported into this project.</p></div>
@@ -182,7 +182,7 @@ button{cursor:pointer}
  "use strict";
  const $ = id => document.getElementById(id);
  const messages = $("messages"), input = $("messageInput"), send = $("sendButton");
- const HISTORY_KEY = "expert802.conversation.v1";
+ const HISTORY_KEY = "expert802.conversation.v2";\n const MEMORY_KEY = "expert802.learned-meanings.v1";\n let learnedMemory = [];\n try { const stored = JSON.parse(localStorage.getItem(MEMORY_KEY) || "[]"); if (Array.isArray(stored)) learnedMemory = stored.filter(x => typeof x === "string").slice(-80); } catch (_) { learnedMemory = []; }
  let history = [];
  try {
   const saved = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
@@ -190,7 +190,7 @@ button{cursor:pointer}
  } catch (_) { history = []; }
  let statusData = null;
  const viewInfo = {
-  chat:["Conversation","Talk naturally. Expert 802 AI will interpret your message."],
+  chat:["Conversation","Ask anything. Discuss ideas, build software and solve problems in one conversation."],
   dictionary:["Dictionary","Look up words from the project's local knowledge base."],
   training:["Architecture","Inspect the native cognitive pipeline and local learning data."],
   codelab:["Code Lab","Inspect project files and plan real engineering work."]
@@ -222,11 +222,11 @@ button{cursor:pointer}
   const message=String(raw??input.value).trim();
   if(!message||send.disabled)return;
   const welcome=$("welcome"); if(welcome)welcome.remove();
-  appendMessage("user",message); history.push({role:"user",text:message}); persistHistory();
+  appendMessage("user",message); history.push({role:"user",text:message}); rememberMeaning(message); persistHistory();
   input.value="";input.style.height="auto";send.disabled=true;send.textContent="…";
   const pending=appendMessage("assistant","Thinking…");
   try{
-   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-30)})});
+   const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-80),memory:learnedMemory})});
    const data=await response.json();
    if(!response.ok||typeof data.reply!=="string"||!data.reply.trim())throw new Error(data.error||"The language engine returned no answer.");
    pending.querySelector(".bubble").textContent=data.reply;
@@ -241,7 +241,7 @@ button{cursor:pointer}
  input.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,150)+"px";});
  $("newChat").addEventListener("click",()=>{
   history.length=0; localStorage.removeItem(HISTORY_KEY);
-  messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, discuss ideas, plan software and continue multi-turn conversations. Open Code Lab to inspect project files.</p><div class="welcome-note">Your messages are processed by Expert 802 AI.</div></div>';
+  messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, discuss ideas, plan software and continue multi-turn conversations. Open Code Lab to inspect project files.</p><div class="welcome-note">Your conversation memory stays in this browser. Start a new chat without losing learned meanings.</div></div>';
   input.value="";input.focus();switchView("chat");
  });
  const codeFilesInput=$("codeFiles");
@@ -330,7 +330,7 @@ button{cursor:pointer}
    $("trainingVocab").textContent=number(statusData.training_vocabulary);
    $("statusDot").classList.toggle("ready",true);
    $("statusLabel").textContent="Cognitive core online";
-   $("statusCaption").textContent="Conversation reasoning · programming planner · code inspection.";
+   $("statusCaption").textContent="Chat-first reasoning · browser memory · programming in conversation.";
    $("modelPill").textContent=statusData.neural_generator_ready?"Private neural model active":"Native cognition active";
    $("generateCode").disabled=!statusData.code_generation_enabled;
    $("runCodeTests").disabled=!statusData.isolated_test_runner_ready;
