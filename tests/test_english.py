@@ -83,6 +83,32 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertIn("game", fixed.lower())
         self.assertIn("now", fixed.lower())
 
+    def test_user_taught_acronym_meaning_is_recalled_in_followup(self):
+        history = [
+            {"role": "user", "text": "do you know PS5"},
+            {"role": "assistant", "text": "Do you mean the gaming device?"},
+            {"role": "user", "text": "its play station 5, a gaming device"},
+        ]
+        result = self.engine.reply("what is PS5?", history)
+        self.assertTrue(result.get("memory_used"))
+        self.assertIn("play station 5", result["reply"].lower())
+        self.assertIn("gaming device", result["reply"].lower())
+
+    def test_user_taught_expansion_is_recalled_in_followup(self):
+        history = [
+            {"role": "user", "text": "html"},
+            {"role": "assistant", "text": "What about HTML?"},
+            {"role": "user", "text": "it means hyper text markup language"},
+        ]
+        result = self.engine.reply("what is html in full?", history)
+        self.assertTrue(result.get("memory_used"))
+        self.assertIn("hyper text markup language", result["reply"].lower())
+
+    def test_bare_topic_does_not_return_random_dictionary_excerpt(self):
+        result = self.engine.reply("html")
+        self.assertNotIn("local references", result["reply"].lower())
+        self.assertIn("what would you like to know", result["reply"].lower())
+
     def test_greetings_bypass_topic_retrieval(self):
         frame = parse_intent("hi")
         self.assertEqual(frame.kind, "greeting")
