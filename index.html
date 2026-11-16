@@ -408,8 +408,20 @@ button{cursor:pointer}
    await typeReply(pending.querySelector(".bubble"),data.reply);
    history.push({role:"assistant",text:data.reply}); persistHistory();
   }catch(error){
-   pending.classList.add("error");
-   pending.querySelector(".bubble").textContent="I couldn't complete that request. "+(error.message||"Please try again.");
+   let localFallback="";
+   if(localGenerator){
+    try{
+     const attached=await Promise.all(filesToInspect.map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
+     localFallback=await generateLocalReply(message||"Inspect the attached source files.",null,attached.concat(pastedFiles));
+    }catch(_){}
+   }
+   if(localFallback){
+    await typeReply(pending.querySelector(".bubble"),localFallback);
+    history.push({role:"assistant",text:localFallback});persistHistory();
+   }else{
+    pending.classList.add("error");
+    pending.querySelector(".bubble").textContent="I couldn't complete that request. "+(error.message||"Please try again.");
+   }
   }finally{send.disabled=false;send.textContent="↑";input.focus();messages.scrollTop=messages.scrollHeight;}
  }
  send.addEventListener("click",()=>sendMessage());
