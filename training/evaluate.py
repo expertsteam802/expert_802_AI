@@ -38,10 +38,10 @@ def evaluate(checkpoint_path, data_dir, tokenizer_path, batch_size=4, batches=50
 
     tokenizer = load_tokenizer(tokenizer_path)
     sample_prompts = prompts or [
-        "<|user|> Hello. Please introduce yourself.\\n<|assistant|>",
-        "<|user|> Explain what a Python function is.\\n<|assistant|>",
-        "<|user|> Write a JavaScript function that adds two numbers.\\n<|assistant|>",
-        "<|user|> I made a mistake in my code. How should I debug it?\\n<|assistant|>",
+        "<|user|> Hello. Please introduce yourself.\n<|assistant|>",
+        "<|user|> Explain what a Python function is.\n<|assistant|>",
+        "<|user|> Write a JavaScript function that adds two numbers.\n<|assistant|>",
+        "<|user|> I made a mistake in my code. How should I debug it?\n<|assistant|>",
     ]
     samples = []
     for prompt in sample_prompts:
@@ -86,7 +86,7 @@ def main():
     rendered = json.dumps(result, ensure_ascii=False, indent=2)
     if args.output:
         Path(args.output).parent.mkdir(parents=True, exist_ok=True)
-        Path(args.output).write_text(rendered + "\\n", encoding="utf-8")
+        Path(args.output).write_text(rendered + "\n", encoding="utf-8")
     print(rendered)
 
 
