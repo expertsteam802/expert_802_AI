@@ -33,13 +33,14 @@ No Qwen API, hosted model API or cloud inference GPU is used.
 
 ## Important capability boundary
 
-Open-ended generation is provided by the compact browser-local SmolLM2 model when it has loaded. Symbolic memory, arithmetic, explicit-fact inference, retrieval and safety routing run in the backend. The compact model can make mistakes and is substantially less capable than ChatGPT. It can draft code in chat, but does not silently apply code to a repository or claim to have executed it. The optional private Expert 802 inference adapter remains separate from this browser model.
+Open-ended generation is provided by the compact browser-local SmolLM2 model when it has loaded. Symbolic memory, arithmetic, explicit-fact inference, retrieval and safety routing run in the backend. The compact model can make mistakes and is substantially less capable than ChatGPT. The browser knowledge library currently uses local keyword-based passage ranking; it is not a trained vector-embedding index. Book catalogue metadata is loaded from Gutendex, while book text is fetched only after the user starts an import. Rights for Project Gutenberg works can vary outside the United States; users must confirm local reuse rights. It can draft code in chat, but does not silently apply code to a repository or claim to have executed it. The optional private Expert 802 inference adapter remains separate from this browser model.
 
 The old word-bigram artifact in `backend/language_model.json` is only a statistical next-word baseline. It is not the assistant's intelligence.
 
 ## Repository layout
 
 - `index.html` — chat-first interface, browser-local model loading, browser conversation memory and in-chat source inspection.
+- The browser also includes a 100-title English public-domain book catalogue powered by Gutendex. Users can explicitly import plain-text books from Project Gutenberg into IndexedDB; imports are device-local, deduplicated, and bounded to 8 MB per book and 120 MB per import batch.
 - `api/chat.py` — Vercel HTTP API for chat, lookup, task planning, code inspection and optional patch generation.
 - `backend/cognition/` — language processing, semantic conversation memory, dialogue state, knowledge graph, retrieval, reasoning, programming planner, code analysis, tool registry and optional private neural connector.
 - `backend/language.py` — lexical data loading, spelling, tokenization and grammar helpers.
