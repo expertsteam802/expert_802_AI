@@ -38,6 +38,8 @@ class TrainingDataPipelineTests(unittest.TestCase):
             root = Path(temporary)
             corpus, manifest, _ = self._make_corpus(root)
             (corpus / "leak.txt").write_text("api_key = 'abcdefghijklmnopqrstu'", encoding="utf-8")
+            with manifest.open("a", encoding="utf-8", newline="") as handle:
+                csv.writer(handle).writerow(["leak.txt", "CC0-1.0", "", "synthetic test fixture", "credential scanner test"])
             report = root / "audit.json"
             with self.assertRaises(SystemExit):
                 audit(corpus, manifest, report)
