@@ -4,6 +4,9 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 from backend.language import dictionary_lookup, load_wordnet, tokens
+from .intent import STOP
+
+QUERY_FILLER = {"full", "meaning", "definition", "define", "know", "tell", "please", "about"}
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "knowledge" / "english_corpus.txt"
@@ -52,7 +55,7 @@ class LocalRetriever:
         return records
 
     def retrieve(self, query, limit=3):
-        terms = list(dict.fromkeys(tokens(query)))
+        terms = list(dict.fromkeys(term for term in tokens(query) if term not in STOP and term not in QUERY_FILLER and len(term) > 1))
         if not terms or not self.documents:
             return []
         weighted_terms = {term: 1.0 for term in terms}
@@ -60,7 +63,10 @@ class LocalRetriever:
         for term in terms:
             entry = wordnet.get(term, {})
             if isinstance(entry, dict):
-                for synonym in entry.get("synonyms", [])[:6]:
+                synonyms = entry.get("synonyms", [])
+                if not isinstance(synonyms, list):
+                    synonyms = []
+                for synonym in synonyms[:6]:
                     synonym = str(synonym).lower()
                     if synonym and synonym not in weighted_terms:
                         weighted_terms[synonym] = 0.35
@@ -76,9 +82,21 @@ class LocalRetriever:
                 length = self.lengths[doc_id]
                 denominator = frequency + 1.2 * (1 - 0.75 + 0.75 * length / max(1, self.average_length))
                 scores[doc_id] += weight * idf * frequency * 2.2 / denominator
-        ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)[:limit]
-        return [{"text": self.documents[i], "source": self.sources[i], "score": round(score, 4)}
-                for i, score in ranked if score > 0]
+        ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
+        results = []
+        for doc_id, score in ranked:
+            exact_overlap = sum(1 for term in terms if any(
+                indexed_id == doc_id for indexed_id, _ in self.index.get(term, [])
+            ))
+            if len(terms) >= 4 and exact_overlap < 2:
+                continue
+            if len(terms) >= 7 and exact_overlap / len(terms) < 0.2:
+                continue
+            results.append({"text": self.documents[doc_id], "source": self.sources[doc_id],
+                            "score": round(score, 4), "matched_terms": exact_overlap})
+            if len(results) >= limit:
+                break
+        return results
 
     @staticmethod
     def define(term):
@@ -87,7 +105,7 @@ class LocalRetriever:
             definitions = entry.get("definitions", [])
             return {"term": term, "definition": definitions[0] if definitions else "",
                     "part_of_speech": entry.get("part_of_speech", "word"),
-                    "synonyms": entry.get("synonyms", [])[:8], "source": "local_dictionary"}
+                    "synonyms": (entry.get("synonyms") if isinstance(entry.get("synonyms"), list) else [])[:8], "source": "local_dictionary"}
         if isinstance(entry, str) and entry:
             return {"term": term, "definition": entry, "part_of_speech": "word",
                     "synonyms": [], "source": "local_dictionary"}
