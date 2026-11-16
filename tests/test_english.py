@@ -125,8 +125,19 @@ class CognitiveArchitectureTests(unittest.TestCase):
     def test_yes_is_not_treated_as_an_isolated_statement(self):
         history = [{"role": "assistant", "text": "Would you like help with HTML?"}]
         result = self.engine.reply("yes", history)
-        self.assertIn("Got it", result["reply"])
+        self.assertIn("agreement", result["reply"].lower())
         self.assertEqual(result["intent"]["kind"], "confirmation")
+
+    def test_yes_executes_a_single_action_offered_in_previous_turn(self):
+        history = [{"role": "assistant", "text": "Would you like me to explain HTML?"}]
+        result = self.engine.reply("yes", history)
+        self.assertEqual(result["intent"]["kind"], "action_request")
+        self.assertEqual(result["action_frame"]["verb"], "explain")
+
+    def test_yes_does_not_guess_between_multiple_offered_options(self):
+        history = [{"role": "assistant", "text": "Would you like me to explain it, check it, or compare it?"}]
+        result = self.engine.reply("yes", history)
+        self.assertIn("more than one option", result["reply"])
 
     def test_common_grammar_helper(self):
         corrected, notes = correct_common_grammar("She are ready")
