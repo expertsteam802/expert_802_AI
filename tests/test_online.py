@@ -32,49 +32,9 @@ class OnlineAssistantTests(unittest.TestCase):
         self.assertEqual(results[0]["title"], "Useful result")
         self.assertEqual(results[0]["snippet"], "A clear snippet")
 
-    def test_hosted_model_is_disabled_without_server_key(self):
-        with patch.dict(os.environ, {"EXPERT802_LLM_PROVIDER": "gemini"}, clear=True):
-            self.assertFalse(online.online_model_config()["configured"])
-
-    def test_existing_gemini_environment_key_is_detected(self):
-        with patch.dict(os.environ, {"GEMINI_API_KEY": "existing-secret"}, clear=True):
-            config = online.online_model_config()
-        self.assertTrue(config["configured"])
-        self.assertEqual(config["provider"], "gemini")
-
-    def test_gemini_uses_secure_openai_compatible_endpoint(self):
-        with patch.dict(os.environ, {
-            "EXPERT802_LLM_PROVIDER": "gemini",
-            "EXPERT802_LLM_API_KEY": "test-secret",
-        }, clear=True):
-            config = online.online_model_config()
-        self.assertTrue(config["configured"])
-        self.assertEqual(config["model"], "gemini-2.5-flash")
-        self.assertEqual(
-            config["base_url"],
-            "https://generativelanguage.googleapis.com/v1beta/openai",
-        )
-
-    def test_hosted_model_request_stays_server_side_and_parses_reply(self):
-        class FakeResponse:
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *_):
-                return False
-
-            def read(self, _limit):
-                return b'{"choices":[{"message":{"content":"A useful answer."}}]}'
-
-        with patch.dict(os.environ, {
-            "EXPERT802_LLM_PROVIDER": "gemini",
-            "GEMINI_API_KEY": "server-secret",
-        }, clear=True), patch("urllib.request.urlopen", return_value=FakeResponse()) as request:
-            answer = online.generate_online_reply("Explain AI.", [], "general", [])
-        self.assertEqual(answer, "A useful answer.")
-        sent_request = request.call_args.args[0]
-        self.assertIn("/v1beta/openai/chat/completions", sent_request.full_url)
-        self.assertEqual(sent_request.get_header("Authorization"), "Bearer server-secret")
+    def test_external_language_model_adapter_is_not_part_of_runtime(self):
+        self.assertFalse(hasattr(online, "online_model_config"))
+        self.assertFalse(hasattr(online, "generate_online_reply"))
 
     def test_search_uses_wikipedia_when_no_paid_provider_is_configured(self):
         with patch.dict(os.environ, {}, clear=True), patch.object(
