@@ -83,6 +83,13 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertIn("game", fixed.lower())
         self.assertIn("now", fixed.lower())
 
+    def test_greetings_bypass_topic_retrieval(self):
+        frame = parse_intent("hi")
+        self.assertEqual(frame.kind, "greeting")
+        result = self.engine.reply("hi")
+        self.assertEqual(result["intent"]["kind"], "greeting")
+        self.assertIn("Hello", result["reply"])
+
     def test_single_word_topics_are_not_spell_corrected_or_misclassified(self):
         for word in ("html", "code", "hui", "fooli", "gta", "FBI"):
             self.assertEqual(normalize(word), word)
