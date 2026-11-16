@@ -78,7 +78,7 @@ class CognitiveEngine:
                 "greeting": "Hello. What are you working on or thinking about?",
                 "gratitude": "You're welcome.",
                 "laughter": "Haha — I'm listening.",
-                "criticism": "You're right to call that out. I'll correct the interpretation rather than argue with you.",
+                "criticism": "I misread your meaning. You're right to call that out; I'll correct the interpretation rather than argue with you.",
                 "positive_feedback": "Thanks. I'll apply that feedback consistently.",
                 "acknowledgement": "Got it.",
             }
@@ -378,7 +378,7 @@ class CognitiveEngine:
             'python': 'Python is a general-purpose language used for automation, apps, data and AI.',
         }
         if low in descriptions:
-            return descriptions[low] + ' I can help you learn it or build a working project with it. What should we make?'
+            return descriptions[low] + ' I can help you learn it or build a working project with it. What would you like to know or build?'
         if low in {'code', 'coding', 'programming'}:
             return 'Absolutely - let us build something. I can write and explain code, debug errors, or create a website, app or script. What do you want to make?'
         return '{} - got it. Are you asking for an explanation, or do you want to build something with it?'.format(topic)
