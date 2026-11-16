@@ -535,7 +535,7 @@ button{cursor:pointer}
    $("artifactStatus").textContent="Could not retrieve training artifact information.";
   }
  }
- loadStatus();
+ loadStatus().finally(initializeLocalAI);
 })();
 </script>
 </body>
