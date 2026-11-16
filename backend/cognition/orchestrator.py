@@ -132,7 +132,7 @@ class CognitiveEngine:
                 return {**base, "engine": neural["engine"], "intent": {**frame.to_dict(), "kind": "programming_task"},
                         "engineering_plan": plan, "reply": neural["reply"], "neural_generated": True}
             next_input = plan.get("next_input", "Send the relevant source files or project snapshot so I can inspect the actual code.")
-            answer = "I classified this as a " + plan["kind"] + " engineering task.\n\n" + plan_text + "\n\n" + next_input + "\n\nCode Lab can inspect Python, JavaScript, TypeScript, HTML, CSS and JSON project files. A trained private neural generator is not connected yet; I will not pretend to generate or execute arbitrary code."
+            answer = "I understand this as a " + plan["kind"] + " programming task.\n\n" + plan_text + "\n\n" + next_input + "\n\nKeep the work in this chat: paste the relevant source code and describe the result you want. I can inspect the supplied code and reason through changes; code generation and execution are only reported when the private model or an approved test tool actually returns a result."
             return {**base, "intent": {**frame.to_dict(), "kind": "programming_task"},
                     "engineering_plan": plan, "reply": answer}
 
