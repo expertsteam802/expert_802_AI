@@ -58,6 +58,15 @@ button{cursor:pointer}
 .message.user .bubble{background:#edf3ff;border-color:#dce7ff;border-radius:15px 4px 15px 15px}
  .message.assistant .bubble{animation:answerFade .32s ease both}
  @keyframes answerFade{from{opacity:.25;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.web-results{margin-top:14px;border:1px solid var(--line);border-radius:13px;background:#fbfcff;overflow:hidden}
+.web-results-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:#f2f5fb;border-bottom:1px solid var(--line);font-size:11px;font-weight:750;color:#34425b}
+.web-results-head small{font-size:10px;font-weight:550;color:#7c899d}
+.web-result{padding:11px 12px;border-bottom:1px solid #e9edf4}
+.web-result:last-child{border-bottom:0}
+.web-result-title{display:block;color:#2458b8;font-size:13px;font-weight:700;text-decoration:none;line-height:1.4}
+.web-result-title:hover{text-decoration:underline}
+.web-result-snippet{margin:4px 0 0;color:#46546a;font-size:12px;line-height:1.55;white-space:normal}
+.web-result-domain{display:block;margin-top:5px;color:#8994a6;font-size:10px}
 .message.error .bubble{background:#fff8f4;border-color:#f3dfd2;color:#9a4e28}
 .composer-wrap{flex:0 0 auto;padding:13px clamp(16px,4vw,56px) max(16px,env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(245,247,251,0),#f5f7fb 18%)}
 .composer{width:min(920px,100%);margin:auto;background:#fff;border:1px solid #dfe5ef;border-radius:17px;padding:8px;display:flex;align-items:flex-end;gap:9px;box-shadow:0 7px 24px rgba(30,51,90,.06)}
@@ -579,7 +588,24 @@ button{cursor:pointer}
   if(typeof answer!=="string"||!answer.trim())return "";
   return answer.trim();
  }
-  function appendWebSources(reply,results,fallback){const items=(results||[]).filter(item=>item&&item.title&&item.url).slice(0,5);let output=String(reply||"");if(items.length)output+="\n\n**Web sources**\n"+items.map((item,index)=>"- ["+(index+1)+"] ["+item.title+"]("+item.url+")").join("\n");if(fallback)output+="\n\n*Online model unavailable or rate-limited; the local assistant fallback answered this turn.*";return output;}
+  function appendWebSources(reply,results,fallback){return String(reply||"");}
+ function renderWebResults(bubble,results){
+  const items=(Array.isArray(results)?results:[]).filter(item=>item&&item.title&&item.snippet&&/^https?:\\/\\//i.test(item.url)).slice(0,6);
+  if(!items.length)return;
+  const panel=document.createElement("section");panel.className="web-results";
+  const head=document.createElement("div");head.className="web-results-head";
+  const label=document.createElement("span");label.textContent=(items[0].source||"Web")+" · Search results";
+  const count=document.createElement("small");count.textContent=items.length+" sources";head.append(label,count);panel.appendChild(head);
+  items.forEach(item=>{
+   const card=document.createElement("article");card.className="web-result";
+   const title=document.createElement("a");title.className="web-result-title";title.textContent=item.title;title.href=item.url;title.target="_blank";title.rel="noopener noreferrer";
+   const snippet=document.createElement("p");snippet.className="web-result-snippet";snippet.textContent=item.snippet;
+   let domain="";try{domain=new URL(item.url).hostname.replace(/^www\\./,"");}catch(_){}
+   const source=document.createElement("small");source.className="web-result-domain";source.textContent=domain;
+   card.append(title,snippet,source);panel.appendChild(card);
+  });
+  bubble.appendChild(panel);
+ }
  async function sendMessage(raw){
   const message=String(raw??input.value).trim();
   if((!message&&!chatFiles.length)||send.disabled)return;
@@ -632,6 +658,7 @@ button{cursor:pointer}
    }
    if(streamedLocal)renderMarkdown(pending.querySelector(".bubble"),data.reply);
    else await typeReply(pending.querySelector(".bubble"),data.reply);
+   renderWebResults(pending.querySelector(".bubble"),data.web_results);
    history.push({role:"assistant",text:data.reply}); persistHistory();
   }catch(error){
    let localFallback="";
