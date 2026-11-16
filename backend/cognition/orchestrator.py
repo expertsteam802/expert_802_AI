@@ -201,7 +201,13 @@ class CognitiveEngine:
                 if key not in seen:
                     seen.add(key)
                     results.append(item)
+        lexical_terms = list(terms[:4])
         for term in terms[:4]:
+            if len(term) > 4 and term.endswith("ies"):
+                lexical_terms.append(term[:-3] + "y")
+            elif len(term) > 3 and term.endswith("s"):
+                lexical_terms.append(term[:-1])
+        for term in dict.fromkeys(lexical_terms):
             entry = self.retriever.define(term)
             if entry and entry.get("definition"):
                 text = f"{term} ({entry.get('part_of_speech', 'word')}): {entry['definition']}"
