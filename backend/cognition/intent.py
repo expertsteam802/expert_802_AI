@@ -73,12 +73,27 @@ def parse_intent(message, history=None):
 
     # Social turns must be classified before the generic topic fallback.
     # Otherwise "hi" is misrouted into local retrieval.
-    if re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening|howdy)[!. ]*", low):
+    if re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening|howdy|bro+|bruh|yo)[!. ,]*", low):
         return IntentFrame("greeting", text, confidence=0.99, slots={})
     if re.fullmatch(r"(thanks|thank you|thx|many thanks)[!. ]*", low):
         return IntentFrame("gratitude", text, confidence=0.99, slots={})
 
 
+    # Recognize knowledge questions before lexical verb/object parsing.
+    if re.match(r"^(?:do you know|have you heard of|are you familiar with)\s+", low):
+        target = re.sub(r"^(?:do you know|have you heard of|are you familiar with)\s+", "", low).strip(" ?!.")
+        return IntentFrame("knowledge_check", text, target=_clean_target(target),
+                           confidence=0.94, slots={"question_type": "familiarity"})
+    if re.search(r"\b(?:i want to|i am going to|i'm going to|help me)\s+(?:kill|murder|stab|shoot|poison|hurt)\s+(?:someone|somebody|him|her|them|a person)\b", low):
+        return IntentFrame("harm_risk", text, confidence=0.99, slots={"target": "person"})
+    if re.search(r"\b(?:materials|weapons|tools|ways)\s+(?:to|used to)\s+(?:kill|murder|hurt)\s+(?:someone|somebody|a person)\b", low):
+        return IntentFrame("harm_risk", text, confidence=0.99, slots={"target": "person"})
+
+    math_match = re.match(r"^(?:what is|calculate|compute|solve)\s+(.+?)[?!.]*$", low)
+    if math_match:
+        expression = math_match.group(1).strip()
+        if re.search(r"\d", expression) and re.search(r"[+\-*/%^]|\b(plus|minus|times|divided by|over|percent of|x)\b", expression):
+            return IntentFrame("calculation", text, target=expression, confidence=0.95, slots={})
     # Extract a verb/object frame compositionally from the user's wording.
     # Verb status comes from the local lexical database, not a hand-written
     # list of supported topics or canned examples.
@@ -121,27 +136,12 @@ def parse_intent(message, history=None):
                     slots={"verb": verb, "object": object_text, "syntax": "imperative_or_infinitive"}
                 )
 
-    # A single word or noun phrase is a topic candidate regardless of whether
-    # it appears in a preselected list. Its meaning is resolved by retrieval.
-    if (words_only and len(words_only) <= 3 and not re.search(r"[?]", text)
-            and words_only[0] not in {"what", "who", "where", "when", "why", "how", "is", "are", "do", "does", "did", "can", "could", "would", "will", "should", "i", "you", "he", "she", "it", "we", "they"}):
-        return IntentFrame("topic", text, target=text, action="explore",
-                           confidence=0.55, slots={"topic_candidate": text})
-
     if re.fullmatch(r"(hi|hello|hey|good morning|good afternoon|good evening|howdy)[!. ]*", low):
         return IntentFrame("greeting", text, confidence=0.99, slots={})
     if re.fullmatch(r"(thanks|thank you|thx|many thanks)[!. ]*", low):
         return IntentFrame("gratitude", text, confidence=0.99, slots={})
     if re.search(r"\b(who are you|what are you|your name)\b", low):
         return IntentFrame("identity", text, confidence=0.99, slots={})
-
-    math_match = re.match(r"^(?:what is|calculate|compute|solve)\s+(.+?)[?!.]*$", low)
-    if math_match:
-        expression = math_match.group(1).strip()
-        has_number = bool(re.search(r"\d", expression))
-        has_operator = bool(re.search(r"[+\-*/%^]|\b(plus|minus|times|divided by|over|percent of|x)\b", expression))
-        if has_number and has_operator:
-            return IntentFrame("calculation", text, target=expression, confidence=0.95, slots={})
 
     patterns = [
         r"^(?:what is|what's|define|meaning of|definition of)\s+(.+?)(?:\s+in full(?: words)?)?$",
@@ -169,5 +169,11 @@ def parse_intent(message, history=None):
 
     if low.endswith("?") or re.match(r"^(what|who|where|when|why|how|which|is|are|can|could|does|do|did|will|would)\b", low):
         return IntentFrame("question", text, target=text, confidence=0.68, slots={})
+
+    # Fall back to a bare topic only after full question and action forms.
+    if (words_only and len(words_only) <= 3 and not re.search(r"[?]", text)
+            and words_only[0] not in {"what", "who", "where", "when", "why", "how", "is", "are", "do", "does", "did", "can", "could", "would", "will", "should", "i", "you", "he", "she", "it", "we", "they"}):
+        return IntentFrame("topic", text, target=text, action="explore",
+                           confidence=0.55, slots={"topic_candidate": text})
 
     return IntentFrame("statement", text, target=text, confidence=0.55, slots={})
