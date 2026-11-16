@@ -55,6 +55,27 @@ class OnlineAssistantTests(unittest.TestCase):
             "https://generativelanguage.googleapis.com/v1beta/openai",
         )
 
+    def test_hosted_model_request_stays_server_side_and_parses_reply(self):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def read(self, _limit):
+                return b'{"choices":[{"message":{"content":"A useful answer."}}]}'
+
+        with patch.dict(os.environ, {
+            "EXPERT802_LLM_PROVIDER": "gemini",
+            "EXPERT802_LLM_API_KEY": "server-secret",
+        }, clear=True), patch("urllib.request.urlopen", return_value=FakeResponse()) as request:
+            answer = online.generate_online_reply("Explain AI.", [], "general", [])
+        self.assertEqual(answer, "A useful answer.")
+        sent_request = request.call_args.args[0]
+        self.assertIn("/v1beta/openai/chat/completions", sent_request.full_url)
+        self.assertEqual(sent_request.get_header("Authorization"), "Bearer server-secret")
+
     def test_search_uses_wikipedia_when_no_paid_provider_is_configured(self):
         with patch.dict(os.environ, {}, clear=True), patch.object(
             online, "_wikipedia_search", return_value=[{
