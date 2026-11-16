@@ -25,7 +25,7 @@ The primary interface is one conversation. Users can paste fenced code or attach
 
 ## Browser-local language model
 
-The browser loads `HuggingFaceTB/SmolLM2-1.7B-Instruct` on devices with WebGPU and sufficient reported memory. Other devices use `onnx-community/SmolLM2-360M-Instruct-ONNX`, with WebGPU when available and WASM/CPU as a fallback. Transformers.js caches the model files in browser Cache Storage after the first download. User chat generation then runs on the user's device; no hosted LLM endpoint or online GPU is involved. The first model download is large (roughly 1.2 GB for the 1.7B option or a few hundred MB for the 360M option).
+The browser first attempts `onnx-community/Llama-3.2-3B-Instruct-ONNX` on devices reporting at least 8 GB of memory with WebGPU. If that cannot load, it falls back to `HuggingFaceTB/SmolLM2-1.7B-Instruct`, then `onnx-community/SmolLM2-360M-Instruct-ONNX`. Lower-memory devices use the 360M model, with WebGPU when available and WASM/CPU as a fallback. Transformers.js caches the model files in browser Cache Storage after the first download. User chat generation then runs on the user's device; no hosted LLM endpoint or online GPU is involved. The first model download is large: the 3B option is about 2.4 GB, the 1.7B option about 1.2 GB, and the 360M option a few hundred MB.
 
 The downloaded SmolLM2 model is a pretrained general-purpose foundation, not a custom Expert 802 checkpoint. The `training/` directory separately contains Expert 802's own decoder-only Transformer, BPE tokenizer, pretraining and fine-tuning pipelines. **No custom Expert 802 neural checkpoint has been trained or connected.** The browser model is compact and cannot be represented as GPT-equivalent or human-level intelligence.
 
