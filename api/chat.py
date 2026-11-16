@@ -175,6 +175,13 @@ class handler(BaseHTTPRequestHandler):
                 task = payload.get("task", "Review this project for correctness and maintainability.")
                 if not isinstance(task, str):
                     return self._send(400, {"error": "The engineering task must be text."})
+                code_history = payload.get("history", [])
+                if not isinstance(code_history, list):
+                    code_history = []
+                code_memory = payload.get("memory", [])
+                if isinstance(code_memory, list):
+                    code_history = [{"role": "memory", "text": item[:500]} for item in code_memory[-80:]
+                                    if isinstance(item, str) and item.strip()] + code_history
                 plan = _AGENT.plan(task, files)
                 web_results = []
                 if should_search_web(task):
@@ -197,7 +204,7 @@ class handler(BaseHTTPRequestHandler):
                         online_reply = generate_online_reply(
                             "Engineering task: " + task[:4000] +
                             "\n\nAnalyze the supplied project and static findings. Give prioritized concrete fixes, corrected code or patches where useful, and verification steps. Do not claim files were changed or code was executed.",
-                            [], "coding", web_results, source_context)
+                            code_history[-200:], payload.get("mode", "coding"), web_results, source_context)
                         return self._send(200, {"engine": "expert802-coding-agent",
                                                 "analysis": result["output"], "plan": plan,
                                                 "reply": online_reply, "online_model_used": True,
