@@ -42,6 +42,14 @@ class CognitiveEngine:
     def _reply_single(self, message, history=None):
         frame = parse_intent(message, history)
         state = build_state(history)
+        learned = self._learned_meanings(history)
+        if frame.kind == "definition":
+            known = self._meaning_for(frame.target, learned)
+            if known:
+                return {"engine": "expert802-cognitive-core", "language": "English",
+                        "intent": frame.to_dict(), "dialogue_state": state.to_dict(),
+                        "reply": known, "memory_used": True, "confidence": 0.96,
+                        "reasoning": {"method": "browser_conversation_fact_recall"}}
         knowledge_graph = KnowledgeGraph.from_history(history)
         base = {
             "engine": "expert802-cognitive-core",
@@ -58,13 +66,15 @@ class CognitiveEngine:
             return {**base, "reply": "You're welcome. What would you like to work on next?"}
         if frame.kind == "topic":
             topic = frame.target
-            evidence = self._retrieve_topic_evidence(topic)
-            if evidence:
-                return {**base, "reply": "I found this in my local references:\n" + "\n".join(item["text"] for item in evidence[:2]) +
-                        "\n\nIs this the aspect of the topic you meant?", "topic": topic,
-                        "evidence": evidence, "reasoning": {"method": "lexical_and_corpus_retrieval"}}
-            return {**base, "reply": f"You've introduced the topic “{topic}”. I don't have enough matching reference material to explain it reliably yet. What are you trying to find out about it?", "topic": topic,
-                    "reasoning": {"method": "topic_detection_without_supported_evidence"}}
+            known = self._meaning_for(topic, learned)
+            if known:
+                return {**base, "reply": known, "memory_used": True,
+                        "reasoning": {"method": "conversation_meaning_recall"}}
+            # A bare topic is an invitation to converse, not a dictionary lookup.
+            # Ask a natural, focused question instead of returning an unrelated
+            # lexical match from the corpus.
+            return {**base, "reply": f"You're bringing up {topic}. What would you like to know or do with it?",
+                    "topic": topic, "reasoning": {"method": "topic_conversation"}}
         if frame.kind == "action_request":
             action, target = frame.action, frame.target
             evidence = self._retrieve_topic_evidence(target) if target else []
@@ -234,6 +244,44 @@ class CognitiveEngine:
         if neural["ok"]:
             return {**base, "engine": neural["engine"], "reply": neural["reply"], "neural_generated": True}
         return {**base, "reply": self._interpret_statement(frame.normalized), "confidence": frame.confidence}
+
+    @staticmethod
+    def _learned_meanings(history):
+        """Recover user-taught meanings from browser-persisted conversation turns."""
+        turns = [item.get("text", "") for item in history or []
+                 if isinstance(item, dict) and item.get("role") == "user"
+                 and isinstance(item.get("text"), str)]
+        meanings = {}
+        previous_topic = ""
+        for text in turns:
+            clean = text.strip()
+            match = re.search(r"\b([A-Za-z][A-Za-z0-9 +.-]{0,24})\s+(?:means|refers to)\s+(.+)$", clean, re.I)
+            if match:
+                meanings[re.sub(r"\s+", "", match.group(1)).lower()] = match.group(2).strip(" .!?")
+            elif re.search(r"\b(?:it|also it)\s+means\s+", clean, re.I) and previous_topic:
+                value = re.split(r"\bmeans\b", clean, maxsplit=1, flags=re.I)[-1].strip(" .!?")
+                key = re.sub(r"\s+", "", previous_topic).lower()
+                if value:
+                    meanings[key] = (meanings.get(key, "") + "; " + value).strip("; ")
+            else:
+                asked = re.search(r"\b(?:know|about|is|does|mean(?:ing)? of)\s+([A-Z][A-Z0-9-]{1,10})\b", clean)
+                if asked:
+                    previous_topic = asked.group(1)
+                else:
+                    single = re.search(r"\bwhat\s+is\s+([A-Za-z][A-Za-z0-9-]{1,20})\b", clean, re.I)
+                    if single:
+                        previous_topic = single.group(1)
+        return meanings
+
+    @staticmethod
+    def _meaning_for(term, meanings):
+        key = re.sub(r"\s+", "", (term or "")).lower().strip("?!.,")
+        value = meanings.get(key)
+        if not value:
+            return ""
+        if key.isupper() or any(char.isdigit() for char in key):
+            return f"{term} means {value}."
+        return f"{term} means {value}."
 
     def _retrieve_topic_evidence(self, topic):
         if not topic:
