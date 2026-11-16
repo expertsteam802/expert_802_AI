@@ -223,12 +223,12 @@ button{cursor:pointer}
  document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
  function extractInlineCode(message){
   const files=[];
-  const extension={python:"py",py:"py",javascript:"js",js:"js",typescript:"ts",ts:"ts",tsx:"tsx",jsx:"jsx",html:"html",css:"css",json:"json",sql:"sql"};
+  const extension={python:"py",python3:"py",py:"py",javascript:"js",js:"js",typescript:"ts",ts:"ts",tsx:"tsx",jsx:"jsx",html:"html",css:"css",json:"json",sql:"sql"};
   const fenced=/\x60\x60\x60([a-z0-9+#-]*)\s*\n([\s\S]*?)\x60\x60\x60/gi;
   let match,index=0;
   while((match=fenced.exec(message))!==null){
    const ext=extension[(match[1]||"").toLowerCase()];
-   if(ext&&match[2].trim())files.push({path:"pasted_snippet_"+(++index)+"."+ext,content:match[2].trim()});
+   if(match[2].trim())files.push({path:"pasted_snippet_"+(++index)+"."+(ext||"txt"),content:match[2].trim()});
   }
   if(files.length)return files;
   const firstCode=message.search(/^\s*(?:def\s+\w+|class\s+\w+|import\s+\w+|from\s+\w+\s+import|function\s+\w+|(?:const|let|var)\s+\w+\s*=|<!doctype\s+html|<html\b|SELECT\s+.+\s+FROM)\b/im);
@@ -356,7 +356,7 @@ button{cursor:pointer}
    ...history.slice(-9).map((item,index,items)=>({role:item.role,content:String(item.text||"").slice(index===items.length-1?-3500:-650)}))];
   if(!chat.length||chat[chat.length-1].role!=="user")chat.push({role:"user",content:message});
   const output=await localGenerator(chat,{
-   max_new_tokens:384,temperature:0.68,top_p:0.9,repetition_penalty:1.08,do_sample:true
+   max_new_tokens:768,temperature:0.68,top_p:0.9,repetition_penalty:1.08,do_sample:true
   });
   const generated=output?.[0]?.generated_text;
   let answer=Array.isArray(generated)?generated.filter(item=>item?.role==="assistant").slice(-1)[0]?.content:
