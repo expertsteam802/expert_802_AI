@@ -48,7 +48,7 @@ class ConversationMemory:
             (item.get("role"), item.get("text", item.get("content", "")).strip())
             for item in (history if isinstance(history, list) else [])
             if isinstance(item, dict)
-            and item.get("role") in {"user", "assistant"}
+            and item.get("role") in {"user", "assistant", "memory"}
             and isinstance(item.get("text", item.get("content", "")), str)
             and item.get("text", item.get("content", "")).strip()
         ][-120:]
@@ -58,9 +58,16 @@ class ConversationMemory:
 
     def _build(self):
         for role, text in self.turns:
+            clean = _strip_punctuation(text)
+            if role == "memory":
+                remembered = _RELATION.match(clean)
+                if remembered:
+                    subject, value = map(_strip_punctuation, remembered.groups())
+                    if subject and value and subject.lower() not in {"it", "this", "that", "also it"}:
+                        self._remember(subject, value, text, update_topic=False)
+                continue
             if role != "user":
                 continue
-            clean = _strip_punctuation(text)
             relation = _RELATION.match(clean)
             if relation:
                 subject, value = map(_strip_punctuation, relation.groups())
@@ -88,7 +95,7 @@ class ConversationMemory:
             if candidate:
                 self.topic = candidate
 
-    def _remember(self, subject, value, source):
+    def _remember(self, subject, value, source, update_topic=True):
         key = canonical(subject)
         if not key:
             return
