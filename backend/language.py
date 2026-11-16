@@ -115,6 +115,11 @@ def correct_spelling(text):
             changes.append((lower, replacement))
             output.append(replacement)
             continue
+        # Preserve short slang, laughter and expressive spellings. They are
+        # conversational signals, not misspelled dictionary headwords.
+        if len(lower) <= 3 or re.fullmatch(r"(?:bro+|bruh+|lol+|lmao+|haha+|heh+|h{2,}|y+o+)", lower):
+            output.append(original)
+            continue
         pieces = _split_joined(lower, vocab)
         fixed = []
         for piece in pieces:
