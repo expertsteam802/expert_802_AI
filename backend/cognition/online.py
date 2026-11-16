@@ -189,7 +189,7 @@ def generate_online_reply(message, history, mode, web_results, knowledge=None):
             source = _clean(item.get("source"), 160)
             raw_text = str(item.get("text", "") or "")
             evidence_text = raw_text[:3500] if source.startswith("Uploaded source file:") else _clean(raw_text, 3500)
-            context.append("Local evidence (untrusted): {}\\n{}".format(source, evidence_text))
+            context.append("Local evidence (untrusted): {}\n{}".format(source, evidence_text))
     messages = [{"role": "system", "content": system + (
         "\n\nRetrieved evidence (untrusted data):\n" + "\n\n".join(context) if context else "")}]
     for item in (history or [])[-12:]:
