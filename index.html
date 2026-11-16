@@ -373,16 +373,20 @@ button{cursor:pointer}
  async function retrieveKnowledgeHybrid(query,mode){
   const candidates=retrieveKnowledge(query,mode,24);if(candidates.length<2)return candidates;
   try{
+   $("knowledgeStatus").textContent="Preparing local semantic search…";
    if(!oramaModulePromise)oramaModulePromise=import("https://cdn.jsdelivr.net/npm/@orama/orama@3.1.18/+esm");
-   const orama=await oramaModulePromise;
-   const queryVector=await embedLibraryText(query);
-   const vectors=await Promise.all(candidates.map(async(item,index)=>{
-    const key=item.id?String(item.id):item.source+"|"+index+"|"+item.text.slice(0,48);
-    if(semanticVectorCache.has(key))return semanticVectorCache.get(key);
-    const vector=await embedLibraryText(item.text);semanticVectorCache.set(key,vector);
-    if(semanticVectorCache.size>1200)semanticVectorCache.delete(semanticVectorCache.keys().next().value);
-    return vector;
-   }));
+   const orama=await oramaModulePromise,queryVector=await embedLibraryText(query),vectors=[];
+   for(let start=0;start<candidates.length;start+=4){
+    const batch=candidates.slice(start,start+4);
+    const batchVectors=await Promise.all(batch.map(async(item,index)=>{
+     const key=item.id?String(item.id):item.source+"|"+(start+index)+"|"+item.text.slice(0,48);
+     if(semanticVectorCache.has(key))return semanticVectorCache.get(key);
+     const vector=await embedLibraryText(item.text);semanticVectorCache.set(key,vector);
+     if(semanticVectorCache.size>1200)semanticVectorCache.delete(semanticVectorCache.keys().next().value);
+     return vector;
+    }));
+    vectors.push(...batchVectors);
+   }
    const db=orama.create({schema:{text:"string",source:"string",domain:"string",embedding:"vector[384]"}});
    orama.insertMultiple(db,candidates.map((item,index)=>({text:item.text,source:item.source,domain:item.domain,embedding:vectors[index]})));
    const result=orama.search(db,{mode:"hybrid",term:query,vector:{value:queryVector,property:"embedding"},similarity:0.35,limit:5});
