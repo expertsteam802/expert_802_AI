@@ -7,6 +7,10 @@ on:
         description: Path to an already-present licensed corpus folder in the runner workspace
         required: true
         default: training/corpus
+      corpus_manifest_path:
+        description: CSV provenance manifest for every file in the corpus folder
+        required: true
+        default: training/corpus_manifest.csv
       steps:
         description: Total pretraining steps
         required: true
@@ -57,7 +61,14 @@ jobs:
         env:
           DATASET_PATH: ${{ inputs.dataset_path }}
         run: test -d "$DATASET_PATH"
-      - name: Prepare BPE corpus
+      - name: Audit corpus provenance, file types and embedded credentials
+        env:
+          DATASET_PATH: ${{ inputs.dataset_path }}
+          CORPUS_MANIFEST: ${{ inputs.corpus_manifest_path }}
+        run: |
+          test -f "$CORPUS_MANIFEST"
+          python training/audit_corpus.py "$DATASET_PATH" --manifest "$CORPUS_MANIFEST" --output training/corpus_audit.json
+      - name: Prepare source-isolated BPE corpus
         env:
           DATASET_PATH: ${{ inputs.dataset_path }}
           VOCAB_SIZE: ${{ inputs.vocab_size }}
