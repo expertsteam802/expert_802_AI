@@ -82,6 +82,31 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertIn("game", fixed.lower())
         self.assertIn("now", fixed.lower())
 
+    def test_single_word_topics_are_not_spell_corrected_or_misclassified(self):
+        for word in ("html", "code", "hui", "fooli", "gta", "FBI"):
+            self.assertEqual(normalize(word), word)
+        self.assertEqual(parse_intent("html").kind, "topic")
+        self.assertEqual(parse_intent("code").kind, "topic")
+        self.assertEqual(parse_intent("gta").target, "gta")
+        self.assertEqual(parse_intent("FBI").target, "FBI")
+
+    def test_yes_resolves_as_confirmation_only_when_assistant_asked(self):
+        history = [{"role": "assistant", "text": "Would you like me to explain HTML?"}]
+        self.assertEqual(parse_intent("yes", history).kind, "confirmation")
+        self.assertEqual(parse_intent("yes", []).kind, "acknowledgement")
+
+    def test_short_unknown_word_is_preserved_and_clarified(self):
+        result = self.engine.reply("hui")
+        self.assertIn("hui", result["reply"])
+        self.assertNotIn("Gui", result["reply"])
+        self.assertNotIn("statement", result["reply"].lower())
+
+    def test_yes_is_not_treated_as_an_isolated_statement(self):
+        history = [{"role": "assistant", "text": "Would you like help with HTML?"}]
+        result = self.engine.reply("yes", history)
+        self.assertIn("Got it", result["reply"])
+        self.assertEqual(result["intent"]["kind"], "confirmation")
+
     def test_common_grammar_helper(self):
         corrected, notes = correct_common_grammar("She are ready")
         self.assertEqual(corrected, "She is ready")
