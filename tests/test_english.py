@@ -327,7 +327,7 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertTrue(result.get("memory_used"))
         self.assertIn("yes", result["reply"].lower())
         self.assertEqual(result["reasoning"]["method"], "type_inheritance")
-        self.assertEqual(len(result["reasoning"]["inference_chain"]), 2)
+        self.assertEqual(len(result["reasoning"]["inference_chain"]), 3)
 
     def test_symbolic_reasoner_does_not_assume_unknown_relations(self):
         result = self.engine.reply("Is a dragon an animal?")
@@ -343,7 +343,7 @@ class CognitiveArchitectureTests(unittest.TestCase):
         ]
         result = self.engine.reply("Is Paris in Europe?", history)
         self.assertTrue(result.get("memory_used"))
-        self.assertEqual(result["reasoning"]["method"], "explicit_fact_graph")
+        self.assertEqual(result["reasoning"]["method"], "transitive_location_inference")
         self.assertIn("Paris -> France -> Europe", result["reply"])
 
     def test_knowledge_graph_surfaces_conflicting_facts(self):
