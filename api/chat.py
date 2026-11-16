@@ -176,7 +176,37 @@ class handler(BaseHTTPRequestHandler):
                 if not isinstance(task, str):
                     return self._send(400, {"error": "The engineering task must be text."})
                 plan = _AGENT.plan(task, files)
-                return self._send(200, {"engine": "expert802-coding-agent", "analysis": result["output"], "plan": plan})
+                web_results = []
+                if should_search_web(task):
+                    if _rate_allowed("web_search", self.client_address[0], limit=12, window=300):
+                        try:
+                            web_results = search_web(task[:300], 5)
+                        except Exception:
+                            logging.exception("Expert 802 coding web search failed")
+                if online_model_config()["configured"]:
+                    try:
+                        source_context = [
+                            {"source": "Uploaded source file: " + str(item.get("path", "source")),
+                             "text": str(item.get("content", ""))[:3500]}
+                            for item in files[:4] if isinstance(item, dict)
+                        ]
+                        source_context.append({"source": "Static code inspection",
+                                               "text": json.dumps(result["output"], ensure_ascii=False)[:3500]})
+                        source_context.append({"source": "Engineering plan",
+                                               "text": json.dumps(plan, ensure_ascii=False)[:2000]})
+                        online_reply = generate_online_reply(
+                            "Engineering task: " + task[:4000] +
+                            "\\n\\nAnalyze the supplied project and static findings. Give prioritized concrete fixes, corrected code or patches where useful, and verification steps. Do not claim files were changed or code was executed.",
+                            [], "coding", web_results, source_context)
+                        return self._send(200, {"engine": "expert802-coding-agent",
+                                                "analysis": result["output"], "plan": plan,
+                                                "reply": online_reply, "online_model_used": True,
+                                                "web_results": web_results})
+                    except Exception:
+                        logging.exception("Expert 802 hosted coding response failed; using local model")
+                return self._send(200, {"engine": "expert802-coding-agent",
+                                        "analysis": result["output"], "plan": plan,
+                                        "online_model_used": False, "web_results": web_results})
             if action == "plan":
                 task = payload.get("task", "")
                 if not isinstance(task, str) or not task.strip():
