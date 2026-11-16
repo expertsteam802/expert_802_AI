@@ -65,7 +65,7 @@ The browser-local model can draft code in chat. Drafts are not silently applied 
 
 ## Browser-local language generation
 
-The web interface loads an instruction-tuned ONNX model through Transformers.js. Devices reporting WebGPU and at least 8 GB of memory attempt Llama 3.2 3B in q4f16, then fall back to SmolLM2 1.7B and finally SmolLM2 360M. Other devices use the 360M instruct model. If WebGPU initialization fails, the client falls back to 360M on WASM/CPU. Transformers.js caches model weights in the browser Cache API, so later visits reuse the local copy. Inference happens on the visitor's device, not on a hosted GPU. The first download ranges from a few hundred MB to about 2.4 GB.
+The web interface loads an instruction-tuned ONNX model through Transformers.js. Devices reporting WebGPU and at least 8 GB of memory attempt Llama 3.2 3B in q4f16, then fall back to SmolLM2 1.7B and finally SmolLM2 360M. Other devices use the 360M instruct model. If WebGPU initialization fails, the client falls back to 360M on WASM/CPU. Transformers.js caches model weights in the browser Cache API, so later visits reuse the local copy. Inference happens on the visitor's device, not on a hosted GPU. The first download ranges from a few hundred MB to about 2.7 GB.
 
 Separately, the project includes:
 - byte-level BPE tokenizer trained on the supplied corpus;
