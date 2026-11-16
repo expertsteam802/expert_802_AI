@@ -18,7 +18,7 @@ The Vercel chat endpoint runs a project-owned Python pipeline:
 8. **Tool registry** — exposes explicitly registered capabilities with bounded input validation.
 9. **Isolated test runner** — optionally sends explicit Python unit-test or JavaScript syntax-check requests to a private Docker service with network disabled and strict resource limits.
 10. **Private self-trained neural model** — open-ended generation can use Expert 802's own checkpoint through its private inference process. The chat runtime does not call OpenAI, Gemini, Groq or another hosted AI provider. If no trained checkpoint is running, the cognition and retrieval layers remain available but open-ended generation is limited.
-11. **Live web search** — automatically searches factual/current questions and explicit search requests. It uses Brave Search, Tavily or Bing when a server key is configured; otherwise it falls back to Wikipedia's public search API. Retrieved snippets are treated as untrusted evidence and displayed with source links.
+11. **Live web search** — automatically searches factual/current questions and explicit search requests. It starts with key-free DuckDuckGo HTML search, then Wikipedia public search, and can fall back to configured Brave, Tavily or Bing providers. Public endpoints can still throttle excessive traffic; no third-party search engine promises unlimited access. Retrieved snippets are passed to the private Expert 802 generator when available, otherwise an extractive evidence-based answer is returned in the chat, with source cards.
 
 ## Programming in chat
 
@@ -30,7 +30,7 @@ The browser first attempts `onnx-community/Llama-3.2-3B-Instruct-ONNX` on device
 
 The downloaded SmolLM2 model is a pretrained general-purpose foundation, not a custom Expert 802 checkpoint. The `training/` directory separately contains Expert 802's own decoder-only Transformer, BPE tokenizer, pretraining and fine-tuning pipelines. **No custom Expert 802 neural checkpoint has been trained or connected.** The browser model is compact and cannot be represented as GPT-equivalent or human-level intelligence. The custom checkpoint has not yet been trained or evaluated, so it is not currently comparable to a large general-purpose assistant.
 
-No external AI model API key is required or used by the chat runtime. Full-web search is a separate retrieval feature: Brave, Tavily and Bing require search-provider keys; without them, the app uses Wikipedia search fallback.
+No external AI model API key is required or used by the chat runtime. Full-web search is a separate retrieval feature. The default DuckDuckGo and Wikipedia paths require no API key; public providers may still apply fair-use throttling.
 
 ## Important capability boundary
 
@@ -73,7 +73,7 @@ GitHub Actions validates code on pushes to `main`. It does not train a capable c
 
 The chat backend does not call an external AI model API. Google Programmable Search retrieves web pages only; it does not generate AI answers. To use Expert 802's own model, train a checkpoint using the instructions in [training/README.md](training/README.md), then run `training/serve.py` on a private inference host. Configure `EXPERT802_NEURAL_URL` and `EXPERT802_INFERENCE_TOKEN` on the server. Keep the inference endpoint private behind TLS and a strong token.
 
-Web search is a separate information-retrieval capability, not an AI model. Search priority is Google Programmable Search, then Brave, Tavily, Bing, then Wikipedia fallback. Google requires `GOOGLE_CSE_API_KEY` and `GOOGLE_CSE_ID`; the other full-web providers require their own search keys. The no-key Wikipedia fallback is not a full general-purpose web index. Search is automatically triggered for explicit web-search requests, freshness-sensitive questions, general factual questions and relevant programming/API questions. Results are bounded, rate-limited and treated as untrusted evidence. Expert 802 incorporates snippets into its local answer and renders result titles, excerpts and source domains directly inside the chat response.
+Web search is a separate information-retrieval capability, not an AI model. Search priority is DuckDuckGo (key-free), then Wikipedia (key-free), followed by configured Brave, Tavily or Bing providers. No API key is required for the default path. Public endpoints can apply fair-use throttling, so this is not a promise of unlimited requests. Search is automatically triggered for explicit web-search requests, freshness-sensitive questions, general factual questions and relevant programming/API questions. Results are treated as untrusted evidence. When the private Expert 802 generator is ready, it receives the live excerpts and composes the answer; otherwise the backend returns an extractive evidence-based answer directly in chat. Result cards show titles, excerpts and source domains.
 
 ## Engineering principles
 
