@@ -90,6 +90,27 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertEqual(parse_intent("gta").target, "gta")
         self.assertEqual(parse_intent("FBI").target, "FBI")
 
+    def test_intent_extracts_unlisted_action_and_object_compositionally(self):
+        frame = parse_intent("play GTA")
+        self.assertEqual(frame.kind, "action_request")
+        self.assertEqual(frame.action, "play")
+        self.assertEqual(frame.target.lower(), "gta")
+
+    def test_arbitrary_single_word_is_a_topic_not_a_special_case(self):
+        frame = parse_intent("games")
+        self.assertEqual(frame.kind, "topic")
+        self.assertEqual(frame.target, "games")
+
+    def test_statement_extracts_user_supplied_meaning(self):
+        result = self.engine.reply("it refers to letter b typed 5 times")
+        self.assertIn("letter b typed 5 times", result["reply"].lower())
+        self.assertEqual(result["asserted_fact"]["relation"], "refers_to")
+
+    def test_action_response_does_not_claim_to_launch_external_software(self):
+        result = self.engine.reply("play GTA")
+        self.assertIn("play", result["action_frame"]["verb"])
+        self.assertIn("cannot directly control your computer", result["reply"])
+
     def test_yes_resolves_as_confirmation_only_when_assistant_asked(self):
         history = [{"role": "assistant", "text": "Would you like me to explain HTML?"}]
         self.assertEqual(parse_intent("yes", history).kind, "confirmation")
