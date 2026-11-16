@@ -444,7 +444,8 @@ button{cursor:pointer}
   chatFiles=[];$("chatFiles").value="";$("chatAttachmentStatus").textContent="";$("chatAttachmentStatus").classList.remove("visible");
   input.value="";input.style.height="auto";send.disabled=true;send.textContent="…";
   const pending=appendMessage("assistant","Thinking…");
-  let streamedLocal=false;\n  const showLocalTokens=partial=>{streamedLocal=true;const bubble=pending.querySelector(".bubble");bubble.textContent=partial;messages.scrollTop=messages.scrollHeight;};
+  let streamedLocal=false;
+  const showLocalTokens=partial=>{streamedLocal=true;const bubble=pending.querySelector(".bubble");bubble.textContent=partial;messages.scrollTop=messages.scrollHeight;};
   try{
    let data;
    if(filesToInspect.length||pastedFiles.length){
