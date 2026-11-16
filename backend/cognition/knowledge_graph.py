@@ -16,6 +16,14 @@ class KnowledgeGraph:
         value = re.sub(r"\s+", " ", value).strip()
         return re.sub(r"^(?:the|a|an)\s+", "", value)
 
+    @staticmethod
+    def _singular(value):
+        if value.endswith("ies") and len(value) > 4:
+            return value[:-3] + "y"
+        if value.endswith("s") and not value.endswith(("ss", "us", "is")):
+            return value[:-1]
+        return value
+
     @classmethod
     def from_history(cls, history):
         graph = cls()
@@ -41,7 +49,7 @@ class KnowledgeGraph:
                 if universal:
                     subject, target = map(cls.canonical, universal.groups())
                     if subject and target:
-                        graph.type_rules[subject].append({"type": target, "source": sentence})
+                        graph.type_rules["class:" + cls._singular(subject)].append({"type": cls._singular(target), "source": sentence})
                     continue
 
                 location = re.match(r"^(.+?)\s+(?:is|are|was|were)\s+in\s+(.+)$", sentence, re.I)
@@ -111,8 +119,8 @@ class KnowledgeGraph:
         subject, target = self.canonical(subject), self.canonical(target)
         positive = self._inferred_types(subject)
         negative = self.negative_types.get(subject, [])
-        yes = [(kind, sources) for kind, sources in positive if kind == target]
-        no = [edge for edge in negative if edge["type"] == target]
+        yes = [(kind, sources) for kind, sources in positive if kind == self._singular(target)]
+        no = [edge for edge in negative if edge["type"] == self._singular(target)]
         if yes and no:
             return {"reply": f"I have conflicting facts about whether {subject.title()} is a {target}: one supports it and another denies it.",
                     "evidence": [source for _, sources in yes for source in sources] + [x["source"] for x in no],
