@@ -214,7 +214,7 @@ class handler(BaseHTTPRequestHandler):
                         logging.exception("Expert 802 hosted coding response failed; using local model")
                 return self._send(200, {"engine": "expert802-coding-agent",
                                         "analysis": result["output"], "plan": plan,
-                                        "online_model_used": False, "web_results": web_results})
+                                        "online_model_used": False, "online_model_fallback": online_model_fallback, "web_results": web_results})
             if action == "plan":
                 task = payload.get("task", "")
                 if not isinstance(task, str) or not task.strip():
