@@ -182,11 +182,10 @@ class handler(BaseHTTPRequestHandler):
                 plan = _AGENT.plan(task, files)
                 web_results = []
                 if should_search_web(task):
-                    if _rate_allowed("web_search", self.client_address[0], limit=12, window=300):
-                        try:
-                            web_results = search_web(task[:300], 5)
-                        except Exception:
-                            logging.exception("Expert 802 coding web search failed")
+                    try:
+                        web_results = search_web(task[:300], 5)
+                    except Exception:
+                        logging.exception("Expert 802 coding web search failed")
                 source_context = [
                     {"source": "Uploaded source file: " + str(item.get("path", "source")),
                      "text": str(item.get("content", ""))[:3500]}
@@ -249,7 +248,7 @@ class handler(BaseHTTPRequestHandler):
             if should_search_web(message):
                 try:
                     web_results = search_web(message[:300], 5)
-                    web_search_performed = True
+                    web_search_performed = bool(web_results)
                 except Exception:
                     logging.exception("Expert 802 web search failed")
             result = _ENGINE.reply(message[:4000], history[-200:])
