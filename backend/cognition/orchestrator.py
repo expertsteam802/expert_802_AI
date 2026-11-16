@@ -74,6 +74,12 @@ class CognitiveEngine:
             return {**base, "reply": "Hello. What are you working on or thinking about?"}
         if frame.kind == "gratitude":
             return {**base, "reply": "You're welcome. What would you like to work on next?"}
+        if frame.kind == "laughter":
+            return {**base, "reply": "Haha — I'm listening. What were you going to say?"}
+        if frame.kind == "criticism":
+            return {**base, "reply": "You're right to call that out. I misread your meaning and fell back on weak matching instead of understanding the conversation. I'll correct the interpretation rather than argue with you."}
+        if frame.kind == "positive_feedback":
+            return {**base, "reply": "Thanks. The corrections you give me are useful context, and I'll keep applying them consistently in this conversation."}
         if frame.kind == "acknowledgement":
             return {**base, "reply": "Got it. I'll keep that in mind as we continue."}
         if frame.kind == "harm_risk" or contextual_weapon_request:
