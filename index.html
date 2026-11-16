@@ -353,7 +353,7 @@ button{cursor:pointer}
    context?"Context for this turn:\n"+context:""
   ].filter(Boolean).join("\n\n");
   const chat=[{role:"system",content:system},
-   ...history.slice(-14).map(item=>({role:item.role,content:String(item.text||"").slice(-3500)}))];
+   ...history.slice(-9).map((item,index,items)=>({role:item.role,content:String(item.text||"").slice(index===items.length-1?-3500:-650)}))];
   if(!chat.length||chat[chat.length-1].role!=="user")chat.push({role:"user",content:message});
   const output=await localGenerator(chat,{
    max_new_tokens:384,temperature:0.68,top_p:0.9,repetition_penalty:1.08,do_sample:true
