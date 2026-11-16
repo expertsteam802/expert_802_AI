@@ -209,7 +209,7 @@ class CognitiveEngine:
             graph_answer = knowledge_graph.answer(frame.normalized)
             if graph_answer:
                 return {**base, **graph_answer, "memory_used": True,
-                        "reasoning": {"method": "explicit_fact_graph"}}
+                        "reasoning": graph_answer.get("reasoning", {"method": "explicit_fact_graph"})}
             remembered = self._match_fact(frame.normalized, state.facts)
             if remembered:
                 return {**base, "reply": "From your earlier message: " + remembered["text"],
