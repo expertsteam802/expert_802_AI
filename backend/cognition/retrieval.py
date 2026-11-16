@@ -3,7 +3,7 @@ import math
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
-from backend.language import dictionary_lookup, tokens
+from backend.language import dictionary_lookup, load_wordnet, tokens
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "knowledge" / "english_corpus.txt"
