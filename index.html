@@ -339,7 +339,7 @@ button{cursor:pointer}
   try{
    if(navigator.storage?.persist) await navigator.storage.persist().catch(()=>false);
    $("modelPill").textContent="Preparing local AI…";
-   const {pipeline,env}=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1");
+   const {pipeline,env,TextStreamer}=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1");
    env.useBrowserCache=true;
    env.allowRemoteModels=true;
    const strongDevice=!!navigator.gpu && (navigator.deviceMemory||4)>=8;
@@ -385,7 +385,7 @@ button{cursor:pointer}
   return ["explicit_fact_graph","transitive_location_inference","type_inheritance",
           "browser_conversation_fact_recall","conversation_meaning_recall"].includes(data.reasoning?.method);
  }
- async function generateLocalReply(message,backendData,files=[]){
+ async function generateLocalReply(message,backendData,files=[],onToken=null){
   if(!localGenerator)return "";
   if(shouldKeepDeterministic(backendData))return backendData.reply||"";
   const evidence=(backendData?.evidence||[]).slice(0,4).map(item=>
@@ -417,12 +417,18 @@ button{cursor:pointer}
   const chat=[{role:"system",content:system},
    ...history.slice(-9).map((item,index,items)=>({role:item.role,content:String(item.text||"").slice(index===items.length-1?-3500:-650)}))];
   if(!chat.length||chat[chat.length-1].role!=="user")chat.push({role:"user",content:message});
-  const output=await localGenerator(chat,{
-   max_new_tokens:768,temperature:0.68,top_p:0.9,repetition_penalty:1.08,do_sample:true
-  });
+  let streamed="";
+  const streamer=TextStreamer?new TextStreamer(localGenerator.tokenizer,{
+   skip_prompt:true,
+   callback_function:chunk=>{streamed+=chunk;if(typeof onToken==="function")onToken(streamed);}
+  }):null;
+  const generation={max_new_tokens:768,temperature:0.68,top_p:0.9,repetition_penalty:1.08,do_sample:true};
+  if(streamer)generation.streamer=streamer;
+  const output=await localGenerator(chat,generation);
   const generated=output?.[0]?.generated_text;
   let answer=Array.isArray(generated)?generated.filter(item=>item?.role==="assistant").slice(-1)[0]?.content:
    typeof generated==="string"?generated:"";
+  if(typeof answer!=="string"||!answer.trim())answer=streamed;
   if(typeof answer!=="string"||!answer.trim())return "";
   return answer.trim();
  }
@@ -437,8 +443,7 @@ button{cursor:pointer}
   const pastedFiles=extractInlineCode(message);
   chatFiles=[];$("chatFiles").value="";$("chatAttachmentStatus").textContent="";$("chatAttachmentStatus").classList.remove("visible");
   input.value="";input.style.height="auto";send.disabled=true;send.textContent="…";
-  const pending=appendMessage("assistant","Thinking…");
-  try{
+  const pending=appendMessage("assistant","Thinking…");\n  let streamedLocal=false;\n  const showLocalTokens=partial=>{streamedLocal=true;const bubble=pending.querySelector(".bubble");bubble.textContent=partial;messages.scrollTop=messages.scrollHeight;};\n  try{
    let data;
    if(filesToInspect.length||pastedFiles.length){
     const uploaded=await Promise.all(filesToInspect.map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
@@ -460,27 +465,27 @@ button{cursor:pointer}
     lines.push("", "This inspection checks source structure and selected risks; it does not execute the project.");
     if(data.plan?.steps?.length){lines.push("","Suggested engineering steps:");data.plan.steps.slice(0,8).forEach((step,index)=>lines.push((index+1)+". "+step));}
     data.reply=lines.join("\n");
-    const localAnswer=await generateLocalReply(message||"Review these source files and explain what they do, what is wrong, and how to improve them.",data,files);
+    const localAnswer=await generateLocalReply(message||"Review these source files and explain what they do, what is wrong, and how to improve them.",data,files,showLocalTokens);
     if(localAnswer)data.reply=localAnswer;
    }else{
     const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-80),memory:learnedMemory})});
     data=await response.json();
     if(!response.ok||typeof data.reply!=="string"||!data.reply.trim())throw new Error(data.error||"The language engine returned no answer.");
-    const localAnswer=await generateLocalReply(message,data);
+    const localAnswer=await generateLocalReply(message,data,[],showLocalTokens);
     if(localAnswer)data.reply=localAnswer;
    }
-   await typeReply(pending.querySelector(".bubble"),data.reply);
+   if(streamedLocal)renderMarkdown(pending.querySelector(".bubble"),data.reply);\n   else await typeReply(pending.querySelector(".bubble"),data.reply);
    history.push({role:"assistant",text:data.reply}); persistHistory();
   }catch(error){
    let localFallback="";
    if(localGenerator){
     try{
      const attached=await Promise.all(filesToInspect.map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
-     localFallback=await generateLocalReply(message||"Inspect the attached source files.",null,attached.concat(pastedFiles));
+     localFallback=await generateLocalReply(message||"Inspect the attached source files.",null,attached.concat(pastedFiles),showLocalTokens);
     }catch(_){}
    }
    if(localFallback){
-    await typeReply(pending.querySelector(".bubble"),localFallback);
+    if(streamedLocal)renderMarkdown(pending.querySelector(".bubble"),localFallback);\n   else await typeReply(pending.querySelector(".bubble"),localFallback);
     history.push({role:"assistant",text:localFallback});persistHistory();
    }else{
     pending.classList.add("error");
