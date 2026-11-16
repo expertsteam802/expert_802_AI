@@ -95,7 +95,7 @@ class ConversationMemory:
         self.facts = [fact for fact in self.facts if fact["key"] != key]
         self.facts.append({
             "key": key, "subject": subject, "value": value,
-            "source": source, "kind": "user_defined_meaning",
+            "source": source, "kind": "user_defined_meaning", "relation": "refers_to",
         })
         self.topic = subject
 
