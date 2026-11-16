@@ -51,7 +51,7 @@ class ConversationMemory:
             and item.get("role") in {"user", "assistant", "memory"}
             and isinstance(item.get("text", item.get("content", "")), str)
             and item.get("text", item.get("content", "")).strip()
-        ][-120:]
+        ][-200:]
         self.facts = []
         self.topic = ""
         self._build()
