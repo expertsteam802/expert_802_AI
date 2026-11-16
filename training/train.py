@@ -113,6 +113,10 @@ def main():
                       "train_tokens": len(train_data), "validation_tokens": len(val_data),
                       "objective": metadata.get("objective", "all_token_next_token_prediction")}))
     best_validation = float("inf")
+    best_checkpoint_path = output / "best.pt"
+    if best_checkpoint_path.exists():
+        previous_best = torch.load(best_checkpoint_path, map_location="cpu", weights_only=False)
+        best_validation = float(previous_best.get("metrics", {}).get("validation", float("inf")))
     for step in range(start_step, args.steps):
         progress = step / max(1, args.steps)
         learning_rate = args.learning_rate * 0.1 + 0.9 * args.learning_rate * 0.5 * (1 + math.cos(math.pi * progress))
