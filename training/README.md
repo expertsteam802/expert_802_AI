@@ -16,6 +16,20 @@ Expert 802's neural layer is project-owned and trained from random initializatio
 
 The starter configuration is intentionally modest: 6 Transformer blocks, width 256, 8 attention heads, a 1,024-token context and a corpus-trained vocabulary up to 16,000 tokens. Change the training arguments only when the available GPU memory and dataset justify it.
 
+## Corpus provenance and quality gate
+
+Before a corpus enters pretraining, create `corpus_manifest.csv` from `training/corpus_manifest.example.csv`. Add one row per source file, using its path relative to the corpus folder and recording its license plus the permission basis. Keep the original source and license records. Do not include private conversations, customer data, secrets, credentials, or code whose license/permission is unclear.
+
+Run the audit before tokenization:
+
+```bash
+python training/audit_corpus.py ./licensed-corpus --manifest ./corpus_manifest.csv --output training/corpus_audit.json
+```
+
+The audit checks supported text/code formats, UTF-8 readability, file size, duplicate content, required provenance fields and common embedded credential patterns. It writes a JSON report and exits unsuccessfully if any file is rejected; review and fix every rejection rather than bypassing the gate. This is a screening tool, not a legal opinion or a guarantee that content contains no personal data.
+
+The GPU workflow requires the manifest path as an input and runs this audit before preparing data. The training/validation split is now performed by source file, not by paragraph, so paragraphs from the same source cannot leak across both splits. At least two independent source files are required; a realistic corpus should contain many more diverse sources.
+
 ## Install training dependencies
 
 Use a machine or rented GPU runner with a compatible PyTorch build. Training dependencies are isolated from the Vercel application:
