@@ -166,7 +166,7 @@ def answer_from_web_results(message, results):
     query = normalize_search_query(message)
     stop_words = {"who", "what", "when", "where", "which", "why", "how", "is", "are",
                   "the", "a", "an", "of", "in", "on", "for", "to", "and", "or",
-                  "current", "currently", "today", "now", "please", "tell", "me",
+                  "currently", "today", "now", "please", "tell", "me",
                   "about", "usa", "u.s", "united", "states"}
     terms = {word for word in re.findall(r"[a-z0-9]+", query.lower())
              if len(word) > 2 and word not in stop_words}
@@ -180,8 +180,13 @@ def answer_from_web_results(message, results):
         body_words = set(re.findall(r"[a-z0-9]+", snippet.lower()))
         title_hits = len(terms & title_words)
         body_hits = len(terms & body_words)
+        matched_terms = terms & (title_words | body_words)
+        if "current" in terms and "current" not in (title_words | body_words):
+            continue
+        if len(matched_terms) < min(2, len(terms)):
+            continue
         score = (title_hits * 2 + body_hits) / max(1, len(terms) * 3)
-        if snippet and score >= 0.16:
+        if snippet and score >= 0.22:
             ranked.append((score, item, snippet))
     if not ranked:
         return None
