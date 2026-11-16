@@ -139,14 +139,17 @@ def should_search_web(message):
 
 def online_model_config():
     provider = os.environ.get("EXPERT802_LLM_PROVIDER", "").strip().lower()
-    key = os.environ.get("EXPERT802_LLM_API_KEY", "").strip()
+    if not provider:
+        provider = "gemini" if os.environ.get("GEMINI_API_KEY") else "openai" if os.environ.get("OPENAI_API_KEY") else "groq" if os.environ.get("GROQ_API_KEY") else ""
+    key = (os.environ.get("EXPERT802_LLM_API_KEY") or os.environ.get("GEMINI_API_KEY") or
+           os.environ.get("OPENAI_API_KEY") or os.environ.get("GROQ_API_KEY") or "").strip()
     base = os.environ.get("EXPERT802_LLM_BASE_URL", "").strip()
     model = os.environ.get("EXPERT802_LLM_MODEL", "").strip()
     if not provider or not key:
         return {"configured": False, "provider": None, "model": None}
     if provider == "gemini":
         base = base or "https://generativelanguage.googleapis.com/v1beta/openai"
-        model = model or "gemini-2.5-flash"
+        model = model or os.environ.get("GEMINI_MODEL", "").strip() or "gemini-2.5-flash"
     elif provider == "groq":
         base = base or "https://api.groq.com/openai/v1"
         model = model or "llama-3.3-70b-versatile"
