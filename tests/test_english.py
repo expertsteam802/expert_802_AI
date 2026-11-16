@@ -109,6 +109,65 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertNotIn("local references", result["reply"].lower())
         self.assertIn("what would you like to know", result["reply"].lower())
 
+    def test_knowledge_question_is_not_misread_as_a_command(self):
+        frame = parse_intent("do you know PS5")
+        self.assertEqual(frame.kind, "knowledge_check")
+        self.assertEqual(frame.target.lower(), "ps5")
+
+    def test_user_correction_is_attached_to_previous_topic(self):
+        from backend.cognition.conversation_memory import ConversationMemory
+        history = [
+            {"role": "user", "text": "do you know PS5"},
+            {"role": "assistant", "text": "Which part?"},
+        ]
+        memory = ConversationMemory(history + [{"role": "user", "text": "its play station 5, a gaming device"}])
+        fact = memory.meaning_for("PS5")
+        self.assertIsNotNone(fact)
+        self.assertIn("play station 5", fact["value"].lower())
+        self.assertIn("gaming device", fact["value"].lower())
+
+    def test_pronoun_meaning_correction_is_attached_to_topic(self):
+        from backend.cognition.conversation_memory import ConversationMemory
+        history = [
+            {"role": "user", "text": "html"},
+            {"role": "assistant", "text": "What do you mean?"},
+            {"role": "user", "text": "it means hyper text markup language"},
+        ]
+        memory = ConversationMemory(history)
+        self.assertIn("hyper text markup language", memory.meaning_for("HTML")["value"].lower())
+
+    def test_additional_meaning_correction_is_attached_to_topic(self):
+        from backend.cognition.conversation_memory import ConversationMemory
+        history = [
+            {"role": "user", "text": "food"},
+            {"role": "assistant", "text": "What about food?"},
+            {"role": "user", "text": "also it means what we eat to thrive"},
+        ]
+        memory = ConversationMemory(history)
+        self.assertIn("what we eat to thrive", memory.meaning_for("food")["value"].lower())
+
+    def test_user_defined_food_meaning_is_used_in_later_question(self):
+        history = [
+            {"role": "user", "text": "food"},
+            {"role": "assistant", "text": "What about food?"},
+            {"role": "user", "text": "also it means what we eat to thrive"},
+            {"role": "assistant", "text": "Got it."},
+        ]
+        result = self.engine.reply("what is food?", history)
+        self.assertTrue(result.get("memory_used"))
+        self.assertIn("what we eat to thrive", result["reply"].lower())
+
+    def test_harm_request_is_not_treated_as_a_task_to_assist(self):
+        self.assertEqual(parse_intent("i want to kill someone").kind, "harm_risk")
+        self.assertEqual(parse_intent("materials used to kill someone").kind, "harm_risk")
+        result = self.engine.reply("i want materials used to kill someone")
+        self.assertIn("can't help find weapons", result["reply"].lower())
+
+    def test_acknowledgement_without_pending_question_is_natural(self):
+        result = self.engine.reply("yes", [{"role": "assistant", "text": "I'll use that meaning."}])
+        self.assertEqual(result["intent"]["kind"], "acknowledgement")
+        self.assertIn("got it", result["reply"].lower())
+
     def test_greetings_bypass_topic_retrieval(self):
         frame = parse_intent("hi")
         self.assertEqual(frame.kind, "greeting")
