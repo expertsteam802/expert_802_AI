@@ -56,6 +56,7 @@ def parse_intent(message, history=None):
     text = normalize(message)
     low = re.sub(r"[?!.]+$", "", text.lower().strip())
     words = tokens(low)
+    risk_text = re.sub(r"[^a-z ]", " ", (message or "").lower())
     if not low:
         return IntentFrame("empty", "", confidence=1.0, slots={})
 
@@ -80,18 +81,18 @@ def parse_intent(message, history=None):
 
 
     # Recognize knowledge questions before lexical verb/object parsing.
-    if re.match(r"^(?:do you know|have you heard of|are you familiar with)\s+", low):
+    if re.match(r"^(?:do you know|have you heard of|are you familiar with)\s+", risk_text):
         target = re.sub(r"^(?:do you know|have you heard of|are you familiar with)\s+", "", low).strip(" ?!.")
         return IntentFrame("knowledge_check", text, target=_clean_target(target),
                            confidence=0.94, slots={"question_type": "familiarity"})
-    if re.search(r"\b(?:i want to|i am going to|i'm going to|help me)\s+(?:kill|murder|stab|shoot|poison|hurt)\s+(?:someone|somebody|some one|him|her|them|a person)\b", low):
+    if re.search(r"\b(?:i want to|i am going to|i'm going to|help me)\s+(?:kill|murder|stab|shoot|poison|hurt)\s+(?:someone|somebody|some one|him|her|them|a person)\b", risk_text):
         return IntentFrame("harm_risk", text, confidence=0.99, slots={"target": "person"})
-    if re.search(r"\b(?:materials|weapons|tools|ways)\s+(?:to|used to)\s+(?:kill|murder|hurt)\s+(?:someone|somebody|some one|a person)\b", low):
+    if re.search(r"\b(?:materials|weapons|tools|ways)\s+(?:to|used to)\s+(?:kill|murder|hurt)\s+(?:someone|somebody|some one|a person)\b", risk_text):
         return IntentFrame("harm_risk", text, confidence=0.99, slots={"target": "person"})
 
-    if re.search(r"\b(?:materials|weapons|tools|ways)\s+(?:to|used to)\s+(?:kill|murder|hurt)\b", low):
+    if re.search(r"\b(?:materials|weapons|tools|ways)\s+(?:to|used to)\s+(?:kill|murder|hurt)\b", risk_text):
         return IntentFrame("harm_risk", text, confidence=0.96, slots={"target": "person_or_unspecified"})
-    if re.search(r"\b(?:i want|looking for|need)\s+(?:materials|weapons|tools)\s+(?:used\s+)?to\s+(?:kill|murder|hurt)\b", low):
+    if re.search(r"\b(?:i want|looking for|need)\s+(?:materials|weapons|tools)\s+(?:used\s+)?to\s+(?:kill|murder|hurt)\b", risk_text):
         return IntentFrame("harm_risk", text, confidence=0.96, slots={"target": "person_or_unspecified"})
     math_match = re.match(r"^(?:what is|calculate|compute|solve)\s+(.+?)[?!.]*$", low)
     if math_match:
