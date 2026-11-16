@@ -190,6 +190,7 @@ class handler(BaseHTTPRequestHandler):
                             web_results = search_web(task[:300], 5)
                         except Exception:
                             logging.exception("Expert 802 coding web search failed")
+                online_model_fallback = bool(online_model_config()["configured"])
                 if online_model_config()["configured"] and _rate_allowed("hosted_chat", self.client_address[0], limit=18, window=300):
                     try:
                         source_context = [
