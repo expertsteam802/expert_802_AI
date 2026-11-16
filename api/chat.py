@@ -196,7 +196,7 @@ class handler(BaseHTTPRequestHandler):
                                                "text": json.dumps(plan, ensure_ascii=False)[:2000]})
                         online_reply = generate_online_reply(
                             "Engineering task: " + task[:4000] +
-                            "\\n\\nAnalyze the supplied project and static findings. Give prioritized concrete fixes, corrected code or patches where useful, and verification steps. Do not claim files were changed or code was executed.",
+                            "\n\nAnalyze the supplied project and static findings. Give prioritized concrete fixes, corrected code or patches where useful, and verification steps. Do not claim files were changed or code was executed.",
                             [], "coding", web_results, source_context)
                         return self._send(200, {"engine": "expert802-coding-agent",
                                                 "analysis": result["output"], "plan": plan,
