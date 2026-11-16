@@ -221,6 +221,24 @@ button{cursor:pointer}
   $("pageSubtitle").textContent=viewInfo[name][1];
  }
  document.querySelectorAll(".nav-btn").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
+ function extractInlineCode(message){
+  const files=[];
+  const extension={python:"py",py:"py",javascript:"js",js:"js",typescript:"ts",ts:"ts",tsx:"tsx",jsx:"jsx",html:"html",css:"css",json:"json",sql:"sql"};
+  const fenced=/\x60\x60\x60([a-z0-9+#-]*)\s*\n([\s\S]*?)\x60\x60\x60/gi;
+  let match,index=0;
+  while((match=fenced.exec(message))!==null){
+   const ext=extension[(match[1]||"").toLowerCase()];
+   if(ext&&match[2].trim())files.push({path:"pasted_snippet_"+(++index)+"."+ext,content:match[2].trim()});
+  }
+  if(files.length)return files;
+  const firstCode=message.search(/^\s*(?:def\s+\w+|class\s+\w+|import\s+\w+|from\s+\w+\s+import|function\s+\w+|(?:const|let|var)\s+\w+\s*=|<!doctype\s+html|<html\b|SELECT\s+.+\s+FROM)\b/im);
+  if(firstCode>=0){
+   const code=message.slice(firstCode).trim();
+   const ext=/^\s*(?:def\s+|class\s+|import\s+|from\s+.+import)/m.test(code)?"py":/^\s*(?:<!doctype|<html)/i.test(code)?"html":/^\s*SELECT/i.test(code)?"sql":"js";
+   if(code)files.push({path:"pasted_snippet."+ext,content:code});
+  }
+  return files;
+ }
  function appendMessage(role,text,isError=false){
   const row=document.createElement("div"); row.className="message "+role+(isError?" error":"");
   const avatar=document.createElement("div"); avatar.className="avatar"; avatar.textContent=role==="user"?"YOU":"E";
@@ -262,7 +280,7 @@ button{cursor:pointer}
   appendMessage("user",message||"Please inspect the attached source files.");
   history.push({role:"user",text:message||"Please inspect the attached source files."});
   rememberMeaning(message); persistHistory();
-  const filesToInspect=chatFiles.slice();
+  const filesToInspect=chatFiles.slice();\n  const pastedFiles=extractInlineCode(message);
   chatFiles=[];$("chatFiles").value="";$("chatAttachmentStatus").textContent="";$("chatAttachmentStatus").classList.remove("visible");
   input.value="";input.style.height="auto";send.disabled=true;send.textContent="…";
   const pending=appendMessage("assistant","Thinking…");
