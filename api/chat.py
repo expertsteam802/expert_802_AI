@@ -255,7 +255,11 @@ class handler(BaseHTTPRequestHandler):
             result = _ENGINE.reply(message[:4000], history[-200:])
             if not isinstance(result, dict):
                 result = {"reply": str(result)}
-            if web_results and not result.get("memory_used"):
+            deterministic_local_result = bool(
+                result.get("memory_used") or
+                (isinstance(result.get("reasoning"), dict) and result["reasoning"].get("operation"))
+            )
+            if web_results and not deterministic_local_result:
                 evidence = answer_from_web_results(message, web_results)
                 if evidence:
                     evidence_context = (
