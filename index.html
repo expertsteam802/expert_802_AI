@@ -280,14 +280,16 @@ button{cursor:pointer}
   appendMessage("user",message||"Please inspect the attached source files.");
   history.push({role:"user",text:message||"Please inspect the attached source files."});
   rememberMeaning(message); persistHistory();
-  const filesToInspect=chatFiles.slice();\n  const pastedFiles=extractInlineCode(message);
+  const filesToInspect=chatFiles.slice();
+  const pastedFiles=extractInlineCode(message);
   chatFiles=[];$("chatFiles").value="";$("chatAttachmentStatus").textContent="";$("chatAttachmentStatus").classList.remove("visible");
   input.value="";input.style.height="auto";send.disabled=true;send.textContent="…";
   const pending=appendMessage("assistant","Thinking…");
   try{
    let data;
-   if(filesToInspect.length){
-    const files=await Promise.all(filesToInspect.map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
+   if(filesToInspect.length||pastedFiles.length){
+    const uploaded=await Promise.all(filesToInspect.map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
+    const files=uploaded.concat(pastedFiles);
     const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"code_analyze",task:message||"Inspect these source files and explain their structure, defects and risks.",files})});
     data=await response.json();
     if(!response.ok)throw new Error(data.error||"The source inspection failed.");
