@@ -37,6 +37,17 @@ def _normalize_results(items, provider, limit):
     return results
 
 
+def _google_search(query, limit):
+    """Google Programmable Search JSON API. Requires a Google API key and Search Engine ID."""
+    key = os.environ.get("GOOGLE_CSE_API_KEY", "").strip()
+    engine_id = os.environ.get("GOOGLE_CSE_ID", "").strip()
+    if not key or not engine_id:
+        return None
+    params = urllib.parse.urlencode({"key": key, "cx": engine_id, "q": query, "num": min(limit, 10), "safe": "active"})
+    data = _json_request("https://www.googleapis.com/customsearch/v1?" + params, {"Accept": "application/json"})
+    return _normalize_results(data.get("items", []), "Google Search", limit)
+
+
 def _brave_search(query, limit):
     key = os.environ.get("BRAVE_SEARCH_API_KEY", "").strip()
     if not key:
@@ -88,13 +99,13 @@ def _wikipedia_search(query, limit):
 
 
 def search_web(query, limit=5):
-    """Use a configured full-web search API; otherwise use Wikipedia's public search API."""
+    """Use Google Programmable Search first, then configured web search providers; otherwise use Wikipedia."""
     query = _clean(query, 300)
     if len(query) < 2:
         return []
     limit = max(1, min(int(limit), 6))
     errors = []
-    for provider in (_brave_search, _tavily_search, _bing_search):
+    for provider in (_google_search, _brave_search, _tavily_search, _bing_search):
         try:
             results = provider(query, limit)
             if results is not None:
