@@ -7,6 +7,7 @@ from urllib.request import Request, urlopen
 from backend.engine import ExpertLanguageEngine
 from backend.cognition.intent import normalize, parse_intent
 from backend.cognition.reasoning import calculate
+from backend.cognition.deliberation import Deliberator
 from backend.cognition.code_intelligence import inspect_project, InspectionError
 from backend.cognition.programming import build_work_plan, is_programming_request
 from backend.cognition.agent import AgentPlanner
@@ -138,6 +139,29 @@ class CognitiveArchitectureTests(unittest.TestCase):
         history = [{"role": "assistant", "text": "Would you like me to explain it, check it, or compare it?"}]
         result = self.engine.reply("yes", history)
         self.assertIn("more than one option", result["reply"])
+
+    def test_deliberator_splits_compound_questions_and_keeps_source_provenance(self):
+        class FakeRetriever:
+            def retrieve(self, query, limit=3):
+                if "water" in query.lower():
+                    return [{"text":"Water boils at 100 degrees Celsius at standard atmospheric pressure.",
+                             "source":"science.txt","score":1.8}]
+                if "pressure" in query.lower():
+                    return [{"text":"The boiling point changes when atmospheric pressure changes.",
+                             "source":"physics.txt","score":1.5}]
+                return []
+        result = Deliberator(FakeRetriever()).analyze(
+            "What is water's boiling point, and how does pressure affect it?"
+        )
+        self.assertGreaterEqual(len(result["subquestions"]), 2)
+        self.assertTrue(result["evidence"])
+        self.assertIn(result["evidence"][0]["source"], {"science.txt", "physics.txt"})
+        self.assertEqual(result["method"], "decompose_retrieve_compare_verify")
+
+    def test_question_route_runs_deliberation_even_without_neural_weights(self):
+        result = self.engine.reply("What is water?")
+        self.assertIn("deliberation", result)
+        self.assertEqual(result["deliberation"]["method"], "decompose_retrieve_compare_verify")
 
     def test_common_grammar_helper(self):
         corrected, notes = correct_common_grammar("She are ready")
