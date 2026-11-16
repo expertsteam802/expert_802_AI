@@ -3,12 +3,14 @@ import re
 from .intent import parse_intent, normalize
 from .memory import build_state
 from .deliberation import Deliberator
+from .retrieval import LocalRetriever
 from .reasoning import calculate
 from .neural_runtime import NeuralRuntime
 
 class CognitiveEngine:
     def __init__(self):
-        self.deliberator = Deliberator()
+        self.retriever = LocalRetriever()
+        self.deliberator = Deliberator(self.retriever)
         self.neural = NeuralRuntime()
 
     def reply(self, message, history=None):
