@@ -1,4 +1,4 @@
-"""Vercel Python endpoint for the provider-independent Expert 802 cognitive core."""
+"""Vercel API for Expert 802 cognition, online search and optional hosted chat."""
 import json
 import os
 import time
@@ -87,7 +87,7 @@ class handler(BaseHTTPRequestHandler):
         self._send(200, {
             "engine": "expert802-cognitive-core",
             "architecture": ["normalization", "intent_analysis", "dialogue_state", "knowledge_graph",
-                             "local_retrieval", "symbolic_reasoning", "programming_planner", "safe_code_inspection", "tool_registry", "private_neural_runtime", "isolated_test_runner"],
+                             "local_retrieval", "symbolic_reasoning", "programming_planner", "safe_code_inspection", "tool_registry", "live_web_search", "optional_hosted_language_model", "private_neural_runtime", "isolated_test_runner"],
             "external_model_provider": bool(online_config["configured"]),
             "online_model_configured": bool(online_config["configured"]),
             "online_model": online_config.get("model"),
