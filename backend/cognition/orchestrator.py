@@ -169,7 +169,7 @@ class CognitiveEngine:
 
         # Treat declarative input as information to inspect and retain, not as a
         # request to choose from a menu of canned operations.
-        relation = re.search(r"\b(.+?)\s+(?:means|refers to|describes|is called)\s+(.+)$", frame.normalized, re.I)
+        relation = re.search(r"\b(.+?)\s+(?:means|refers to|describes|is called)\s+(.+)$", message, re.I)
         if relation:
             subject, meaning = relation.group(1).strip(), relation.group(2).strip().rstrip(".!?")
             return {**base, "reply": f"Understood: {subject} refers to {meaning}. I'll use that meaning in this conversation.",
