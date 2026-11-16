@@ -69,6 +69,7 @@ class CognitiveEngine:
             if action.lower() in {"explain", "describe", "teach", "define"}:
                 if evidence:
                     return {**base, "reply": "\n".join(item["text"] for item in evidence[:3]),
+                            "action_frame": {"verb": action, "object": target},
                             "evidence": evidence, "reasoning": {"method": "reference_based_explanation"}}
                 neural = self.neural.generate(message, history)
                 if neural["ok"]:
