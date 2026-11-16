@@ -105,6 +105,8 @@ def parse_intent(message, history=None):
             if lexical_is_verb(verb):
                 object_words = words_only[verb_index + 1:]
                 object_text = " ".join(object_words).strip()
+                if not object_text:
+                    continue
                 return IntentFrame(
                     "action_request", text, target=object_text, action=verb,
                     confidence=0.82 if object_text else 0.68,
@@ -113,7 +115,8 @@ def parse_intent(message, history=None):
 
     # A single word or noun phrase is a topic candidate regardless of whether
     # it appears in a preselected list. Its meaning is resolved by retrieval.
-    if len(words_only) <= 3 and not re.search(r"[?]", text):
+    if (len(words_only) <= 3 and not re.search(r"[?]", text)
+            and words_only[0] not in {"what", "who", "where", "when", "why", "how", "is", "are", "do", "does", "did", "can", "could", "would", "will", "should", "i", "you", "he", "she", "it", "we", "they"}):
         return IntentFrame("topic", text, target=text, action="explore",
                            confidence=0.55, slots={"topic_candidate": text})
 
