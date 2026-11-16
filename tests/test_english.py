@@ -472,6 +472,28 @@ class CognitiveArchitectureTests(unittest.TestCase):
             server.server_close()
             thread.join(timeout=2)
 
+    def test_http_chat_uses_persistent_browser_meanings_after_new_chat(self):
+        server = HTTPServer(("127.0.0.1", 0), ChatHandler)
+        thread = threading.Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            payload = json.dumps({
+                "message": "what is PS5?",
+                "history": [],
+                "memory": ["PS5 means PlayStation 5, a gaming device"],
+            }).encode()
+            request = Request(f"http://127.0.0.1:{server.server_port}/api/chat", data=payload,
+                              headers={"Content-Type": "application/json"}, method="POST")
+            with urlopen(request, timeout=5) as response:
+                data = json.loads(response.read().decode())
+                self.assertEqual(response.status, 200)
+                self.assertTrue(data.get("memory_used"))
+                self.assertIn("gaming device", data["reply"].lower())
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
+
     def test_http_chat_uses_native_engine(self):
         server = HTTPServer(("127.0.0.1", 0), ChatHandler)
         thread = threading.Thread(target=server.serve_forever, daemon=True)
