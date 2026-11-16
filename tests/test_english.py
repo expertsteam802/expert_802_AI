@@ -159,7 +159,7 @@ class CognitiveArchitectureTests(unittest.TestCase):
         self.assertEqual(result["method"], "decompose_retrieve_compare_verify")
 
     def test_question_route_runs_deliberation_even_without_neural_weights(self):
-        result = self.engine.reply("What is water?")
+        result = self.engine.reply("How does water affect climate?")
         self.assertIn("deliberation", result)
         self.assertEqual(result["deliberation"]["method"], "decompose_retrieve_compare_verify")
 
