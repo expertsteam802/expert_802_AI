@@ -5,7 +5,7 @@ import random
 import tempfile
 from pathlib import Path
 import numpy as np
-from tokenizer import train_tokenizer, encode_text
+from tokenizer import train_tokenizer, load_tokenizer, encode_text
 
 TEXT_SUFFIXES = {".txt", ".md", ".py", ".js", ".jsx", ".ts", ".tsx", ".html", ".css", ".sql", ".json", ".jsonl"}
 
@@ -38,7 +38,7 @@ def split_documents(text):
     lines = [line.strip() for line in text.splitlines() if len(line.strip()) > 40]
     return lines if len(lines) > 1 else ([text.strip()] if text.strip() else [])
 
-def prepare(sources, output_dir, validation_fraction=0.02, vocab_size=16000, seed=802):
+def prepare(sources, output_dir, validation_fraction=0.02, vocab_size=16000, seed=802, tokenizer_path=None):
     source_groups = []
     for source in sources:
         path = Path(source)
@@ -61,13 +61,18 @@ def prepare(sources, output_dir, validation_fraction=0.02, vocab_size=16000, see
     validation_docs = [doc for _, docs in validation_groups for doc in docs]
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False) as handle:
-        corpus_path = Path(handle.name)
-        handle.write("\n\n".join(training_docs))
-    try:
-        tokenizer = train_tokenizer([corpus_path], output / "tokenizer.json", vocab_size=vocab_size)
-    finally:
-        corpus_path.unlink(missing_ok=True)
+    if tokenizer_path:
+        tokenizer = load_tokenizer(tokenizer_path)
+        import shutil
+        shutil.copy2(tokenizer_path, output / "tokenizer.json")
+    else:
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".txt", delete=False) as handle:
+            corpus_path = Path(handle.name)
+            handle.write("\n\n".join(training_docs))
+        try:
+            tokenizer = train_tokenizer([corpus_path], output / "tokenizer.json", vocab_size=vocab_size)
+        finally:
+            corpus_path.unlink(missing_ok=True)
     separator = tokenizer.token_to_id("<|endoftext|>")
     def tokenize(documents):
         ids = []
@@ -94,8 +99,10 @@ def main():
     parser.add_argument("sources", nargs="+", help="Explicit reviewed text/code corpus folders or files.")
     parser.add_argument("--output", default="training/data")
     parser.add_argument("--vocab-size", type=int, default=16000)
+    parser.add_argument("--tokenizer", default="", help="Reuse an existing tokenizer to keep resumed training token IDs compatible.")
     args = parser.parse_args()
-    print(json.dumps(prepare(args.sources, args.output, vocab_size=args.vocab_size), indent=2))
+    print(json.dumps(prepare(args.sources, args.output, vocab_size=args.vocab_size,
+                             tokenizer_path=args.tokenizer or None), indent=2))
 
 if __name__ == "__main__":
     main()
