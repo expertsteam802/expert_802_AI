@@ -15,7 +15,7 @@ from backend.language import dictionary_lookup, load_dictionary, load_wordnet
 from backend.cognition.agent import AgentPlanner, InspectionError
 from backend.cognition.programming import build_work_plan
 from backend.cognition.sandbox_runtime import SandboxRuntime
-from backend.cognition.online import search_web, should_search_web, answer_from_web_results, normalize_search_query
+from backend.cognition.online import search_web, should_search_web, answer_from_web_results
 
 _ENGINE = ExpertLanguageEngine()
 _AGENT = AgentPlanner()
