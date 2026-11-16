@@ -114,7 +114,6 @@ _FRESH_RE = re.compile(
     r"schedule|score|standings|available now|right now|as of)\b", re.I
 )
 _EXPLICIT_RE = re.compile(r"\b(search (?:the )?(?:web|internet)|internet search|search online|look (?:it )?up online|find online|browse the internet|check (?:the )?web|check online|verify online)\b", re.I)
-                          r"find online|browse the internet|check online|verify online)\b", re.I)
 _FACTUAL_RE = re.compile(r"^\s*(?:what|who|when|where|which|why|how)\b", re.I)
 _RESEARCH_RE = re.compile(r"^\s*(?:(?:can|could) you |please )?(?:explain|describe|compare|define|summari[sz]e|tell me about|give me an overview of)\b", re.I)
 _PERSONAL_RE = re.compile(r"^\s*(?:who are you|what is your name|how are you|what can you do|what do you know about me|what do you remember about me)\b", re.I)
@@ -168,7 +167,8 @@ def generate_online_reply(message, history, mode, web_results, knowledge=None):
     config = online_model_config()
     if not config["configured"]:
         return None
-    key = os.environ.get("EXPERT802_LLM_API_KEY", "").strip()
+    provider_key = {"gemini": "GEMINI_API_KEY", "openai": "OPENAI_API_KEY", "groq": "GROQ_API_KEY"}.get(config["provider"], "")
+    key = (os.environ.get("EXPERT802_LLM_API_KEY") or (os.environ.get(provider_key, "") if provider_key else "")).strip()
     system = (
         "You are Expert 802 AI, a capable, natural, helpful assistant. Be accurate, direct, "
         "clear and appropriately detailed. Think carefully but do not reveal private chain of thought. "
