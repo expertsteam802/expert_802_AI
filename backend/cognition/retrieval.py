@@ -23,12 +23,45 @@ class LocalRetriever:
 
     @staticmethod
     def _load_documents():
-        try:
-            text = CORPUS.read_text(encoding="utf-8")
-        except OSError:
-            return []
-        chunks = [part.strip() for part in re.split(r"(?<=[.!?])\s+|\n+", text) if len(part.strip()) > 35]
-        return chunks
+        documents = []
+        sources = [CORPUS]
+        reference_dir = ROOT / "knowledge" / "references"
+        if reference_dir.exists():
+            sources.extend(sorted(reference_dir.rglob("*.txt")))
+        for source in sources:
+            try:
+                text = source.read_text(encoding="utf-8", errors="ignore")
+            except OSError:
+                continue
+            chunks = [part.strip() for part in re.split(r"(?<=[.!?])\s+|\n+", text)
+                      if 35 < len(part.strip()) <= 1800]
+            documents.extend(chunks)
+
+        # Index dictionary glosses as evidence too. This makes the local
+        # lexical resource searchable by meaning, rather than only by exact
+        # "define X" requests.
+        from backend.language import load_dictionary, load_wordnet
+        for term, entry in load_dictionary().items():
+            if isinstance(entry, str) and entry.strip():
+                documents.append(f"{term}: {entry.strip()}")
+            elif isinstance(entry, dict):
+                definitions = entry.get("definitions", [])
+                if isinstance(definitions, str):
+                    definitions = [definitions]
+                if isinstance(definitions, list):
+                    documents.extend(f"{term}: {value.strip()}" for value in definitions
+                                     if isinstance(value, str) and value.strip())
+
+        for term, entry in load_wordnet().items():
+            if not isinstance(entry, dict):
+                continue
+            definitions = entry.get("definitions", [])
+            if isinstance(definitions, str):
+                definitions = [definitions]
+            if isinstance(definitions, list):
+                documents.extend(f"{term}: {value.strip()}" for value in definitions
+                                 if isinstance(value, str) and value.strip())
+        return documents
 
     def retrieve(self, query, limit=3):
         terms = list(dict.fromkeys(tokens(query)))
