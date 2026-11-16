@@ -30,7 +30,17 @@ def get_batch(data, batch_size, block_size, device, mask_data=None):
         for i in starts
     ]).to(device)
     if not torch.any(weights):
-        return get_batch(data, batch_size, block_size, device, mask_data)
+        for _ in range(31):
+            starts = torch.randint(0, len(data) - block_size - 1, (batch_size,))
+            x = torch.stack([torch.from_numpy(np.array(data[i:i + block_size], dtype=np.int64)) for i in starts])
+            y = torch.stack([torch.from_numpy(np.array(data[i + 1:i + block_size + 1], dtype=np.int64)) for i in starts])
+            weights = torch.stack([
+                torch.from_numpy(np.array(mask_data[i + 1:i + block_size + 1], dtype=np.float32))
+                for i in starts
+            ])
+            if torch.any(weights):
+                return x.to(device), y.to(device), weights.to(device)
+        raise ValueError("Could not sample assistant targets. Increase the number and density of reviewed assistant responses.")
     return x, y, weights
 
 
