@@ -1,0 +1,4 @@
+# Copy this file to corpus_manifest.csv and add one row for every source file under your corpus directory.
+# Use the exact path relative to the corpus directory. Only include material you are legally entitled to use.
+path,license,source_url,permission_basis,notes
+example.txt,CC0-1.0,https://example.org/source,Public domain; verified source terms,Replace this example row
