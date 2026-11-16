@@ -8,8 +8,8 @@ Expert 802's neural layer is project-owned and trained from random initializatio
 - `training/model.py`: decoder-only causal Transformer with multi-head self-attention, residual blocks, feed-forward layers, learned positional embeddings and tied input/output embeddings.
 - `training/test_model.py`: forward, backward and generation smoke test run before GPU training.
 - `training/prepare_data.py`: tokenize explicitly selected text, documentation and source-code corpora; hold out validation documents.
-- `training/train.py`: pretrain from random weights, evaluate held-out loss, clip gradients, schedule learning rate and save resumable checkpoints.
-- `training/prepare_sft.py`: prepare supervised chat conversations while keeping whole conversations in one split.
+- `training/train.py`: pretrain from random weights or fine-tune with assistant-only target masks, evaluate held-out loss, clip gradients, schedule learning rate and save resumable checkpoints.
+- `training/prepare_sft.py`: prepare supervised chat conversations while keeping whole conversations in one split and masking system/user tokens so loss is applied only to assistant responses.
 - `training/generate.py`: local checkpoint inference.
 - `training/serve.py`: private HTTP inference process for a trained checkpoint.
 - `training/checkpoints/`: model weights and tokenizer, excluded from Git.
@@ -76,7 +76,7 @@ python training/prepare_sft.py conversations.jsonl --tokenizer training/checkpoi
 python training/train.py --data training/sft_data --output training/sft-checkpoints --resume training/checkpoints/best.pt --steps 20000
 ```
 
-The fine-tuning tokenizer must match the base checkpoint. `--steps` is the total target step number, so choose a number greater than the checkpoint's saved step.
+The fine-tuning tokenizer must match the base checkpoint. Fine-tuning loss is applied only to assistant response tokens (plus the assistant turn terminator); system and user prompt tokens are context, not targets. The trainer detects the mask files and retains ordinary all-token loss for pretraining datasets. `--steps` is the total target step number, so choose a number greater than the checkpoint's saved step.
 
 A separate manual workflow, `.github/workflows/finetune-neural.yml`, runs the same fine-tuning stage on a GPU runner. It requires the reviewed JSONL dataset, base checkpoint and matching tokenizer to be present at the supplied paths on that runner. Keep checkpoints in private durable storage; workflow artifacts expire after seven days.
 
@@ -105,4 +105,4 @@ This is a real trainable Transformer architecture, not a dictionary lookup or bi
 
 The symbolic cognition and Code Lab layers can provide deterministic calculations, conversation-state tracking, evidence retrieval, task plans and static source inspection. The neural model is intended to improve open-ended language and code generation after it has actually been trained.
 
-The neural inference service is not yet connected to the production Vercel chat route. It is kept separate until a real trained checkpoint exists and can be evaluated. No model weights or corpora are committed to Git.
+The Vercel chat route does not call OpenAI, Gemini, Groq, or another hosted language-model API. Open-ended generation is routed to the private Expert 802 inference service only when a trained checkpoint is available; otherwise the deterministic cognition/retrieval fallback is used. Public web search is a separate retrieval capability and is not used to generate answers with another AI. No model weights or corpora are committed to Git.
