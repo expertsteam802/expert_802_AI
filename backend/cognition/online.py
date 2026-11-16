@@ -155,7 +155,7 @@ def normalize_search_query(message):
     text = _clean(message, 300)
     lowered = text.lower()
     if (re.search(r"\b(president|head of state)\b", lowered)
-            and re.search(r"\b(usa|u\\.?s\\.?|united states|america)\b", lowered)
+            and any(term in lowered for term in ("usa", "u.s.", "united states", "america"))
             and re.search(r"\b(who|current|currently|today|now)\b", lowered)):
         return "current president of the United States"
     return text
