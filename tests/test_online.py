@@ -13,6 +13,7 @@ class OnlineAssistantTests(unittest.TestCase):
     def test_factual_questions_trigger_web_search(self):
         self.assertTrue(online.should_search_web("Who invented the telephone?"))
         self.assertTrue(online.should_search_web("Explain quantum computing"))
+        self.assertTrue(online.should_search_web("Can you explain how transformers work?"))
 
     def test_freshness_questions_trigger_web_search(self):
         self.assertTrue(online.should_search_web("What is the latest Python version today?"))
@@ -33,6 +34,12 @@ class OnlineAssistantTests(unittest.TestCase):
     def test_hosted_model_is_disabled_without_server_key(self):
         with patch.dict(os.environ, {"EXPERT802_LLM_PROVIDER": "gemini"}, clear=True):
             self.assertFalse(online.online_model_config()["configured"])
+
+    def test_existing_gemini_environment_key_is_detected(self):
+        with patch.dict(os.environ, {"GEMINI_API_KEY": "existing-secret"}, clear=True):
+            config = online.online_model_config()
+        self.assertTrue(config["configured"])
+        self.assertEqual(config["provider"], "gemini")
 
     def test_gemini_uses_secure_openai_compatible_endpoint(self):
         with patch.dict(os.environ, {
