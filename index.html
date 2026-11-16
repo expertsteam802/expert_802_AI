@@ -137,9 +137,9 @@ button{cursor:pointer}
   <div class="side-foot">CONVERSATION · REASONING · CODE</div>
  </aside>
  <main class="workspace">
-  <header class="topbar"><div><div class="top-title" id="pageTitle">Conversation</div><div class="top-subtitle" id="pageSubtitle">A conversational and programming assistant built around reasoning, tools and its own trainable model.</div></div><div class="top-right"><span class="pill" id="modelPill">Checking model</span></div></header>
+  <header class="topbar"><div><div class="top-title" id="pageTitle">Conversation</div><div class="top-subtitle" id="pageSubtitle">Local language model · conversation memory · reasoning · programming tools</div></div><div class="top-right"><span class="pill" id="modelPill">Checking model</span></div></header>
   <section class="view chat-view active" id="chatView">
-   <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, explore ideas, build software, debug problems and continue naturally. Programming belongs here in the conversation too.</p><div class="welcome-note">Your conversation history and learned meanings stay in this browser. No online GPU is needed for local conversation memory.</div></div></div>
+   <div class="messages" id="messages"><div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, explore ideas, build software, debug problems and continue naturally. Programming belongs here in the conversation too.</p><div class="welcome-note">Your chat history and learned meanings are saved in this browser. Language generation runs on your device after the model is cached — no cloud GPU inference.</div></div></div>
    <div class="composer-wrap"><div class="attachment-status" id="chatAttachmentStatus"></div><div class="composer"><button class="attach" id="chatAttachButton" type="button" aria-label="Attach source files" title="Attach source files">＋</button><input id="chatFiles" type="file" multiple accept=".py,.js,.jsx,.mjs,.cjs,.ts,.tsx,.html,.css,.json,.sql,.md,.txt,.yml,.yaml" hidden><textarea id="messageInput" rows="1" aria-label="Message Expert 802 AI" placeholder="Message Expert 802 AI…"></textarea><button class="send" id="sendButton" aria-label="Send message">↑</button></div><div class="composer-meta"><span>Enter to send · Shift + Enter for a new line · ＋ attach code</span><span>Your chat and learned meanings stay in this browser</span></div></div>
   </section>
   <section class="view content-view" id="dictionaryView"><div class="page-scroll"><div class="page-inner">
@@ -431,7 +431,7 @@ button{cursor:pointer}
  input.addEventListener("input",()=>{input.style.height="auto";input.style.height=Math.min(input.scrollHeight,150)+"px";});
  $("newChat").addEventListener("click",()=>{
   history.length=0; localStorage.removeItem(HISTORY_KEY);
-  messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, discuss ideas, plan software and continue multi-turn conversations. Attach source files to inspect them directly in this conversation.</p><div class="welcome-note">Your conversation memory stays in this browser. Start a new chat without losing learned meanings.</div></div>';
+  messages.innerHTML='<div class="welcome" id="welcome"><div class="welcome-orb">✳</div><h1>Think freely. Speak naturally.</h1><p>Ask questions, discuss ideas, plan software and continue multi-turn conversations. Attach source files to inspect them directly in this conversation.</p><div class="welcome-note">Your chat history can restart without erasing meanings you taught Expert 802.</div></div>';
   input.value="";input.focus();switchView("chat");
  });
  const codeFilesInput=$("codeFiles");
