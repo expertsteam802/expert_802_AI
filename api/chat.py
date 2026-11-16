@@ -194,7 +194,12 @@ class handler(BaseHTTPRequestHandler):
                 history = []
             if _ENGINE.neural.configured and not _rate_allowed("neural_chat", self.client_address[0], limit=30):
                 return self._send(429, {"error": "Conversation generation is temporarily rate limited. Please wait and try again."})
-            return self._send(200, _ENGINE.reply(message[:4000], history[-30:]))
+            browser_memory = payload.get("memory", [])
+            if isinstance(browser_memory, list):
+                memory_turns = [{"role": "user", "text": item[:500]} for item in browser_memory[-80:]
+                                if isinstance(item, str) and item.strip()]
+                history = memory_turns + history
+            return self._send(200, _ENGINE.reply(message[:4000], history[-100:]))
         except Exception as error:
             logging.exception("Expert 802 cognitive core error (action=%s)", action if "action" in locals() else "unknown")
             return self._send(500, {"error": "The cognitive engine encountered an internal error."})
