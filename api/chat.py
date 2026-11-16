@@ -15,6 +15,7 @@ from backend.language import dictionary_lookup, load_dictionary, load_wordnet
 from backend.cognition.agent import AgentPlanner, InspectionError
 from backend.cognition.programming import build_work_plan
 from backend.cognition.sandbox_runtime import SandboxRuntime
+from backend.cognition.online import search_web, should_search_web, online_model_config, generate_online_reply
 
 _ENGINE = ExpertLanguageEngine()
 _AGENT = AgentPlanner()
@@ -80,12 +81,18 @@ class handler(BaseHTTPRequestHandler):
         neural_health = _ENGINE.neural.health()
         sandbox_health = _SANDBOX.health()
         csrf_token = _make_csrf_token()
+        online_config = online_model_config()
+        search_provider = ("Brave Search" if os.environ.get("BRAVE_SEARCH_API_KEY") else "Tavily" if os.environ.get("TAVILY_API_KEY") else "Bing" if os.environ.get("BING_SEARCH_V7_SUBSCRIPTION_KEY") else "Wikipedia fallback")
         sandbox_health["ready"] = bool(sandbox_health["ready"] and _CODE_RUN_ENABLED and csrf_token)
         self._send(200, {
             "engine": "expert802-cognitive-core",
             "architecture": ["normalization", "intent_analysis", "dialogue_state", "knowledge_graph",
                              "local_retrieval", "symbolic_reasoning", "programming_planner", "safe_code_inspection", "tool_registry", "private_neural_runtime", "isolated_test_runner"],
-            "external_model_provider": False,
+            "external_model_provider": bool(online_config["configured"]),
+            "online_model_configured": bool(online_config["configured"]),
+            "online_model": online_config.get("model"),
+            "web_search_ready": True,
+            "web_search_provider": search_provider,
             "model_configured": _ENGINE.neural.configured,
             "neural_generator_ready": neural_health["ready"],
             "code_generation_enabled": bool(neural_health["ready"] and csrf_token),
@@ -115,6 +122,14 @@ class handler(BaseHTTPRequestHandler):
             if not isinstance(payload, dict):
                 return self._send(400, {"error": "The request body must be a JSON object."})
             action = payload.get("action", "chat")
+            if action == "web_search":
+                query = payload.get("query", "")
+                if not isinstance(query, str) or not query.strip() or len(query) > 300:
+                    return self._send(400, {"error": "Enter a search query under 300 characters."})
+                if not _rate_allowed("web_search", self.client_address[0], limit=12, window=300):
+                    return self._send(429, {"error": "Search limit reached. Please wait before searching again."})
+                results = search_web(query.strip(), 5)
+                return self._send(200, {"query": query.strip(), "results": results, "provider": results[0]["source"] if results else "No results"})
             if action == "code_run":
                 if not _CODE_RUN_ENABLED or not _SANDBOX.health()["ready"]:
                     return self._send(503, {"error": "The isolated runner is disabled or unavailable. An administrator must explicitly enable and configure it."})
@@ -199,7 +214,38 @@ class handler(BaseHTTPRequestHandler):
                 memory_turns = [{"role": "memory", "text": item[:500]} for item in browser_memory[-80:]
                                 if isinstance(item, str) and item.strip()]
                 history = memory_turns + history
-            return self._send(200, _ENGINE.reply(message[:4000], history[-200:]))
+            web_results = []
+            web_search_performed = False
+            if should_search_web(message):
+                if _rate_allowed("web_search", self.client_address[0], limit=12, window=300):
+                    try:
+                        web_results = search_web(message[:300], 5)
+                        web_search_performed = True
+                    except Exception:
+                        logging.exception("Expert 802 web search failed")
+            online_model_used = False
+            online_model_error = False
+            if online_model_config()["configured"]:
+                try:
+                    online_reply = generate_online_reply(
+                        message[:4000], history[-200:], payload.get("mode", "general"),
+                        web_results, payload.get("knowledge", []))
+                    result = {"reply": online_reply, "intent": {"kind": "online_assistant"},
+                              "reasoning": {"method": "hosted_language_model"}}
+                    online_model_used = True
+                except Exception:
+                    logging.exception("Expert 802 hosted model failed; falling back to local cognition")
+                    result = _ENGINE.reply(message[:4000], history[-200:])
+                    online_model_error = True
+            else:
+                result = _ENGINE.reply(message[:4000], history[-200:])
+            if not isinstance(result, dict):
+                result = {"reply": str(result)}
+            result["web_results"] = web_results
+            result["web_search_performed"] = web_search_performed
+            result["online_model_used"] = online_model_used
+            result["online_model_fallback"] = online_model_error
+            return self._send(200, result)
         except Exception as error:
             logging.exception("Expert 802 cognitive core error (action=%s)", action if "action" in locals() else "unknown")
             return self._send(500, {"error": "The cognitive engine encountered an internal error."})
