@@ -3,7 +3,7 @@ import math
 import re
 from collections import Counter, defaultdict
 from pathlib import Path
-from backend.language import dictionary_lookup, load_wordnet, tokens
+from backend.language import dictionary_lookup, tokens
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS = ROOT / "knowledge" / "english_corpus.txt"
@@ -51,16 +51,6 @@ class LocalRetriever:
                 if isinstance(definitions, list):
                     documents.extend(f"{term}: {value.strip()}" for value in definitions
                                      if isinstance(value, str) and value.strip())
-
-        for term, entry in load_wordnet().items():
-            if not isinstance(entry, dict):
-                continue
-            definitions = entry.get("definitions", [])
-            if isinstance(definitions, str):
-                definitions = [definitions]
-            if isinstance(definitions, list):
-                documents.extend(f"{term}: {value.strip()}" for value in definitions
-                                 if isinstance(value, str) and value.strip())
         return documents
 
     def retrieve(self, query, limit=3):
