@@ -443,7 +443,9 @@ button{cursor:pointer}
   const pastedFiles=extractInlineCode(message);
   chatFiles=[];$("chatFiles").value="";$("chatAttachmentStatus").textContent="";$("chatAttachmentStatus").classList.remove("visible");
   input.value="";input.style.height="auto";send.disabled=true;send.textContent="…";
-  const pending=appendMessage("assistant","Thinking…");\n  let streamedLocal=false;\n  const showLocalTokens=partial=>{streamedLocal=true;const bubble=pending.querySelector(".bubble");bubble.textContent=partial;messages.scrollTop=messages.scrollHeight;};\n  try{
+  const pending=appendMessage("assistant","Thinking…");
+  let streamedLocal=false;\n  const showLocalTokens=partial=>{streamedLocal=true;const bubble=pending.querySelector(".bubble");bubble.textContent=partial;messages.scrollTop=messages.scrollHeight;};
+  try{
    let data;
    if(filesToInspect.length||pastedFiles.length){
     const uploaded=await Promise.all(filesToInspect.map(async file=>({path:file.webkitRelativePath||file.name,content:await file.text()})));
@@ -474,7 +476,8 @@ button{cursor:pointer}
     const localAnswer=await generateLocalReply(message,data,[],showLocalTokens);
     if(localAnswer)data.reply=localAnswer;
    }
-   if(streamedLocal)renderMarkdown(pending.querySelector(".bubble"),data.reply);\n   else await typeReply(pending.querySelector(".bubble"),data.reply);
+   if(streamedLocal)renderMarkdown(pending.querySelector(".bubble"),data.reply);
+   else await typeReply(pending.querySelector(".bubble"),data.reply);
    history.push({role:"assistant",text:data.reply}); persistHistory();
   }catch(error){
    let localFallback="";
@@ -485,7 +488,8 @@ button{cursor:pointer}
     }catch(_){}
    }
    if(localFallback){
-    if(streamedLocal)renderMarkdown(pending.querySelector(".bubble"),localFallback);\n   else await typeReply(pending.querySelector(".bubble"),localFallback);
+    if(streamedLocal)renderMarkdown(pending.querySelector(".bubble"),localFallback);
+   else await typeReply(pending.querySelector(".bubble"),localFallback);
     history.push({role:"assistant",text:localFallback});persistHistory();
    }else{
     pending.classList.add("error");
