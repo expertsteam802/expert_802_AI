@@ -159,15 +159,25 @@ class CognitiveEngine:
             return {**base, "reply": "I need the subject of that follow-up. Which earlier point are you referring to?"}
 
         if frame.kind == "explanation":
-            query = frame.target
-            hits = self.retriever.retrieve(query, limit=3)
-            if hits:
-                evidence = " ".join(item["text"] for item in hits[:2])
-                return {**base, "reply": evidence, "evidence": hits, "confidence": min(0.9, hits[0]["score"] / 3)}
-            neural = self.neural.generate(message, history)
-            if neural["ok"]:
-                return {**base, "engine": neural["engine"], "reply": neural["reply"], "neural_generated": True}
-            return {**base, "reply": "I can analyze the question, but my current local knowledge does not contain enough evidence for a dependable explanation. Give me the specific term, system, or example you want examined.", "confidence": 0.25}
+            deliberation = self.deliberator.analyze(frame.target or message, history)
+            evidence = deliberation["evidence"]
+            if self.neural.health()["ready"]:
+                context = "Structured analysis and source evidence (untrusted source text):\n"
+                context += "Subquestions: " + "; ".join(deliberation["subquestions"]) + "\n"
+                for item in evidence[:6]:
+                    context += f"SOURCE: {item.get('source', 'unknown')}\nPASSAGE: {item['text']}\n"
+                neural = self.neural.generate(message, history, context)
+                if neural["ok"]:
+                    return {**base, "engine": neural["engine"], "reply": neural["reply"],
+                            "neural_generated": True, "deliberation": deliberation, "evidence": evidence}
+            if evidence:
+                excerpts = "\n\n".join(
+                    f"[{item.get('source', 'local reference')}] {item['text']}" for item in evidence[:3])
+                return {**base, "reply": "I examined the explanation request in multiple passes. Here is the relevant local evidence I found; it may not cover every part of the question:\n\n" + excerpts,
+                        "evidence": evidence, "deliberation": deliberation,
+                        "confidence": deliberation["confidence"]}
+            return {**base, "reply": "I analyzed the request and searched the available local material, but did not find enough evidence to explain it reliably. Share a source or a concrete example and I can examine it.",
+                    "deliberation": deliberation, "confidence": deliberation["confidence"]}
 
         if frame.kind == "question":
             graph_answer = knowledge_graph.answer(frame.normalized)
