@@ -71,6 +71,8 @@ jobs:
           HEADS: ${{ inputs.heads }}
           WIDTH: ${{ inputs.width }}
         run: python training/train.py --data training/data --output training/checkpoints --steps "$TRAIN_STEPS" --batch-size "$TRAIN_BATCH" --block-size "$BLOCK_SIZE" --layers "$LAYERS" --heads "$HEADS" --width "$WIDTH"
+      - name: Evaluate held-out language and coding prompts
+        run: python training/evaluate.py --checkpoint training/checkpoints/best.pt --data training/data --tokenizer training/checkpoints/tokenizer.json --output training/checkpoints/evaluation.json
       - name: Upload checkpoint artifact
         uses: actions/upload-artifact@v4
         with:
