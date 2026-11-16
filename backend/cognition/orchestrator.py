@@ -47,10 +47,10 @@ class CognitiveEngine:
                                 if isinstance(item, dict) and item.get("role") == "user"
                                 and isinstance(item.get("text"), str)]
         prior_harm_context = any(re.search(
-            r"\\b(?:want to kill|kill someone|kill some one|hurt someone|murder someone|materials used to kill)\\b",
+            r"\b(?:want to kill|kill someone|kill some one|hurt someone|murder someone|materials used to kill)\b",
             item.lower()) for item in recent_user_messages)
         contextual_weapon_request = prior_harm_context and bool(re.search(
-            r"\\b(gun|firearm|knife|poison|explosive|bomb|weapon|ammunition)\\b", message, re.I))
+            r"\b(gun|firearm|knife|poison|explosive|bomb|weapon|ammunition)\b", message, re.I))
         conversation_memory = ConversationMemory((history or []) + [{"role": "user", "text": message}])
         learned = {fact["key"]: fact["value"] for fact in conversation_memory.export_facts()}
         if frame.kind == "definition":
