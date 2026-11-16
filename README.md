@@ -84,7 +84,7 @@ Set these as **server-side Vercel environment variables** (never use a `VITE_` p
 
 For Gemini, set `EXPERT802_LLM_PROVIDER=gemini`; the adapter defaults to Google's OpenAI-compatible endpoint and `gemini-2.5-flash`. For Groq, set `EXPERT802_LLM_PROVIDER=groq`; for OpenAI, set `EXPERT802_LLM_PROVIDER=openai`. The model adapter is server-side and has request timeouts. If it fails, the app falls back to the local cognition and browser model.
 
-Search priority is Brave, then Tavily, then Bing, then Wikipedia fallback. The first three require provider API keys. The no-key Wikipedia fallback is not a full general-purpose web index. Search is automatically triggered for explicit web-search requests, freshness-sensitive questions, general factual questions and relevant programming/API questions. Results are bounded, rate-limited, treated as untrusted content and shown with clickable source links.
+Search priority is Brave, then Tavily, then Bing, then Wikipedia fallback. The first three require provider API keys. The no-key Wikipedia fallback is not a full general-purpose web index. Existing server secrets named `GEMINI_API_KEY`, `OPENAI_API_KEY` or `GROQ_API_KEY` are also recognized when the corresponding provider is selected or inferred. Search is automatically triggered for explicit web-search requests, freshness-sensitive questions, general factual questions and relevant programming/API questions. Results are bounded, rate-limited, treated as untrusted content and shown with clickable source links.
 
 A hosted model and full-web search are not active merely because the code exists: the operator must configure valid provider keys in Vercel, then deploy successfully. Do not commit real keys to Git.
 
