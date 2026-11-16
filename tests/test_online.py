@@ -68,7 +68,7 @@ class OnlineAssistantTests(unittest.TestCase):
 
         with patch.dict(os.environ, {
             "EXPERT802_LLM_PROVIDER": "gemini",
-            "EXPERT802_LLM_API_KEY": "server-secret",
+            "GEMINI_API_KEY": "server-secret",
         }, clear=True), patch("urllib.request.urlopen", return_value=FakeResponse()) as request:
             answer = online.generate_online_reply("Explain AI.", [], "general", [])
         self.assertEqual(answer, "A useful answer.")
