@@ -150,6 +150,34 @@ def _wikipedia_search(query, limit):
     return _normalize_results(items, "Wikipedia", limit)
 
 
+def _current_us_president_search():
+    """Read the current officeholder from the official USAGov presidents page."""
+    url = "https://www.usa.gov/presidents"
+    request = urllib.request.Request(url, headers={
+        "User-Agent": "Mozilla/5.0 (compatible; Expert802AI/1.0)",
+        "Accept": "text/html",
+    })
+    with urllib.request.urlopen(request, timeout=12) as response:
+        page = response.read(2_000_000).decode("utf-8", "replace")
+    plain = _clean(page, 200000)
+    match = re.search(
+        r"Current president\\s+(?:The\\s+)?(?:\\d+(?:st|nd|rd|th)\\s+and\\s+)?"
+        r"current president of the United States is\\s+([A-Z][A-Za-z .'-]+?)\\.",
+        plain,
+        re.I,
+    )
+    if not match:
+        return []
+    name = match.group(1).strip()
+    return [{
+        "title": "USAGov: Current president of the United States",
+        "snippet": "The current president of the United States is " + name +
+                   ". USAGov identifies the officeholder on its official presidents page.",
+        "url": url,
+        "source": "USAGov (official U.S. government)",
+    }]
+
+
 def normalize_search_query(message):
     """Turn common conversational phrasing into a focused search query."""
     text = _clean(message, 300)
@@ -164,6 +192,18 @@ def normalize_search_query(message):
 def answer_from_web_results(message, results):
     """Return a concise, source-grounded excerpt only when a result is clearly relevant."""
     query = normalize_search_query(message)
+    if query == "current president of the United States":
+        for item in results or []:
+            if "usa.gov/presidents" in str(item.get("url", "")):
+                match = re.search(
+                    r"current president of the United States is\\s+([A-Z][A-Za-z .'-]+?)\\.",
+                    _clean(item.get("snippet"), 1200),
+                    re.I,
+                )
+                if match:
+                    return ("The current president of the United States is **" +
+                            match.group(1).strip() +
+                            "**. USAGov identifies this person as the current officeholder.")
     stop_words = {"who", "what", "when", "where", "which", "why", "how", "is", "are",
                   "the", "a", "an", "of", "in", "on", "for", "to", "and", "or",
                   "currently", "today", "now", "please", "tell", "me",
@@ -204,6 +244,13 @@ def search_web(query, limit=5):
     if len(query) < 2:
         return []
     limit = max(1, min(int(limit), 6))
+    if query == "current president of the United States":
+        try:
+            official = _current_us_president_search()
+            if official:
+                return official[:limit]
+        except (OSError, ValueError, RuntimeError, urllib.error.URLError):
+            pass
     errors = []
     for provider in (_duckduckgo_search, _wikipedia_search, _brave_search, _tavily_search, _bing_search):
         try:
