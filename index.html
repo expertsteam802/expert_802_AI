@@ -645,9 +645,10 @@ button{cursor:pointer}
    const retrieved=retrieveKnowledge(message,mode);
    const response=await fetch("/api/chat",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({message,history:history.slice(-80),memory:learnedMemory,mode,knowledge:retrieved.map(x=>({source:x.source,text:x.text.slice(0,1500)}))})});
     data=await response.json();
-    if(!response.ok||typeof data.reply!=="string"||!data.reply.trim())throw new Error(data.error||"The language engine returned no answer.");
+    if(!response.ok||!data||typeof data!=="object")throw new Error(data?.error||"The cognition request failed.");
      const localAnswer=data.neural_generated?data.reply:await generateLocalReply(message,data,[],showLocalTokens);
     if(localAnswer)data.reply=localAnswer;
+    if(typeof data.reply!=="string"||!data.reply.trim())throw new Error(data.generation_error||"No language generator is ready.");
      data.reply=appendWebSources(data.reply,data.web_results);
    }
    if(streamedLocal)renderMarkdown(pending.querySelector(".bubble"),data.reply);
