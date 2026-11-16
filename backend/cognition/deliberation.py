@@ -18,7 +18,7 @@ class Deliberator:
     def analyze(self, question, history=None):
         original = (question or "").strip()
         clauses = [part.strip(" ,;") for part in re.split(
-            r"(?<=[.!?])\\s+|\\s+(?:and also|and|but|because|although|while)\\s+|\\n+",
+            r"(?<=[.!?])\s+|\s+(?:and also|and|but|because|although|while)\s+|\n+",
             original, flags=re.I) if len(_content_terms(part)) >= 2]
         subquestions = list(dict.fromkeys(clauses or [original]))
         queries = [original] + [part for part in subquestions if part != original]
